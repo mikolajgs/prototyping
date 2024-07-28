@@ -92,9 +92,9 @@ user.CreatedAt = time.Now().Unix()
 err = c.SaveToDB(user) // Insert object to database table
 
 user.Email = "newemail@example.com"
-err = c.SaveToDB() // Update object in the database table
+err = c.SaveToDB(user) // Update object in the database table
 
-err = c.DeleteFromDB() // Delete object from the database table
+err = c.DeleteFromDB(user) // Delete object from the database table
 
 err = c.DropDBTable(user) // Run 'DROP TABLE'
 ```
