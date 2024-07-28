@@ -5,5 +5,5 @@
 // or list of objects. All requests and responses are in the JSON format.
 //
 // Please follow GitHub page for an example:
-// https://github.com/streamln/crud/pkg/crud
+// https://github.com/mikolajgs/crud/pkg/crud
 package crud
