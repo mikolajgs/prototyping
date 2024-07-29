@@ -10,7 +10,7 @@ import (
 type Controller struct {
 	dbConn       *sql.DB
 	dbTblPrefix  string
-	modelHelpers map[string]*struct2sql.Struct2sql
+	sqlGenerators map[string]*struct2sql.Struct2sql
 }
 
 // NewController returns new Controller object
@@ -19,6 +19,6 @@ func NewController(dbConn *sql.DB, tblPrefix string) *Controller {
 		dbConn:      dbConn,
 		dbTblPrefix: tblPrefix,
 	}
-	c.modelHelpers = make(map[string]*struct2sql.Struct2sql)
+	c.sqlGenerators = make(map[string]*struct2sql.Struct2sql)
 	return c
 }

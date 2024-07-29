@@ -7,26 +7,6 @@ import (
 	"github.com/mikolajgs/crud/pkg/struct2sql"
 )
 
-// getHelper returns a special Struct2sql instance which reflects the struct type to get SQL queries etc.
-// TODO: Might be removed in the future
-func (c *Controller) getHelper(obj interface{}) (*struct2sql.Struct2sql, *ErrController) {
-	v := reflect.ValueOf(obj)
-	i := reflect.Indirect(v)
-	s := i.Type()
-	n := s.Name()
-	if c.modelHelpers[n] == nil {
-		h := struct2sql.NewStruct2sql(obj, c.dbTblPrefix, "", nil)
-		if h.Err() != nil {
-			return nil, &ErrController{
-				Op:  "GetHelper",
-				Err: fmt.Errorf("Error getting Struct2sql: %w", h.Err()),
-			}
-		}
-		c.modelHelpers[n] = h
-	}
-	return c.modelHelpers[n], nil
-}
-
 // initHelpers creates all the Struct2sql objects. For HTTP endpoints, it is necessary to create these first
 func (c *Controller) initHelpersForHTTPHandler(newObjFunc func() interface{}, newObjCreateFunc func() interface{}, newObjReadFunc func() interface{}, newObjUpdateFunc func() interface{}, newObjDeleteFunc func() interface{}, newObjListFunc func() interface{}) *ErrController {
 	obj := newObjFunc()
@@ -35,7 +15,7 @@ func (c *Controller) initHelpersForHTTPHandler(newObjFunc func() interface{}, ne
 	s := i.Type()
 	forceName := s.Name()
 
-	h, cErr := c.getHelper(obj)
+	h, cErr := c.struct2db.GetHelper(obj)
 	if cErr != nil {
 		return cErr
 	}
@@ -70,18 +50,14 @@ func (c *Controller) initHelper(newObjFunc func() interface{}, forceName string,
 	}
 
 	obj := newObjFunc()
-	v := reflect.ValueOf(obj)
-	i := reflect.Indirect(v)
-	s := i.Type()
-	n := s.Name()
-	h := struct2sql.NewStruct2sql(obj, c.dbTblPrefix, forceName, sourceHelper)
-	if h.Err() != nil {
+
+	h, err := c.struct2db.RegisterHelper(obj, forceName, sourceHelper)
+	if err != nil {
 		return &ErrController{
 			Op:  "InitStruct2sqlWithForcedName",
 			Err: fmt.Errorf("Error initialising Helper with forced name: %w", h.Err()),
 		}
 	}
-	c.modelHelpers[n] = h
 	return nil
 }
 

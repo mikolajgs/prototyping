@@ -7,14 +7,10 @@ import (
 	"github.com/mikolajgs/crud/pkg/struct2sql"
 )
 
-// getHelper returns a special Struct2sql instance which reflects the struct type to get SQL queries etc.
-// TODO: Might be removed in the future
-func (c *Controller) getHelper(obj interface{}) (*struct2sql.Struct2sql, *ErrController) {
-	v := reflect.ValueOf(obj)
-	i := reflect.Indirect(v)
-	s := i.Type()
-	n := s.Name()
-	if c.modelHelpers[n] == nil {
+// getSQLGenerator returns a special Struct2sql instance which reflects the struct type to get SQL queries etc.
+func (c *Controller) getSQLGenerator(obj interface{}) (*struct2sql.Struct2sql, *ErrController) {
+	n := c.getSQLGeneratorName(obj)
+	if c.sqlGenerators[n] == nil {
 		h := struct2sql.NewStruct2sql(obj, c.dbTblPrefix, "", nil)
 		if h.Err() != nil {
 			return nil, &ErrController{
@@ -22,9 +18,17 @@ func (c *Controller) getHelper(obj interface{}) (*struct2sql.Struct2sql, *ErrCon
 				Err: fmt.Errorf("Error getting Struct2sql: %w", h.Err()),
 			}
 		}
-		c.modelHelpers[n] = h
+		c.sqlGenerators[n] = h
 	}
-	return c.modelHelpers[n], nil
+	return c.sqlGenerators[n], nil
+}
+
+func (c *Controller) getSQLGeneratorName(obj interface{}) string {
+	v := reflect.ValueOf(obj)
+	i := reflect.Indirect(v)
+	s := i.Type()
+	n := s.Name()
+	return n
 }
 
 func (c Controller) mapWithInterfacesToMapBool(m map[string]interface{}) map[string]bool {

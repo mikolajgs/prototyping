@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"strconv"
+
+	"github.com/mikolajgs/crud/pkg/struct2sql"
 )
 
 // SaveToDB takes object, validates its field values and saves it in the database.
@@ -11,7 +13,7 @@ import (
 // exists in the database and the function with execute an "UPDATE" query. Otherwise it will be "INSERT". After
 // inserting, new record ID is set to struct's ID field
 func (c Controller) SaveToDB(obj interface{}) *ErrController {
-	h, err := c.getHelper(obj)
+	h, err := c.getSQLGenerator(obj)
 	if err != nil {
 		return err
 	}
@@ -59,7 +61,7 @@ func (c Controller) SetFromDB(obj interface{}, id string) *ErrController {
 		}
 	}
 
-	h, err2 := c.getHelper(obj)
+	h, err2 := c.getSQLGenerator(obj)
 	if err2 != nil {
 		return err2
 	}
@@ -81,7 +83,7 @@ func (c Controller) SetFromDB(obj interface{}, id string) *ErrController {
 // DeleteFromDB removes object from the database table and it does that only when ID field is set (greater than 0).
 // Once deleted from the DB, all field values are zeroed
 func (c Controller) DeleteFromDB(obj interface{}) *ErrController {
-	h, err := c.getHelper(obj)
+	h, err := c.getSQLGenerator(obj)
 	if err != nil {
 		return err
 	}
@@ -103,7 +105,7 @@ func (c Controller) DeleteFromDB(obj interface{}) *ErrController {
 // list of objects
 func (c Controller) GetFromDB(newObjFunc func() interface{}, order []string, limit int, offset int, filters map[string]interface{}) ([]interface{}, *ErrController) {
 	obj := newObjFunc()
-	h, err := c.getHelper(obj)
+	h, err := c.getSQLGenerator(obj)
 	if err != nil {
 		return nil, err
 	}
@@ -147,4 +149,34 @@ func (c Controller) GetFromDB(newObjFunc func() interface{}, order []string, lim
 		v = append(v, newObj)
 	}
 	return v, nil
+}
+
+
+// AddSQLGenerator adds Struct2sql object to sqlGenerators
+func (c *Controller) AddSQLGenerator(obj interface{}, parentObj interface{}) (*ErrController) {
+	var sourceHelper *struct2sql.Struct2sql
+	var forceName string
+	if parentObj != nil {
+		h, err := c.getSQLGenerator(parentObj)
+		if err != nil {
+			return &ErrController{
+				Op:  "GetHelper",
+				Err: fmt.Errorf("Error getting Struct2sql: %w", h.Err()),
+			}
+		}
+		sourceHelper = h
+		forceName = c.getSQLGeneratorName(parentObj)
+	}
+
+	n := c.getSQLGeneratorName(obj)
+
+	h := struct2sql.NewStruct2sql(obj, c.dbTblPrefix, forceName, sourceHelper)
+	if h.Err() != nil {
+		return &ErrController{
+			Op:  "GetHelper",
+			Err: fmt.Errorf("Error getting Struct2sql: %w", h.Err()),
+		}
+	}
+	c.sqlGenerators[n] = h
+	return nil
 }

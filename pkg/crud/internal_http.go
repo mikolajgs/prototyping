@@ -22,17 +22,17 @@ func (c Controller) handleHTTPPut(w http.ResponseWriter, r *http.Request, newObj
 	objClone := newObjFunc()
 
 	if id != "" {
-		err2 := c.SetFromDB(objClone, id)
+		err2 := c.struct2db.SetFromDB(objClone, id)
 		if err2 != nil {
 			c.writeErrText(w, http.StatusInternalServerError, "cannot_get_from_db")
 			return
 		}
-		if c.GetModelIDValue(objClone) == 0 {
+		if c.struct2db.GetModelIDValue(objClone) == 0 {
 			c.writeErrText(w, http.StatusNotFound, "not_found_in_db")
 			return
 		}
 	} else {
-		c.ResetFields(objClone)
+		c.struct2db.ResetFields(objClone)
 	}
 
 	err = json.Unmarshal(body, objClone)
@@ -47,7 +47,7 @@ func (c Controller) handleHTTPPut(w http.ResponseWriter, r *http.Request, newObj
 		return
 	}
 
-	err2 := c.SaveToDB(objClone)
+	err2 := c.struct2db.SaveToDB(objClone)
 	if err2 != nil {
 		c.writeErrText(w, http.StatusInternalServerError, "cannot_save_to_db")
 		return
@@ -55,11 +55,11 @@ func (c Controller) handleHTTPPut(w http.ResponseWriter, r *http.Request, newObj
 
 	if id != "" {
 		c.writeOK(w, http.StatusOK, map[string]interface{}{
-			"id": c.GetModelIDValue(objClone),
+			"id": c.struct2db.GetModelIDValue(objClone),
 		})
 	} else {
 		c.writeOK(w, http.StatusCreated, map[string]interface{}{
-			"id": c.GetModelIDValue(objClone),
+			"id": c.struct2db.GetModelIDValue(objClone),
 		})
 	}
 }
@@ -103,7 +103,7 @@ func (c Controller) handleHTTPGet(w http.ResponseWriter, r *http.Request, newObj
 				}
 			}
 		}
-		xobj, err1 := c.GetFromDB(newObjFunc, order, limit, offset, filters)
+		xobj, err1 := c.struct2db.GetFromDB(newObjFunc, order, limit, offset, filters)
 		if err1 != nil {
 			if err1.Op == "ValidateFilters" {
 				c.writeErrText(w, http.StatusBadRequest, "invalid_filter_value")
@@ -123,13 +123,13 @@ func (c Controller) handleHTTPGet(w http.ResponseWriter, r *http.Request, newObj
 
 	objClone := newObjFunc()
 
-	err := c.SetFromDB(objClone, id)
+	err := c.struct2db.SetFromDB(objClone, id)
 	if err != nil {
 		c.writeErrText(w, http.StatusInternalServerError, "cannot_get_from_db")
 		return
 	}
 
-	if c.GetModelIDValue(objClone) == 0 {
+	if c.struct2db.GetModelIDValue(objClone) == 0 {
 		c.writeErrText(w, http.StatusNotFound, "not_found_in_db")
 		return
 	}
@@ -147,17 +147,17 @@ func (c Controller) handleHTTPDelete(w http.ResponseWriter, r *http.Request, new
 
 	objClone := newObjFunc()
 
-	err := c.SetFromDB(objClone, id)
+	err := c.struct2db.SetFromDB(objClone, id)
 	if err != nil {
 		c.writeErrText(w, http.StatusInternalServerError, "cannot_get_from_db")
 		return
 	}
-	if c.GetModelIDValue(objClone) == 0 {
+	if c.struct2db.GetModelIDValue(objClone) == 0 {
 		c.writeErrText(w, http.StatusNotFound, "not_found_in_db")
 		return
 	}
 
-	err = c.DeleteFromDB(objClone)
+	err = c.struct2db.DeleteFromDB(objClone)
 	if err != nil {
 		c.writeErrText(w, http.StatusInternalServerError, "cannot_delete_from_db")
 		return
@@ -213,7 +213,7 @@ func (c Controller) jsonID(id int64) []byte {
 }
 
 func (c Controller) uriFilterToFilter(obj interface{}, filterName string, filterValue string) (string, interface{}, *ErrController) {
-	h, err := c.getHelper(obj)
+	h, err := c.struct2db.getOrRegisterHelper(obj, "", nil)
 	if err != nil {
 		return "", nil, &ErrController{
 			Op:  "GetHelper",
