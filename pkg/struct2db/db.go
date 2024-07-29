@@ -153,7 +153,17 @@ func (c Controller) GetFromDB(newObjFunc func() interface{}, order []string, lim
 
 
 // AddSQLGenerator adds Struct2sql object to sqlGenerators
-func (c *Controller) AddSQLGenerator(obj interface{}, parentObj interface{}) (*ErrController) {
+func (c *Controller) AddSQLGenerator(obj interface{}, parentObj interface{}, overwrite bool) (*ErrController) {
+	n := c.getSQLGeneratorName(obj)
+
+	// If sql generator already exists and it should not be overwritten then finish
+	if !overwrite {
+		_, ok := c.sqlGenerators[n]
+		if ok {
+			return nil
+		}
+	}
+
 	var sourceHelper *struct2sql.Struct2sql
 	var forceName string
 	if parentObj != nil {
@@ -168,8 +178,6 @@ func (c *Controller) AddSQLGenerator(obj interface{}, parentObj interface{}) (*E
 		forceName = c.getSQLGeneratorName(parentObj)
 	}
 
-	n := c.getSQLGeneratorName(obj)
-
 	h := struct2sql.NewStruct2sql(obj, c.dbTblPrefix, forceName, sourceHelper)
 	if h.Err() != nil {
 		return &ErrController{
@@ -179,4 +187,16 @@ func (c *Controller) AddSQLGenerator(obj interface{}, parentObj interface{}) (*E
 	}
 	c.sqlGenerators[n] = h
 	return nil
+}
+
+// GetDBCol returns column name used in the database
+func (c *Controller) GetDBCol(obj interface{}, fieldName string) (string, *ErrController) {
+	n := c.getSQLGeneratorName(obj)
+
+	h, err := c.getSQLGenerator(obj)
+	if err != nil {
+		return "", err
+	}
+	dbCol := h.GetDBCol(n)
+	return dbCol, nil
 }
