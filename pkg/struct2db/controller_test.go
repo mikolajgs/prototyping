@@ -41,7 +41,7 @@ func TestCreateDBTables(t *testing.T) {
 	ts := &TestStruct{}
 	_ = testController.CreateDBTables(ts)
 
-	cnt, err2 := getTableNameCnt("gen64_test_structs")
+	cnt, err2 := getTableNameCnt("struct2db_test_structs")
 	if err2 != nil {
 		t.Fatalf("CreateDBTables failed to create table for a struct: %s", err2.Error())
 	}
@@ -132,8 +132,8 @@ func TestSaveToDB(t *testing.T) {
 	}
 
 	ts.Flags = 7
-	ts.PrimaryEmail = "primary1@gen64.net"
-	ts.EmailSecondary = "secondary2@gen64.net"
+	ts.PrimaryEmail = "primary1@example.com"
+	ts.EmailSecondary = "secondary2@example.com"
 	ts.FirstName = "Johnny"
 	ts.LastName = "Smithsy"
 	ts.Age = 50
@@ -207,7 +207,7 @@ func TestGetFromDB(t *testing.T) {
 		ts.ID = 0
 		ts.Age = 10 + i
 		ts.Price = 444
-		ts.PrimaryEmail = "another@gen64.net"
+		ts.PrimaryEmail = "another@example.com"
 		testController.SaveToDB(ts)
 	}
 
@@ -220,7 +220,7 @@ func TestGetFromDB(t *testing.T) {
 
 	testStructs, err := testController.GetFromDB(func() interface{} {
 		return &TestStruct{}
-	}, []string{"Age", "asc", "Price", "asc"}, 10, 20, map[string]interface{}{"Price": 444, "PrimaryEmail": "primary@gen64.net"})
+	}, []string{"Age", "asc", "Price", "asc"}, 10, 20, map[string]interface{}{"Price": 444, "PrimaryEmail": "primary@example.com"})
 	if err != nil {
 		t.Fatalf("GetFromDB failed to return list of objects: %s", err.Op)
 	}

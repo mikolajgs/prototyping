@@ -187,7 +187,7 @@ func TestHTTPHandlerGetMethodWithoutID(t *testing.T) {
 		"order":                "age",
 		"order_direction":      "asc",
 		"filter_price":         "444",
-		"filter_primary_email": "primary@gen64.net",
+		"filter_primary_email": "primary@example.com",
 	}, t)
 
 	r := NewHTTPResponse(1, "")

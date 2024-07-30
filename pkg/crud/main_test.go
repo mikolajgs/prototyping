@@ -143,7 +143,7 @@ func createDocker() {
 }
 
 func createController() {
-	testController = NewController(dbConn, "gen64_")
+	testController = NewController(dbConn, "crud_")
 	testStructNewFunc = func() interface{} {
 		return &TestStruct{}
 	}
@@ -204,7 +204,7 @@ func getRow() (int64, int64, string, string, string, string, int, int, string, s
 	var id, flags, createdByUserID int64
 	var primaryEmail, emailSecondary, firstName, lastName, postCode, postCode2, password, key string
 	var age, price int
-	err := dbConn.QueryRow("SELECT * FROM gen64_test_structs ORDER BY test_struct_id DESC LIMIT 1").Scan(&id, &flags, &primaryEmail, &emailSecondary, &firstName, &lastName, &age, &price, &postCode, &postCode2, &password, &createdByUserID, &key)
+	err := dbConn.QueryRow("SELECT * FROM crud_test_structs ORDER BY test_struct_id DESC LIMIT 1").Scan(&id, &flags, &primaryEmail, &emailSecondary, &firstName, &lastName, &age, &price, &postCode, &postCode2, &password, &createdByUserID, &key)
 	return id, flags, primaryEmail, emailSecondary, firstName, lastName, age, price, postCode, postCode2, password, createdByUserID, key, err
 }
 
@@ -212,21 +212,26 @@ func getRowById(id int64) (int64, string, string, string, string, int, int, stri
 	var id2, flags, createdByUserID int64
 	var primaryEmail, emailSecondary, firstName, lastName, postCode, postCode2, password, key string
 	var age, price int
-	err := dbConn.QueryRow(fmt.Sprintf("SELECT * FROM gen64_test_structs WHERE test_struct_id = %d", id)).Scan(&id2, &flags, &primaryEmail, &emailSecondary, &firstName, &lastName, &age, &price, &postCode, &postCode2, &password, &createdByUserID, &key)
+	err := dbConn.QueryRow(fmt.Sprintf("SELECT * FROM crud_test_structs WHERE test_struct_id = %d", id)).Scan(&id2, &flags, &primaryEmail, &emailSecondary, &firstName, &lastName, &age, &price, &postCode, &postCode2, &password, &createdByUserID, &key)
 	return flags, primaryEmail, emailSecondary, firstName, lastName, age, price, postCode, postCode2, password, createdByUserID, key, err
 }
 
 func getRowCntById(id int64) (int64, error) {
 	var cnt int64
-	err := dbConn.QueryRow(fmt.Sprintf("SELECT COUNT(*) AS c FROM gen64_test_structs WHERE test_struct_id = %d", id)).Scan(&cnt)
+	err := dbConn.QueryRow(fmt.Sprintf("SELECT COUNT(*) AS c FROM crud_test_structs WHERE test_struct_id = %d", id)).Scan(&cnt)
 	return cnt, err
+}
+
+func truncateTable() (error) {
+	_, err := dbConn.Exec("TRUNCATE TABLE crud_test_structs");
+	return err
 }
 
 func getTestStructWithData() *TestStruct {
 	ts := testStructNewFunc().(*TestStruct)
 	ts.Flags = 4
-	ts.PrimaryEmail = "primary@gen64.net"
-	ts.EmailSecondary = "secondary@gen64.net"
+	ts.PrimaryEmail = "primary@example.com"
+	ts.EmailSecondary = "secondary@example.com"
 	ts.FirstName = "John"
 	ts.LastName = "Smith"
 	ts.Age = 37
