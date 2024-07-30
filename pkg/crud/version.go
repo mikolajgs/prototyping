@@ -1,3 +1,3 @@
 package crud
 
-const VERSION = "0.4.0"
+const VERSION = "0.5.0"

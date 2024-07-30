@@ -160,6 +160,6 @@ func (h *Struct2sql) GetQuerySelect(order []string, limit int, offset int, filte
 	return s
 }
 
-func (h *Struct2sql) GetDBCol(n string) string {
+func (h *Struct2sql) GetFieldNameFromDBCol(n string) string {
 	return h.dbCols[n]
 }

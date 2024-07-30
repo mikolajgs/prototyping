@@ -1,4 +1,4 @@
-package crud
+package struct2db
 
 import (
 	"fmt"
@@ -30,7 +30,7 @@ func (c Controller) CreateDBTables(xobj ...interface{}) *ErrController {
 // converts them into table and columns names (all lowercase with underscore), assigns column type based on the
 // field type, and then executes "CREATE TABLE" query on attached DB connection
 func (c Controller) CreateDBTable(obj interface{}) *ErrController {
-	h, err := c.getHelper(obj)
+	h, err := c.getSQLGenerator(obj)
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func (c Controller) CreateDBTable(obj interface{}) *ErrController {
 // DropDBTable drops database table used to store specified type of objects. It just takes struct name, converts
 // it to lowercase-with-underscore table name and executes "DROP TABLE" query using attached DB connection
 func (c Controller) DropDBTable(obj interface{}) *ErrController {
-	h, err := c.getHelper(obj)
+	h, err := c.getSQLGenerator(obj)
 	if err != nil {
 		return err
 	}

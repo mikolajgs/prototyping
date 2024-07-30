@@ -1,4 +1,4 @@
-package crud
+package struct2db
 
 import (
 	"reflect"

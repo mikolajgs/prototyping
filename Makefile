@@ -4,6 +4,7 @@
 
 test: ## Runs tests
 	cd pkg/struct2sql && go test
+	cd pkg/struct2db && go test
 	cd pkg/crud && go test
 
 help: ## Displays this help

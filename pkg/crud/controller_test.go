@@ -4,204 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
 	"testing"
 )
 
-// TestGetModelIDInterface tests if GetModelIDInterface return pointer to ID field
-func TestGetModelIDInterface(t *testing.T) {
-	ts := testStructNewFunc().(*TestStruct)
-	ts.ID = 123
-	i := testController.GetModelIDInterface(ts)
-	if *(i.(*int64)) != int64(123) {
-		log.Fatalf("GetModelIDInterface failed to get ID")
-	}
-}
-
-// TestGetModelIDValue tests if GetModelIDValue returns values of the ID field
-func TestGetModelIDValue(t *testing.T) {
-	ts := testStructNewFunc().(*TestStruct)
-	ts.ID = 123
-	v := testController.GetModelIDValue(ts)
-	if v != 123 {
-		log.Fatalf("GetModelIDValue failed to get ID")
-	}
-}
-
-// TestGetModelFieldInterfaces tests if GetModelFieldInterfaces returns interfaces to object fields
-func TestGetModelFieldInterfaces(t *testing.T) {
-	// TODO
-}
-
-// TestResetFields tests if ResetFields zeroes object fields
-func TestResetFields(t *testing.T) {
-	// TODO
-}
-
-// TestCreateDBTables tests if CreateDBTables creates tables in the database
-func TestCreateDBTables(t *testing.T) {
-	ts := testStructNewFunc().(*TestStruct)
-	_ = testController.CreateDBTables(ts)
-
-	cnt, err2 := getTableNameCnt("gen64_test_structs")
-	if err2 != nil {
-		t.Fatalf("CreateDBTables failed to create table for a struct: %s", err2.Error())
-	}
-	if cnt == 0 {
-		t.Fatalf("CreateDBTables failed to create the table")
-	}
-}
-
-// TestValidateWithValidStruct tests if Validate successfully validates object with valid values
-func TestValidateWithValidStruct(t *testing.T) {
-	ts := getTestStructWithData()
-	b, failedFields, err := testController.Validate(ts, nil)
-	if !b {
-		t.Fatalf("Validate failed validate valid struct")
-	}
-	if len(failedFields) > 0 {
-		t.Fatalf("Validate return non-empty failed field list when validating a valid struct")
-	}
-	if err != nil {
-		t.Fatalf("Validate failed to validate valid struct: %s", err.Error())
-	}
-}
-
-// TestValidateWithInvalidStruct tests if Validate invalidates object with invalid values
-func TestValidateWithInvalidStruct(t *testing.T) {
-	ts := getTestStructWithData()
-	ts.PrimaryEmail = "invalidemail"
-	ts.EmailSecondary = "invalidemail"
-	ts.FirstName = "x"
-	ts.LastName = "aFbdsZFYxMpUNKCkBrHhhODrMBEHtmRAJjoqSSfUotvsfMXcJGPrCRaDOsyuyrXYfACjsJEMUoxNvTwRMUaWYruOxgzTXJRzobmxaFbdsZFYxMpUNKCkBrHhhODrMBEHtmRAJjoqSSfUotvsfMXcJGPrCRaDOsyuyrXYfACjsJEMUoxNvTwRMUaWYruOxgzTXJRzobmxaFbdsZFYxMpUNKCkBrHhhODrMBEHtmRAJjoqSSfUotvsfMXcJGPrCRaDOsyuyrXYfACjsJEMUoxNvTwRMUaWYruOxgzTXJRzobmxaFbdsZFYxMpUNKCkBrHhhODrMBEHtmRAJjoqSSfUotvsfMXcJGPrCRaDOsyuyrXYfACjsJEMUoxNvTwRMUaWYruOxgzTXJRzobmx"
-	ts.Age = 0
-	ts.Price = 1000
-	ts.PostCode = "inv"
-	ts.PostCode2 = "inv"
-	ts.Key = "tooshort"
-	b, failedFields, err := testController.Validate(ts, nil)
-	if err != nil {
-		t.Fatalf("Validate failed with an err")
-	}
-	if b {
-		t.Fatalf("Validate failed to return false for struct with invalid field values")
-	}
-	for _, f := range []string{"PrimaryEmail", "EmailSecondary", "FirstName", "LastName", "Age", "Price", "PostCode", "PostCode2", "Key"} {
-		if failedFields[f] == 0 {
-			t.Fatalf(fmt.Sprintf("Validate failed to return field %s in failed fields", f))
-		}
-	}
-}
-
-// TestSaveToDB tests if SaveToDB properly inserts and updates object in the database
-func TestSaveToDB(t *testing.T) {
-	ts := getTestStructWithData()
-
-	err := testController.SaveToDB(ts)
-	if err != nil {
-		t.Fatalf("SaveToDB failed to insert struct to the table: %s", err.Op)
-	}
-	id, flags, primaryEmail, emailSecondary, firstName, lastName, age, price, postCode, postCode2, password, createdByUserID, key, err2 := getRow()
-	if err2 != nil {
-		t.Fatalf("SaveToDB failed to insert struct to the table: %s", err.Error())
-	}
-	if id == 0 || flags != ts.Flags || primaryEmail != ts.PrimaryEmail || emailSecondary != ts.EmailSecondary || firstName != ts.FirstName || lastName != ts.LastName || age != ts.Age || price != ts.Price || postCode != ts.PostCode || postCode2 != ts.PostCode2 || createdByUserID != ts.CreatedByUserID || key != ts.Key || password != ts.Password {
-		t.Fatalf("SaveToDB failed to insert struct to the table")
-	}
-
-	ts.Flags = 7
-	ts.PrimaryEmail = "primary1@gen64.net"
-	ts.EmailSecondary = "secondary2@gen64.net"
-	ts.FirstName = "Johnny"
-	ts.LastName = "Smithsy"
-	ts.Age = 50
-	ts.Price = 222
-	ts.PostCode = "22-222"
-	ts.PostCode2 = "33-333"
-	ts.Password = "xxx"
-	ts.CreatedByUserID = 7
-	ts.Key = "123456789012345678901234567890aaa"
-
-	err3 := testController.SaveToDB(ts)
-	if err3 != nil {
-		t.Fatalf("SaveToDB failed to update struct")
-	}
-
-	flags, primaryEmail, emailSecondary, firstName, lastName, age, price, postCode, postCode2, password, createdByUserID, key, err2 = getRowById(id)
-	if err2 != nil {
-		t.Fatalf("SaveToDB failed to update struct in the table: %s", err.Error())
-	}
-	if id == 0 || flags != ts.Flags || primaryEmail != ts.PrimaryEmail || emailSecondary != ts.EmailSecondary || firstName != ts.FirstName || lastName != ts.LastName || age != ts.Age || price != ts.Price || postCode != ts.PostCode || postCode2 != ts.PostCode2 || createdByUserID != ts.CreatedByUserID || key != ts.Key || password != ts.Password {
-		t.Fatalf("SaveToDB failed to update struct to the table")
-	}
-}
-
-// TestSetFromDB tests if SetFromDB properly gets row from the database table and populate object fields with its value
-func TestSetFromDB(t *testing.T) {
-	ts := getTestStructWithData()
-	err := testController.SaveToDB(ts)
-	if err != nil {
-		t.Fatalf("SaveToDB in TestSetFromDB failed to insert struct to the table: %s", err.Op)
-	}
-
-	ts2 := testStructNewFunc().(*TestStruct)
-	err = testController.SetFromDB(ts2, fmt.Sprintf("%d", ts.ID))
-	if err != nil {
-		t.Fatalf("SetFromDB failed to get data: %s", err.Op)
-	}
-
-	if !areTestStructObjectSame(ts, ts2) {
-		t.Fatalf("SetFromDB failed to set struct with data: %s", err.Op)
-	}
-}
-
-// TestDeleteFromDB tests if DeleteFromDB removes object from the database
-func TestDeleteFromDB(t *testing.T) {
-	ts := getTestStructWithData()
-	err := testController.SaveToDB(ts)
-	if err != nil {
-		t.Fatalf("SaveToDB in TestDeleteFromDB failed to insert struct to the table: %s", err.Op)
-	}
-	err = testController.DeleteFromDB(ts)
-	if err != nil {
-		t.Fatalf("DeleteFromDB failed to remove: %s", err.Op)
-	}
-
-	cnt, err2 := getRowCntById(ts.ID)
-	if err2 != nil {
-		t.Fatalf("DeleteFromDB failed to delete struct from the table")
-	}
-	if cnt > 0 {
-		t.Fatalf("DeleteFromDB failed to delete struct from the table")
-	}
-	if ts.ID != 0 {
-		t.Fatalf("DeleteFromDB failed to set ID to 0 on the struct")
-	}
-}
-
-// TestGetFromDB tests if GetFromDB properly gets many objects from the database, filtered and ordered, with results limited to specific number
-func TestGetFromDB(t *testing.T) {
-	for i := 1; i < 51; i++ {
-		ts := getTestStructWithData()
-		ts.ID = 0
-		ts.Age = 30 + i
-		testController.SaveToDB(ts)
-	}
-
-	testStructs, err := testController.GetFromDB(testStructNewFunc, []string{"Age", "asc", "Price", "asc"}, 10, 20, map[string]interface{}{"Price": 444, "PrimaryEmail": "primary@gen64.net"})
-	if err != nil {
-		t.Fatalf("GetFromDB failed to return list of objects: %s", err.Op)
-	}
-	if len(testStructs) != 10 {
-		t.Fatalf("GetFromDB failed to return list of objects, want %v, got %v", 10, len(testStructs))
-	}
-	if testStructs[2].(*TestStruct).Age != 52 {
-		t.Fatalf("GetFromDB failed to return correct list of objects, want %v, got %v", 52, testStructs[2].(*TestStruct).Age)
-	}
-}
+var createdID int64
 
 // TestHTTPHanlderPutMethodForValidations checks if HTTP endpoint returns validation failed error when PUT request with invalid input is made
 func TestHTTPHandlerPutMethodForValidation(t *testing.T) {
@@ -244,6 +53,8 @@ func TestHTTPHandlerPutMethodForCreating(t *testing.T) {
 	if r.Data["id"].(float64) == 0 {
 		t.Fatalf("PUT method did not return id")
 	}
+
+	createdID = int64(r.Data["id"].(float64))
 }
 
 // TestHTTPHandlerPutMethodForUpdating tests if HTTP endpoint successfully updates object details when PUT request with ID is being made
@@ -262,7 +73,7 @@ func TestHTTPHandlerPutMethodForUpdating(t *testing.T) {
 		"created_by_user_id": 12,
 		"key": "123456789012345678901234567890nbh"
 	}`
-	_ = makePUTUpdateRequest(j, 54, false, t)
+	_ = makePUTUpdateRequest(j, createdID, false, t)
 
 	id, flags, primaryEmail, emailSecondary, firstName, lastName, age, price, postCode, postCode2, password, createdByUserID, key, err := getRow()
 	if err != nil {
@@ -291,7 +102,7 @@ func TestHTTPHandlerPutMethodForUpdatingOnCustomEndpoint(t *testing.T) {
 		"created_by_user_id": 12,
 		"key": "123456789012345678901234567890nbh"
 	}`
-	_ = makePUTUpdateRequest(j, 54, true, t)
+	_ = makePUTUpdateRequest(j, createdID, true, t)
 
 	id, flags, _, _, _, _, _, price, _, _, _, _, _, err := getRow()
 	if err != nil {
@@ -307,7 +118,7 @@ func TestHTTPHandlerPutMethodForUpdatingOnCustomEndpoint(t *testing.T) {
 // TestHTTPHandlerGetMethodOnExisting checks if HTTP endpoint properly return object details,
 // when GET request with object ID is made
 func TestHTTPHandlerGetMethodOnExisting(t *testing.T) {
-	resp := makeGETReadRequest(54, t)
+	resp := makeGETReadRequest(createdID, t)
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("GET method returned wrong status code, want %d, got %d", http.StatusOK, resp.StatusCode)
@@ -339,9 +150,9 @@ func TestHTTPHandlerGetMethodOnExisting(t *testing.T) {
 
 // TestHTTPHandlerDeleteMethod tests if HTTP endpoint removes object from the database, when DELETE request is made
 func TestHTTPHandlerDeleteMethod(t *testing.T) {
-	makeDELETERequest(54, t)
+	makeDELETERequest(createdID, t)
 
-	cnt, err2 := getRowCntById(54)
+	cnt, err2 := getRowCntById(createdID)
 	if err2 != nil {
 		t.Fatalf("DELETE handler failed to delete struct from the table")
 	}
@@ -352,7 +163,7 @@ func TestHTTPHandlerDeleteMethod(t *testing.T) {
 
 // TestHTTPHandlerGetMethodOnNonExisting checks HTTP endpoint response when making GET request with non-existing object ID
 func TestHTTPHandlerGetMethodOnNonExisting(t *testing.T) {
-	resp := makeGETReadRequest(54, t)
+	resp := makeGETReadRequest(createdID, t)
 
 	if resp.StatusCode != http.StatusNotFound {
 		t.Fatalf("GET method returned wrong status code, want %d, got %d", http.StatusNotFound, resp.StatusCode)
@@ -362,15 +173,15 @@ func TestHTTPHandlerGetMethodOnNonExisting(t *testing.T) {
 // TestHTTPHandlerGetMethodWithoutID tests if HTTP endpoint returns list of objects when GET request without ID
 // is done; request contains filters, order and result limit
 func TestHTTPHandlerGetMethodWithoutID(t *testing.T) {
-	ts := testStructNewFunc().(*TestStruct)
+	truncateTable()
+
+	ts := getTestStructWithData()
 	for i := 1; i <= 55; i++ {
-		testController.ResetFields(ts)
 		ts.ID = 0
-		testController.SetFromDB(ts, fmt.Sprintf("%d", i))
-		if ts.ID != 0 {
-			ts.Password = "abcdefghijklopqrwwe"
-			testController.SaveToDB(ts)
-		}
+		// Key must be unique
+		ts.Key = fmt.Sprintf("%d%s", i, "123456789012345678901234567890")
+		ts.Age = ts.Age + 1
+		testController.struct2db.SaveToDB(ts)
 	}
 	b := makeGETListRequest(map[string]string{
 		"limit":                "10",
@@ -378,7 +189,7 @@ func TestHTTPHandlerGetMethodWithoutID(t *testing.T) {
 		"order":                "age",
 		"order_direction":      "asc",
 		"filter_price":         "444",
-		"filter_primary_email": "primary@gen64.net",
+		"filter_primary_email": "primary@example.com",
 	}, t)
 
 	r := NewHTTPResponse(1, "")
@@ -386,13 +197,12 @@ func TestHTTPHandlerGetMethodWithoutID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GET method returned wrong json output, error marshaling: %s", err.Error())
 	}
-
 	if len(r.Data["items"].([]interface{})) != 10 {
 		t.Fatalf("GET method returned invalid number of rows, want %d got %d", 10, len(r.Data["items"].([]interface{})))
 	}
 
-	if r.Data["items"].([]interface{})[2].(map[string]interface{})["age"].(float64) != 52 {
-		t.Fatalf("GET method returned invalid row, want %d got %f", 52, r.Data["items"].([]interface{})[2].(map[string]interface{})["age"].(float64))
+	if r.Data["items"].([]interface{})[2].(map[string]interface{})["age"].(float64) != 60 {
+		t.Fatalf("GET method returned invalid row, want %d got %f", 60, r.Data["items"].([]interface{})[2].(map[string]interface{})["age"].(float64))
 	}
 
 	if strings.Contains(string(b), "email2") {
@@ -400,22 +210,5 @@ func TestHTTPHandlerGetMethodWithoutID(t *testing.T) {
 	}
 	if strings.Contains(string(b), "post_code2") {
 		t.Fatalf("GET method returned output with field that should have been hidden")
-	}
-}
-
-// TestDropDBTables tests if DropDBTables successfully drops tables from the database
-func TestDropDBTables(t *testing.T) {
-	ts := testStructNewFunc().(*TestStruct)
-	err := testController.DropDBTables(ts)
-	if err != nil {
-		t.Fatalf("DropDBTables failed to drop table for a struct: %s", err.Op)
-	}
-
-	cnt, err2 := getTableNameCnt("gen64_test_structs")
-	if err2 != nil {
-		t.Fatalf("DropDBTables failed to drop table for a struct: %s", err2.Error())
-	}
-	if cnt > 0 {
-		t.Fatalf("DropDBTables failed to drop the table")
 	}
 }
