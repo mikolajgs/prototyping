@@ -173,6 +173,8 @@ func TestHTTPHandlerGetMethodOnNonExisting(t *testing.T) {
 // TestHTTPHandlerGetMethodWithoutID tests if HTTP endpoint returns list of objects when GET request without ID
 // is done; request contains filters, order and result limit
 func TestHTTPHandlerGetMethodWithoutID(t *testing.T) {
+	truncateTable()
+
 	ts := getTestStructWithData()
 	for i := 1; i <= 55; i++ {
 		ts.ID = 0
