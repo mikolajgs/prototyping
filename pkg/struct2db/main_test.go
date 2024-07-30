@@ -121,6 +121,11 @@ func getRowCntById(id int64) (int64, error) {
 	return cnt, err
 }
 
+func truncateTable() (error) {
+	_, err := dbConn.Exec("TRUNCATE TABLE gen64_test_structs");
+	return err
+}
+
 func getTestStructWithData() *TestStruct {
 	ts := &TestStruct{}
 	ts.Flags = 4

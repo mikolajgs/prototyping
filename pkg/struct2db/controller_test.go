@@ -65,6 +65,28 @@ func TestValidateWithValidStruct(t *testing.T) {
 	}
 }
 
+// TestValidateWithValidStructAndListOfFields tests if Validate successfully validates object with valid values
+func TestValidateWithValidStructAndListOfFields(t *testing.T) {
+	ts := getTestStructWithData()
+	ts.Age = 0
+	ts.FirstName = "x"
+	ts.Key = "tooshort"
+	ts.PrimaryEmail = "thisis@valid.email.com"
+	b, failedFields, err := testController.Validate(ts, map[string]interface{}{
+		"PrimaryEmail": true,
+		"Price": true,
+	})
+	if !b {
+		t.Fatalf("Validate failed to validate listed fields")
+	}
+	if len(failedFields) > 0 {
+		t.Fatalf("Validate return non-empty failed field list when validating listed fields")
+	}
+	if err != nil {
+		t.Fatalf("Validate failed to validate listed fields: %s", err.Error())
+	}
+}
+
 // TestValidateWithInvalidStruct tests if Validate invalidates object with invalid values
 func TestValidateWithInvalidStruct(t *testing.T) {
 	ts := getTestStructWithData()
@@ -93,6 +115,8 @@ func TestValidateWithInvalidStruct(t *testing.T) {
 
 // TestSaveToDB tests if SaveToDB properly inserts and updates object in the database
 func TestSaveToDB(t *testing.T) {
+	truncateTable()
+
 	ts := getTestStructWithData()
 
 	err := testController.SaveToDB(ts)
@@ -136,14 +160,12 @@ func TestSaveToDB(t *testing.T) {
 
 // TestSetFromDB tests if SetFromDB properly gets row from the database table and populate object fields with its value
 func TestSetFromDB(t *testing.T) {
-	ts := getTestStructWithData()
-	err := testController.SaveToDB(ts)
-	if err != nil {
-		t.Fatalf("SaveToDB in TestSetFromDB failed to insert struct to the table: %s", err.Op)
-	}
+	truncateTable()
 
+	ts := getTestStructWithData()
+	testController.SaveToDB(ts)
 	ts2 := &TestStruct{}
-	err = testController.SetFromDB(ts2, fmt.Sprintf("%d", ts.ID))
+	err := testController.SetFromDB(ts2, fmt.Sprintf("%d", ts.ID))
 	if err != nil {
 		t.Fatalf("SetFromDB failed to get data: %s", err.Op)
 	}
@@ -155,12 +177,11 @@ func TestSetFromDB(t *testing.T) {
 
 // TestDeleteFromDB tests if DeleteFromDB removes object from the database
 func TestDeleteFromDB(t *testing.T) {
+	truncateTable()
+
 	ts := getTestStructWithData()
-	err := testController.SaveToDB(ts)
-	if err != nil {
-		t.Fatalf("SaveToDB in TestDeleteFromDB failed to insert struct to the table: %s", err.Op)
-	}
-	err = testController.DeleteFromDB(ts)
+	testController.SaveToDB(ts)
+	err := testController.DeleteFromDB(ts)
 	if err != nil {
 		t.Fatalf("DeleteFromDB failed to remove: %s", err.Op)
 	}
@@ -179,6 +200,17 @@ func TestDeleteFromDB(t *testing.T) {
 
 // TestGetFromDB tests if GetFromDB properly gets many objects from the database, filtered and ordered, with results limited to specific number
 func TestGetFromDB(t *testing.T) {
+	truncateTable()
+
+	for i := 1; i < 51; i++ {
+		ts := getTestStructWithData()
+		ts.ID = 0
+		ts.Age = 10 + i
+		ts.Price = 444
+		ts.PrimaryEmail = "another@gen64.net"
+		testController.SaveToDB(ts)
+	}
+
 	for i := 1; i < 51; i++ {
 		ts := getTestStructWithData()
 		ts.ID = 0
@@ -195,7 +227,32 @@ func TestGetFromDB(t *testing.T) {
 	if len(testStructs) != 10 {
 		t.Fatalf("GetFromDB failed to return list of objects, want %v, got %v", 10, len(testStructs))
 	}
-	if testStructs[2].(*TestStruct).Age != 52 {
-		t.Fatalf("GetFromDB failed to return correct list of objects, want %v, got %v", 52, testStructs[2].(*TestStruct).Age)
+	if testStructs[2].(*TestStruct).Age != 53 {
+		t.Fatalf("GetFromDB failed to return correct list of objects, want %v, got %v", 53, testStructs[2].(*TestStruct).Age)
+	}
+}
+
+// TestGetFromDBWithoutFilters tests if GetFromDB properly gets many objects from the database, without any filters
+func TestGetFromDBWithoutFilters(t *testing.T) {
+	truncateTable()
+
+	for i := 1; i < 51; i++ {
+		ts := getTestStructWithData()
+		ts.ID = 0
+		ts.Age = 30 + i
+		testController.SaveToDB(ts)
+	}
+
+	testStructs, err := testController.GetFromDB(func() interface{} {
+		return &TestStruct{}
+	}, []string{"Age", "asc", "Price", "asc"}, 13, 14, nil)
+	if err != nil {
+		t.Fatalf("GetFromDB failed to return list of objects: %s", err.Op)
+	}
+	if len(testStructs) != 13 {
+		t.Fatalf("GetFromDB failed to return list of objects, want %v, got %v", 10, len(testStructs))
+	}
+	if testStructs[2].(*TestStruct).Age != 47 {
+		t.Fatalf("GetFromDB failed to return correct list of objects, want %v, got %v", 47, testStructs[2].(*TestStruct).Age)
 	}
 }
