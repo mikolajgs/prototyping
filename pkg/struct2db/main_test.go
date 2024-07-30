@@ -177,4 +177,3 @@ func areTestStructObjectSame(ts1 *TestStruct, ts2 *TestStruct) bool {
 	}
 	return true
 }
-

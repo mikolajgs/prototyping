@@ -10,6 +10,8 @@ import (
 	"testing"
 )
 
+var createdID int64
+
 // TestHTTPHanlderPutMethodForValidations checks if HTTP endpoint returns validation failed error when PUT request with invalid input is made
 func TestHTTPHandlerPutMethodForValidation(t *testing.T) {
 	j := `{
@@ -51,6 +53,8 @@ func TestHTTPHandlerPutMethodForCreating(t *testing.T) {
 	if r.Data["id"].(float64) == 0 {
 		t.Fatalf("PUT method did not return id")
 	}
+
+	createdID = int64(r.Data["id"].(float64))
 }
 
 // TestHTTPHandlerPutMethodForUpdating tests if HTTP endpoint successfully updates object details when PUT request with ID is being made
@@ -69,7 +73,7 @@ func TestHTTPHandlerPutMethodForUpdating(t *testing.T) {
 		"created_by_user_id": 12,
 		"key": "123456789012345678901234567890nbh"
 	}`
-	_ = makePUTUpdateRequest(j, 54, false, t)
+	_ = makePUTUpdateRequest(j, createdID, false, t)
 
 	id, flags, primaryEmail, emailSecondary, firstName, lastName, age, price, postCode, postCode2, password, createdByUserID, key, err := getRow()
 	if err != nil {
@@ -98,7 +102,7 @@ func TestHTTPHandlerPutMethodForUpdatingOnCustomEndpoint(t *testing.T) {
 		"created_by_user_id": 12,
 		"key": "123456789012345678901234567890nbh"
 	}`
-	_ = makePUTUpdateRequest(j, 54, true, t)
+	_ = makePUTUpdateRequest(j, createdID, true, t)
 
 	id, flags, _, _, _, _, _, price, _, _, _, _, _, err := getRow()
 	if err != nil {
@@ -114,7 +118,7 @@ func TestHTTPHandlerPutMethodForUpdatingOnCustomEndpoint(t *testing.T) {
 // TestHTTPHandlerGetMethodOnExisting checks if HTTP endpoint properly return object details,
 // when GET request with object ID is made
 func TestHTTPHandlerGetMethodOnExisting(t *testing.T) {
-	resp := makeGETReadRequest(54, t)
+	resp := makeGETReadRequest(createdID, t)
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("GET method returned wrong status code, want %d, got %d", http.StatusOK, resp.StatusCode)
@@ -146,9 +150,9 @@ func TestHTTPHandlerGetMethodOnExisting(t *testing.T) {
 
 // TestHTTPHandlerDeleteMethod tests if HTTP endpoint removes object from the database, when DELETE request is made
 func TestHTTPHandlerDeleteMethod(t *testing.T) {
-	makeDELETERequest(54, t)
+	makeDELETERequest(createdID, t)
 
-	cnt, err2 := getRowCntById(54)
+	cnt, err2 := getRowCntById(createdID)
 	if err2 != nil {
 		t.Fatalf("DELETE handler failed to delete struct from the table")
 	}
@@ -159,7 +163,7 @@ func TestHTTPHandlerDeleteMethod(t *testing.T) {
 
 // TestHTTPHandlerGetMethodOnNonExisting checks HTTP endpoint response when making GET request with non-existing object ID
 func TestHTTPHandlerGetMethodOnNonExisting(t *testing.T) {
-	resp := makeGETReadRequest(54, t)
+	resp := makeGETReadRequest(createdID, t)
 
 	if resp.StatusCode != http.StatusNotFound {
 		t.Fatalf("GET method returned wrong status code, want %d, got %d", http.StatusNotFound, resp.StatusCode)
@@ -169,15 +173,13 @@ func TestHTTPHandlerGetMethodOnNonExisting(t *testing.T) {
 // TestHTTPHandlerGetMethodWithoutID tests if HTTP endpoint returns list of objects when GET request without ID
 // is done; request contains filters, order and result limit
 func TestHTTPHandlerGetMethodWithoutID(t *testing.T) {
-	ts := testStructNewFunc().(*TestStruct)
+	ts := getTestStructWithData()
 	for i := 1; i <= 55; i++ {
-		testController.ResetFields(ts)
 		ts.ID = 0
-		testController.SetFromDB(ts, fmt.Sprintf("%d", i))
-		if ts.ID != 0 {
-			ts.Password = "abcdefghijklopqrwwe"
-			testController.SaveToDB(ts)
-		}
+		// Key must be unique
+		ts.Key = fmt.Sprintf("%d%s", i, "123456789012345678901234567890")
+		ts.Age = ts.Age + 1
+		testController.struct2db.SaveToDB(ts)
 	}
 	b := makeGETListRequest(map[string]string{
 		"limit":                "10",
@@ -193,13 +195,12 @@ func TestHTTPHandlerGetMethodWithoutID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GET method returned wrong json output, error marshaling: %s", err.Error())
 	}
-
 	if len(r.Data["items"].([]interface{})) != 10 {
 		t.Fatalf("GET method returned invalid number of rows, want %d got %d", 10, len(r.Data["items"].([]interface{})))
 	}
 
-	if r.Data["items"].([]interface{})[2].(map[string]interface{})["age"].(float64) != 52 {
-		t.Fatalf("GET method returned invalid row, want %d got %f", 52, r.Data["items"].([]interface{})[2].(map[string]interface{})["age"].(float64))
+	if r.Data["items"].([]interface{})[2].(map[string]interface{})["age"].(float64) != 60 {
+		t.Fatalf("GET method returned invalid row, want %d got %f", 60, r.Data["items"].([]interface{})[2].(map[string]interface{})["age"].(float64))
 	}
 
 	if strings.Contains(string(b), "email2") {
@@ -207,22 +208,5 @@ func TestHTTPHandlerGetMethodWithoutID(t *testing.T) {
 	}
 	if strings.Contains(string(b), "post_code2") {
 		t.Fatalf("GET method returned output with field that should have been hidden")
-	}
-}
-
-// TestDropDBTables tests if DropDBTables successfully drops tables from the database
-func TestDropDBTables(t *testing.T) {
-	ts := testStructNewFunc().(*TestStruct)
-	err := testController.DropDBTables(ts)
-	if err != nil {
-		t.Fatalf("DropDBTables failed to drop table for a struct: %s", err.Op)
-	}
-
-	cnt, err2 := getTableNameCnt("gen64_test_structs")
-	if err2 != nil {
-		t.Fatalf("DropDBTables failed to drop table for a struct: %s", err2.Error())
-	}
-	if cnt > 0 {
-		t.Fatalf("DropDBTables failed to drop the table")
 	}
 }

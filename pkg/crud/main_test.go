@@ -103,6 +103,7 @@ type TestStruct_Read struct {
 
 type TestStruct_List struct {
 	ID           int64  `json:"test_struct_id"`
+	Price        int    `json:"price"`
 	PrimaryEmail string `json:"email" crud:"req email"`
 	FirstName    string `json:"first_name"`
 	Age          int    `json:"age"`
@@ -111,10 +112,11 @@ type TestStruct_List struct {
 func TestMain(m *testing.M) {
 	createDocker()
 	createController()
+	createDBStructure()
 	createHTTPServer()
 
 	code := m.Run()
-	removeDocker()
+	//removeDocker()
 	os.Exit(code)
 }
 
@@ -161,6 +163,10 @@ func createController() {
 		return &TestStruct_UpdatePrice{}
 	}
 	testStructObj = testStructNewFunc().(*TestStruct)
+}
+
+func createDBStructure() {
+	testController.struct2db.CreateDBTables(testStructObj)
 }
 
 func getWrappedHTTPHandler(next http.Handler) http.Handler {
@@ -354,6 +360,7 @@ func makeGETListRequest(uriParams map[string]string, t *testing.T) []byte {
 	for k, v := range uriParams {
 		uriParamString = addWithAmpersand(uriParamString, k+"="+url.QueryEscape(v))
 	}
+
 	req, err := http.NewRequest("GET", "http://localhost:"+httpPort+httpURI+"?"+uriParamString, bytes.NewReader([]byte{}))
 	if err != nil {
 		t.Fatalf("GET method failed on HTTP server with handler from GetHTTPHandler: %s", err)
@@ -364,12 +371,12 @@ func makeGETListRequest(uriParams map[string]string, t *testing.T) []byte {
 		t.Fatalf("GET method failed on HTTP server with handler from GetHTTPHandler: %s", err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("PUT method returned wrong status code, want %d, got %d", http.StatusOK, resp.StatusCode)
+		t.Fatalf("GET method returned wrong status code, want %d, got %d", http.StatusOK, resp.StatusCode)
 	}
 
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		t.Fatalf("PUT method failed to return body: %s", err.Error())
+		t.Fatalf("GET method failed to return body: %s", err.Error())
 	}
 
 	return b

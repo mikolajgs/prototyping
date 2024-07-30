@@ -110,20 +110,22 @@ func (c Controller) GetFromDB(newObjFunc func() interface{}, order []string, lim
 		return nil, err
 	}
 
-	b, invalidFields, err1 := c.Validate(obj, filters)
-	if err1 != nil {
-		return nil, &ErrController{
-			Op:  "ValidateFilters",
-			Err: fmt.Errorf("Error when trying to validate filters: %w", err1),
+	if len(filters) > 0 {
+		b, invalidFields, err1 := c.Validate(obj, filters)
+		if err1 != nil {
+			return nil, &ErrController{
+				Op:  "ValidateFilters",
+				Err: fmt.Errorf("Error when trying to validate filters: %w", err1),
+			}
 		}
-	}
 
-	if !b {
-		return nil, &ErrController{
-			Op: "ValidateFilters",
-			Err: &ErrValidation{
-				Fields: invalidFields,
-			},
+		if !b {
+			return nil, &ErrController{
+				Op: "ValidateFilters",
+				Err: &ErrValidation{
+					Fields: invalidFields,
+				},
+			}
 		}
 	}
 
@@ -148,12 +150,12 @@ func (c Controller) GetFromDB(newObjFunc func() interface{}, order []string, lim
 		}
 		v = append(v, newObj)
 	}
+
 	return v, nil
 }
 
-
 // AddSQLGenerator adds Struct2sql object to sqlGenerators
-func (c *Controller) AddSQLGenerator(obj interface{}, parentObj interface{}, overwrite bool) (*ErrController) {
+func (c *Controller) AddSQLGenerator(obj interface{}, parentObj interface{}, overwrite bool) *ErrController {
 	n := c.getSQLGeneratorName(obj)
 
 	// If sql generator already exists and it should not be overwritten then finish
@@ -190,13 +192,11 @@ func (c *Controller) AddSQLGenerator(obj interface{}, parentObj interface{}, ove
 }
 
 // GetDBCol returns column name used in the database
-func (c *Controller) GetDBCol(obj interface{}, fieldName string) (string, *ErrController) {
-	n := c.getSQLGeneratorName(obj)
-
+func (c *Controller) GetFieldNameFromDBCol(obj interface{}, dbCol string) (string, *ErrController) {
 	h, err := c.getSQLGenerator(obj)
 	if err != nil {
 		return "", err
 	}
-	dbCol := h.GetDBCol(n)
-	return dbCol, nil
+	fieldName := h.GetFieldNameFromDBCol(dbCol)
+	return fieldName, nil
 }

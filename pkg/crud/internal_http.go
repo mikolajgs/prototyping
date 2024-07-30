@@ -68,7 +68,6 @@ func (c Controller) handleHTTPGet(w http.ResponseWriter, r *http.Request, newObj
 	if id == "" {
 		obj := newObjFunc()
 		params := c.getParamsFromURI(r.RequestURI)
-
 		limit, _ := strconv.Atoi(params["limit"])
 		offset, _ := strconv.Atoi(params["offset"])
 		if limit < 1 {
@@ -103,6 +102,7 @@ func (c Controller) handleHTTPGet(w http.ResponseWriter, r *http.Request, newObj
 				}
 			}
 		}
+
 		xobj, err1 := c.struct2db.GetFromDB(newObjFunc, order, limit, offset, filters)
 		if err1 != nil {
 			if err1.Op == "ValidateFilters" {
@@ -213,20 +213,20 @@ func (c Controller) jsonID(id int64) []byte {
 }
 
 func (c Controller) uriFilterToFilter(obj interface{}, filterName string, filterValue string) (string, interface{}, *ErrController) {
-	dbCol, cErr := c.struct2db.GetDBCol(obj, filterName)
+	fieldName, cErr := c.struct2db.GetFieldNameFromDBCol(obj, filterName)
 	if cErr != nil {
 		return "", nil, &ErrController{
 			Op:  "GetDBCol",
-			Err: fmt.Errorf("Error getting database column name: %w", cErr.Unwrap()),
+			Err: fmt.Errorf("Error getting field name from filter: %w", cErr.Unwrap()),
 		}
 	}
 
-	if dbCol == "" {
+	if fieldName == "" {
 		return "", nil, nil
 	}
 
 	val := reflect.ValueOf(obj).Elem()
-	valueField := val.FieldByName(dbCol)
+	valueField := val.FieldByName(fieldName)
 	if valueField.Type().Name() == "int" {
 		filterInt, err := strconv.Atoi(filterValue)
 		if err != nil {
@@ -235,7 +235,7 @@ func (c Controller) uriFilterToFilter(obj interface{}, filterName string, filter
 				Err: fmt.Errorf("Error converting string to int: %w", err),
 			}
 		}
-		return dbCol, filterInt, nil
+		return fieldName, filterInt, nil
 	}
 	if valueField.Type().Name() == "int64" {
 		filterInt64, err := strconv.ParseInt(filterValue, 10, 64)
@@ -245,10 +245,10 @@ func (c Controller) uriFilterToFilter(obj interface{}, filterName string, filter
 				Err: fmt.Errorf("Error converting string to int64: %w", err),
 			}
 		}
-		return dbCol, filterInt64, nil
+		return fieldName, filterInt64, nil
 	}
 	if valueField.Type().Name() == "string" {
-		return dbCol, filterValue, nil
+		return fieldName, filterValue, nil
 	}
 
 	return "", nil, nil

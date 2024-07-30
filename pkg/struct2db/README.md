@@ -80,7 +80,7 @@ user := &User{}
 err = c.CreateDBTable(user) // Run 'CREATE TABLE'
 
 user.Email = "test@example.com"
-user.Name = "Nicholas"
+user.Name = "Jane Doe"
 user.CreatedAt = time.Now().Unix()
 err = c.SaveToDB(user) // Insert object to database table
 

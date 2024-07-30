@@ -8,8 +8,8 @@ import (
 
 // Controller is the main component that gets and saves objects in the database.
 type Controller struct {
-	dbConn       *sql.DB
-	dbTblPrefix  string
+	dbConn        *sql.DB
+	dbTblPrefix   string
 	sqlGenerators map[string]*struct2sql.Struct2sql
 }
 

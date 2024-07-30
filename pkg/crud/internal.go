@@ -8,7 +8,7 @@ import (
 func (c *Controller) initHelpersForHTTPHandler(newObjFunc func() interface{}, newObjCreateFunc func() interface{}, newObjReadFunc func() interface{}, newObjUpdateFunc func() interface{}, newObjDeleteFunc func() interface{}, newObjListFunc func() interface{}) *ErrController {
 	obj := newObjFunc()
 
-	cErr := c.struct2db.AddSQLGenerator(newObjCreateFunc(), obj, false)
+	cErr := c.struct2db.AddSQLGenerator(newObjFunc(), obj, false)
 	if cErr != nil {
 		return &ErrController{
 			Op:  "AddSQLGenerator",
@@ -23,6 +23,10 @@ func (c *Controller) initHelpersForHTTPHandler(newObjFunc func() interface{}, ne
 		newObjDeleteFunc,
 		newObjListFunc,
 	} {
+		if f == nil {
+			continue
+		}
+
 		cErr = c.struct2db.AddSQLGenerator(f(), obj, false)
 		if cErr != nil {
 			return &ErrController{
