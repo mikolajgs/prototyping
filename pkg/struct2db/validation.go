@@ -11,12 +11,14 @@ func (c Controller) Validate(obj interface{}, filters map[string]interface{}) (b
 			ValidateWhenSuffix:   true,
 			OverwriteFieldValues: filters,
 			RestrictFields:       c.mapWithInterfacesToMapBool(filters),
+			OverwriteTagName:     c.tagName,
 		})
 		return valid, failedFields, nil
 	}
 
 	valid, failedFields := validator.Validate(obj, &validator.ValidationOptions{
 		ValidateWhenSuffix: true,
+		OverwriteTagName:     c.tagName,
 	})
 	return valid, failedFields, nil
 }

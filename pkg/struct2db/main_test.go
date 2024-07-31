@@ -30,27 +30,27 @@ type TestStruct struct {
 	Flags int64 `json:"test_struct_flags"`
 
 	// Test email validation
-	PrimaryEmail   string `json:"email" validation:"req"`
-	EmailSecondary string `json:"email2" validation:"req email"`
+	PrimaryEmail   string `json:"email" 2db:"req"`
+	EmailSecondary string `json:"email2" 2db:"req email"`
 
 	// Test length validation
-	FirstName string `json:"first_name" validation:"req lenmin:2 lenmax:30"`
-	LastName  string `json:"last_name" validation:"req lenmin:0 lenmax:255"`
+	FirstName string `json:"first_name" 2db:"req lenmin:2 lenmax:30"`
+	LastName  string `json:"last_name" 2db:"req lenmin:0 lenmax:255"`
 
 	// Test int value validation
-	Age   int `json:"age" validation:"valmin:1 valmax:120"`
-	Price int `json:"price" validation:"valmin:0 valmax:999"`
+	Age   int `json:"age" 2db:"valmin:1 valmax:120"`
+	Price int `json:"price" 2db:"valmin:0 valmax:999"`
 
 	// Test regular expression
-	PostCode  string `json:"post_code" validation:"req lenmin:6 regexp:^[0-9]{2}\\-[0-9]{3}$"`
-	PostCode2 string `json:"post_code2" validation:"lenmin:6" validation_regexp:"^[0-9]{2}\\-[0-9]{3}$"`
+	PostCode  string `json:"post_code" 2db:"req lenmin:6 regexp:^[0-9]{2}\\-[0-9]{3}$"`
+	PostCode2 string `json:"post_code2" 2db:"lenmin:6" 2db_regexp:"^[0-9]{2}\\-[0-9]{3}$"`
 
 	// Some other fields
 	Password        string `json:"password"`
 	CreatedByUserID int64  `json:"created_by_user_id"`
 
 	// Test unique tag
-	Key string `json:"key" validation:"req uniq lenmin:30 lenmax:255"`
+	Key string `json:"key" 2db:"req uniq lenmin:30 lenmax:255"`
 }
 
 func TestMain(m *testing.M) {
@@ -85,7 +85,7 @@ func createDocker() {
 }
 
 func createController() {
-	testController = NewController(dbConn, "struct2db_")
+	testController = NewController(dbConn, "struct2db_", nil)
 	testStructObj = &TestStruct{}
 }
 

@@ -22,6 +22,8 @@ const OpList = 32
 // NewController returns new Controller object
 func NewController(dbConn *sql.DB, tblPrefix string) *Controller {
 	c := &Controller{}
-	c.struct2db = struct2db.NewController(dbConn, tblPrefix)
+	c.struct2db = struct2db.NewController(dbConn, tblPrefix, &struct2db.ControllerConfig{
+		TagName: "crud",
+	})
 	return c
 }

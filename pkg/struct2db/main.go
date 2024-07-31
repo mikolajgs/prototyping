@@ -11,14 +11,28 @@ type Controller struct {
 	dbConn        *sql.DB
 	dbTblPrefix   string
 	sqlGenerators map[string]*struct2sql.Struct2sql
+	tagName string
+}
+
+type ControllerConfig struct {
+	TagName string
 }
 
 // NewController returns new Controller object
-func NewController(dbConn *sql.DB, tblPrefix string) *Controller {
+func NewController(dbConn *sql.DB, tblPrefix string, cfg *ControllerConfig) *Controller {
 	c := &Controller{
 		dbConn:      dbConn,
 		dbTblPrefix: tblPrefix,
 	}
+
+	if cfg != nil && cfg.TagName != "" {
+		c.tagName = cfg.TagName
+	}
+
+	if c.tagName == "" {
+		c.tagName = "2db"
+	}
+
 	c.sqlGenerators = make(map[string]*struct2sql.Struct2sql)
 	return c
 }
