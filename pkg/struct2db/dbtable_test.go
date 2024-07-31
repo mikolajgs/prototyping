@@ -9,36 +9,36 @@ type TableTestStruct struct {
 	Flags int64 `json:"db_table_struct_flags"`
 }
 
-// TestCreateDBTables tests if CreateDBTables creates tables in the database
-func TestCreateDBTables(t *testing.T) {
+// TestCreateTables tests if CreateTables creates tables in the database
+func TestCreateTables(t *testing.T) {
 	st := &TableTestStruct{}
-	err := testController.CreateDBTables(st)
+	err := testController.CreateTables(st)
 	if err != nil {
-		t.Fatalf("CreateDBTables failed to create table for a struct: %s", err.Error())
+		t.Fatalf("CreateTables failed to create table for a struct: %s", err.Error())
 	}
 
 	cnt, err2 := getTableNameCnt("struct2db_table_test_structs")
 	if err2 != nil {
-		t.Fatalf("CreateDBTables failed to create table for a struct: %s", err2.Error())
+		t.Fatalf("CreateTables failed to create table for a struct: %s", err2.Error())
 	}
 	if cnt == 0 {
-		t.Fatalf("CreateDBTables failed to create the table")
+		t.Fatalf("CreateTables failed to create the table")
 	}
 }
 
-// TestDropDBTables tests if DropDBTables drops tables in the database
-func TestDropDBTables(t *testing.T) {
+// TestDropTables tests if DropTables drops tables in the database
+func TestDropTables(t *testing.T) {
 	st := &TableTestStruct{}
-	err := testController.DropDBTables(st)
+	err := testController.DropTables(st)
 	if err != nil {
-		t.Fatalf("DropDBTables failed to drop table for a struct: %s", err.Error())
+		t.Fatalf("DropTables failed to drop table for a struct: %s", err.Error())
 	}
 
 	cnt, err2 := getTableNameCnt("struct2db_table_test_structs")
 	if err2 != nil {
-		t.Fatalf("DropDBTables failed to drop table for a struct: %s", err2.Error())
+		t.Fatalf("DropTables failed to drop table for a struct: %s", err2.Error())
 	}
 	if cnt != 0 {
-		t.Fatalf("DropDBTables failed to drop the table")
+		t.Fatalf("DropTables failed to drop the table")
 	}
 }

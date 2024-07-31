@@ -83,19 +83,7 @@ defer conn.Close()
 c := crud.NewController(conn, "app1_")
 user := &User{}
 
-err = c.CreateDBTable(user) // Run 'CREATE TABLE'
-
-user.Email = "test@example.com"
-user.Name = "Jane Doe"
-user.CreatedAt = time.Now().Unix()
-err = c.SaveToDB(user) // Insert object to database table
-
-user.Email = "newemail@example.com"
-err = c.SaveToDB(user) // Update object in the database table
-
-err = c.DeleteFromDB(user) // Delete object from the database table
-
-err = c.DropDBTable(user) // Run 'DROP TABLE'
+err = c.CreateTable(user) // Run 'CREATE TABLE'
 ```
 
 ### HTTP Endpoints

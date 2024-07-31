@@ -22,7 +22,7 @@ func (c Controller) handleHTTPPut(w http.ResponseWriter, r *http.Request, newObj
 	objClone := newObjFunc()
 
 	if id != "" {
-		err2 := c.struct2db.SetFromDB(objClone, id)
+		err2 := c.struct2db.Load(objClone, id)
 		if err2 != nil {
 			c.writeErrText(w, http.StatusInternalServerError, "cannot_get_from_db")
 			return
@@ -47,7 +47,7 @@ func (c Controller) handleHTTPPut(w http.ResponseWriter, r *http.Request, newObj
 		return
 	}
 
-	err2 := c.struct2db.SaveToDB(objClone)
+	err2 := c.struct2db.Save(objClone)
 	if err2 != nil {
 		c.writeErrText(w, http.StatusInternalServerError, "cannot_save_to_db")
 		return
@@ -103,7 +103,7 @@ func (c Controller) handleHTTPGet(w http.ResponseWriter, r *http.Request, newObj
 			}
 		}
 
-		xobj, err1 := c.struct2db.GetFromDB(newObjFunc, order, limit, offset, filters)
+		xobj, err1 := c.struct2db.Get(newObjFunc, order, limit, offset, filters)
 		if err1 != nil {
 			if err1.Op == "ValidateFilters" {
 				c.writeErrText(w, http.StatusBadRequest, "invalid_filter_value")
@@ -123,7 +123,7 @@ func (c Controller) handleHTTPGet(w http.ResponseWriter, r *http.Request, newObj
 
 	objClone := newObjFunc()
 
-	err := c.struct2db.SetFromDB(objClone, id)
+	err := c.struct2db.Load(objClone, id)
 	if err != nil {
 		c.writeErrText(w, http.StatusInternalServerError, "cannot_get_from_db")
 		return
@@ -147,7 +147,7 @@ func (c Controller) handleHTTPDelete(w http.ResponseWriter, r *http.Request, new
 
 	objClone := newObjFunc()
 
-	err := c.struct2db.SetFromDB(objClone, id)
+	err := c.struct2db.Load(objClone, id)
 	if err != nil {
 		c.writeErrText(w, http.StatusInternalServerError, "cannot_get_from_db")
 		return
@@ -157,7 +157,7 @@ func (c Controller) handleHTTPDelete(w http.ResponseWriter, r *http.Request, new
 		return
 	}
 
-	err = c.struct2db.DeleteFromDB(objClone)
+	err = c.struct2db.Delete(objClone)
 	if err != nil {
 		c.writeErrText(w, http.StatusInternalServerError, "cannot_delete_from_db")
 		return
