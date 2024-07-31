@@ -1,0 +1,264 @@
+package struct2db
+
+import (
+	"fmt"
+	"testing"
+	"time"
+)
+
+// Test struct for all the tests
+type TestStruct struct {
+	ID    int64 `json:"test_struct_id"`
+	Flags int64 `json:"test_struct_flags"`
+
+	// Test email validation
+	PrimaryEmail   string `json:"email" 2db:"req"`
+	EmailSecondary string `json:"email2" 2db:"req email"`
+
+	// Test length validation
+	FirstName string `json:"first_name" 2db:"req lenmin:2 lenmax:30"`
+	LastName  string `json:"last_name" 2db:"req lenmin:0 lenmax:255"`
+
+	// Test int value validation
+	Age   int `json:"age" 2db:"valmin:1 valmax:120"`
+	Price int `json:"price" 2db:"valmin:0 valmax:999"`
+
+	// Test regular expression
+	PostCode  string `json:"post_code" 2db:"req lenmin:6 regexp:^[0-9]{2}\\-[0-9]{3}$"`
+	PostCode2 string `json:"post_code2" 2db:"lenmin:6" 2db_regexp:"^[0-9]{2}\\-[0-9]{3}$"`
+
+	// Some other fields
+	Password        string `json:"password"`
+	CreatedByUserID int64  `json:"created_by_user_id"`
+
+	// Test unique tag
+	Key string `json:"key" 2db:"req uniq lenmin:30 lenmax:255"`
+}
+
+func getTestStructWithData() *TestStruct {
+	ts := &TestStruct{}
+	ts.Flags = 4
+	ts.PrimaryEmail = "primary@example.com"
+	ts.EmailSecondary = "secondary@example.com"
+	ts.FirstName = "John"
+	ts.LastName = "Smith"
+	ts.Age = 37
+	ts.Price = 444
+	ts.PostCode = "00-000"
+	ts.PostCode2 = "11-111"
+	ts.Password = "yyy"
+	ts.CreatedByUserID = 4
+	ts.Key = fmt.Sprintf("12345679012345678901234567890%d", time.Now().UnixNano())
+	return ts
+}
+
+func recreateTestStructTable() {
+	testController.DropDBTable(&TestStruct{})
+	testController.CreateDBTable(&TestStruct{})
+}
+
+func areTestStructObjectsSame(ts1 *TestStruct, ts2 *TestStruct) bool {
+	if ts1.Flags != ts2.Flags {
+		return false
+	}
+	if ts1.PrimaryEmail != ts2.PrimaryEmail {
+		return false
+	}
+	if ts1.EmailSecondary != ts2.EmailSecondary {
+		return false
+	}
+	if ts1.FirstName != ts2.FirstName {
+		return false
+	}
+	if ts1.LastName != ts2.LastName {
+		return false
+	}
+	if ts1.Age != ts2.Age {
+		return false
+	}
+	if ts1.Price != ts2.Price {
+		return false
+	}
+	if ts1.PostCode != ts2.PostCode {
+		return false
+	}
+	if ts1.PostCode2 != ts2.PostCode2 {
+		return false
+	}
+	if ts1.Password != ts2.Password {
+		return false
+	}
+	if ts1.CreatedByUserID != ts2.CreatedByUserID {
+		return false
+	}
+	if ts1.Key != ts2.Key {
+		return false
+	}
+	return true
+}
+
+// TestSaveToDB tests if SaveToDB properly inserts and updates object in the database
+func TestSaveToDB(t *testing.T) {
+	recreateTestStructTable()
+
+	// Create an object in the database first
+	ts := getTestStructWithData()
+	err := testController.SaveToDB(ts)
+	if err != nil {
+		t.Fatalf("SaveToDB failed to insert struct to the table: %s", err.Op)
+	}
+
+	ts2 := &TestStruct{}
+	ts2FieldsPtrs := []interface{}{&ts2.ID}
+	ts2FieldsPtrs = append(ts2FieldsPtrs, testController.GetModelFieldInterfaces(ts2)...)
+	err2 := dbConn.QueryRow("SELECT * FROM struct2db_test_structs ORDER BY test_struct_id DESC LIMIT 1").Scan(ts2FieldsPtrs...)
+	if err2 != nil {
+		t.Fatalf("SaveToDB failed to insert struct to the table: %s", err2.Error())
+	}
+
+	if ts2.ID == 0 || ts2.Flags != ts.Flags || ts2.PrimaryEmail != ts.PrimaryEmail || ts2.EmailSecondary != ts.EmailSecondary || ts2.FirstName != ts.FirstName || ts2.LastName != ts.LastName || ts2.Age != ts.Age || ts2.Price != ts.Price || ts2.PostCode != ts.PostCode || ts2.PostCode2 != ts.PostCode2 || ts2.CreatedByUserID != ts.CreatedByUserID || ts2.Key != ts.Key || ts2.Password != ts.Password {
+		t.Fatalf("SaveToDB failed to insert struct to the table")
+	}
+
+	// Now, update the object in the database
+	ts.Flags = 7
+	ts.PrimaryEmail = "primary1@example.com"
+	ts.EmailSecondary = "secondary2@example.com"
+	ts.FirstName = "Johnny"
+	ts.LastName = "Smithsy"
+	ts.Age = 50
+	ts.Price = 222
+	ts.PostCode = "22-222"
+	ts.PostCode2 = "33-333"
+	ts.Password = "xxx"
+	ts.CreatedByUserID = 7
+	ts.Key = "123456789012345678901234567890aaa"
+
+	err3 := testController.SaveToDB(ts)
+	if err3 != nil {
+		t.Fatalf("SaveToDB failed to update struct")
+	}
+
+	ts2 = &TestStruct{}
+	ts2FieldsPtrs = []interface{}{&ts2.ID}
+	ts2FieldsPtrs = append(ts2FieldsPtrs, testController.GetModelFieldInterfaces(ts2)...)
+	err2 = dbConn.QueryRow("SELECT * FROM struct2db_test_structs ORDER BY test_struct_id DESC LIMIT 1").Scan(ts2FieldsPtrs...)
+	if err2 != nil {
+		t.Fatalf("SaveToDB failed to update struct in the table: %s", err2.Error())
+	}
+
+	if ts2.ID == 0  {
+		t.Fatalf("SaveToDB failed to update struct in the table")
+	}
+}
+
+// TestSetFromDB tests if SetFromDB properly gets row from the database table and populate object fields with its value
+func TestSetFromDB(t *testing.T) {
+	recreateTestStructTable()
+
+	// Insert an object first
+	ts := getTestStructWithData()
+	testController.SaveToDB(ts)
+
+	// Get the object
+	ts2 := &TestStruct{}
+	err := testController.SetFromDB(ts2, fmt.Sprintf("%d", ts.ID))
+	if err != nil {
+		t.Fatalf("SetFromDB failed to get data: %s", err.Op)
+	}
+
+	if !areTestStructObjectsSame(ts, ts2) {
+		t.Fatalf("SetFromDB failed to set struct with data: %s", err.Op)
+	}
+}
+
+// TestDeleteFromDB tests if DeleteFromDB removes object from the database
+func TestDeleteFromDB(t *testing.T) {
+	recreateTestStructTable()
+
+	// Insert an object first
+	ts := getTestStructWithData()
+	testController.SaveToDB(ts)
+
+	// Delete it
+	err := testController.DeleteFromDB(ts)
+	if err != nil {
+		t.Fatalf("DeleteFromDB failed to remove: %s", err.Op)
+	}
+
+	var cnt int64
+	err2 := dbConn.QueryRow(fmt.Sprintf("SELECT COUNT(*) AS c FROM struct2db_test_structs WHERE test_struct_id = %d", ts.ID)).Scan(&cnt)
+	if err2 != nil {
+		t.Fatalf("DeleteFromDB failed to delete struct from the table")
+	}
+	if cnt > 0 {
+		t.Fatalf("DeleteFromDB failed to delete struct from the table")
+	}
+	if ts.ID != 0 {
+		t.Fatalf("DeleteFromDB failed to set ID to 0 on the struct")
+	}
+}
+
+// TestGetFromDB tests if GetFromDB properly gets many objects from the database, filtered and ordered, with results limited to specific number
+func TestGetFromDB(t *testing.T) {
+	recreateTestStructTable()
+
+	// Insert some data that should be ignored by GetFromDB later on
+	for i := 1; i < 51; i++ {
+		ts := getTestStructWithData()
+		ts.ID = 0
+		ts.Age = 10 + i
+		ts.Price = 444
+		ts.PrimaryEmail = "another@example.com"
+		testController.SaveToDB(ts)
+	}
+
+	// Insert data that should be selected by filters
+	for i := 1; i < 51; i++ {
+		ts := getTestStructWithData()
+		ts.ID = 0
+		ts.Age = 30 + i
+		testController.SaveToDB(ts)
+	}
+
+	// Get the data from the database
+	testStructs, err := testController.GetFromDB(func() interface{} {
+		return &TestStruct{}
+	}, []string{"Age", "asc", "Price", "asc"}, 10, 20, map[string]interface{}{"Price": 444, "PrimaryEmail": "primary@example.com"})
+	if err != nil {
+		t.Fatalf("GetFromDB failed to return list of objects: %s", err.Op)
+	}
+	if len(testStructs) != 10 {
+		t.Fatalf("GetFromDB failed to return list of objects, want %v, got %v", 10, len(testStructs))
+	}
+	if testStructs[2].(*TestStruct).Age != 53 {
+		t.Fatalf("GetFromDB failed to return correct list of objects, want %v, got %v", 53, testStructs[2].(*TestStruct).Age)
+	}
+}
+
+// TestGetFromDBWithoutFilters tests if GetFromDB properly gets many objects from the database, without any filters
+func TestGetFromDBWithoutFilters(t *testing.T) {
+	recreateTestStructTable()
+
+	// Insert data to the database
+	for i := 1; i < 51; i++ {
+		ts := getTestStructWithData()
+		ts.ID = 0
+		ts.Age = 30 + i
+		testController.SaveToDB(ts)
+	}
+
+	// Get the data
+	testStructs, err := testController.GetFromDB(func() interface{} {
+		return &TestStruct{}
+	}, []string{"Age", "asc", "Price", "asc"}, 13, 14, nil)
+	if err != nil {
+		t.Fatalf("GetFromDB failed to return list of objects: %s", err.Op)
+	}
+	if len(testStructs) != 13 {
+		t.Fatalf("GetFromDB failed to return list of objects, want %v, got %v", 10, len(testStructs))
+	}
+	if testStructs[2].(*TestStruct).Age != 47 {
+		t.Fatalf("GetFromDB failed to return correct list of objects, want %v, got %v", 47, testStructs[2].(*TestStruct).Age)
+	}
+}
