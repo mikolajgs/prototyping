@@ -35,6 +35,22 @@ type TestStruct struct {
 	Key string `json:"key" 2db:"req uniq lenmin:30 lenmax:255"`
 }
 
+// Test structs for DeleteCascade
+type TestChildStruct struct {
+	ID int64 `json:"test_child_struct_id"`
+	Name string `json:"name"`
+	TestParentStructID int64 `json:"test_parent_struct_id"`
+}
+type TestParentStruct struct {
+	ID int64 `json:"test_parent_struct_id"`
+	Title string `json:"title"`
+	TestParentParentStructID int64 `json:"test_parent_parent_struct_id"`
+}
+type TestParentParentStruct struct {
+	ID int64 `json:"test_parent_parent_struct_id"`
+	Key string `json:"key"`
+}
+
 func getTestStructWithData() *TestStruct {
 	ts := &TestStruct{}
 	ts.Flags = 4
@@ -55,6 +71,21 @@ func getTestStructWithData() *TestStruct {
 func recreateTestStructTable() {
 	testController.DropTable(&TestStruct{})
 	testController.CreateTable(&TestStruct{})
+}
+
+func recreateTestParentStructTable() {
+	testController.DropTable(&TestParentStruct{})
+	testController.CreateTable(&TestParentStruct{})
+}
+
+func recreateTestParentParentStructTable() {
+	testController.DropTable(&TestParentParentStruct{})
+	testController.CreateTable(&TestParentParentStruct{})
+}
+
+func recreateTestChildStructTable() {
+	testController.DropTable(&TestChildStruct{})
+	testController.CreateTable(&TestChildStruct{})
 }
 
 func areTestStructObjectsSame(ts1 *TestStruct, ts2 *TestStruct) bool {
@@ -261,4 +292,33 @@ func TestGetWithoutFilters(t *testing.T) {
 	if testStructs[2].(*TestStruct).Age != 47 {
 		t.Fatalf("Get failed to return correct list of objects, want %v, got %v", 47, testStructs[2].(*TestStruct).Age)
 	}
+}
+
+// TestDeleteCascade tests if DeleteCascade can save linked structs
+func TestDeleteCascade(t *testing.T) {
+	recreateTestStructTable()
+	recreateTestParentParentStructTable()
+	recreateTestParentStructTable()
+	recreateTestChildStructTable()
+
+	// ParentParent has Parents which has Children
+	for i := 1; i < 5; i++ {
+		testController.Save(&TestParentParentStruct{
+			Key: fmt.Sprintf("Key%d", i),
+		})
+		for j := 1; j < 3; j++ {
+			testController.Save(&TestParentStruct{
+				Title: fmt.Sprintf("Title%d_%d", i, j)
+				TestParentParentStructID: i,
+			})
+			for k := 1; k < 10; i++ {
+				testController.Save(&TestChildStruct{
+					Name: fmt.Sprintf("Name%d_%d_%d", i, j, k),
+					TestParentStructID: parentStruct.ID,
+				})
+			}
+		}
+	}
+
+	// TODO
 }
