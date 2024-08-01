@@ -4,10 +4,10 @@ import (
 	"fmt"
 )
 
-// DropDBTables drop tables in the database for specified objects (see DropDBTable for a single struct)
-func (c Controller) DropDBTables(xobj ...interface{}) *ErrController {
+// DropTables drop tables in the database for specified objects (see DropTable for a single struct)
+func (c Controller) DropTables(xobj ...interface{}) *ErrController {
 	for _, obj := range xobj {
-		err := c.DropDBTable(obj)
+		err := c.DropTable(obj)
 		if err != nil {
 			return err
 		}
@@ -15,10 +15,10 @@ func (c Controller) DropDBTables(xobj ...interface{}) *ErrController {
 	return nil
 }
 
-// CreateDBTables creates tables in the database for specified objects (see CreateDBTable for a single struct)
-func (c Controller) CreateDBTables(xobj ...interface{}) *ErrController {
+// CreateTables creates tables in the database for specified objects (see CreateTable for a single struct)
+func (c Controller) CreateTables(xobj ...interface{}) *ErrController {
 	for _, obj := range xobj {
-		err := c.CreateDBTable(obj)
+		err := c.CreateTable(obj)
 		if err != nil {
 			return err
 		}
@@ -26,10 +26,10 @@ func (c Controller) CreateDBTables(xobj ...interface{}) *ErrController {
 	return nil
 }
 
-// CreateDBTable creates database table to store specified type of objects. It takes struct name and its fields,
+// CreateTable creates database table to store specified type of objects. It takes struct name and its fields,
 // converts them into table and columns names (all lowercase with underscore), assigns column type based on the
 // field type, and then executes "CREATE TABLE" query on attached DB connection
-func (c Controller) CreateDBTable(obj interface{}) *ErrController {
+func (c Controller) CreateTable(obj interface{}) *ErrController {
 	h, err := c.getSQLGenerator(obj)
 	if err != nil {
 		return err
@@ -45,9 +45,9 @@ func (c Controller) CreateDBTable(obj interface{}) *ErrController {
 	return nil
 }
 
-// DropDBTable drops database table used to store specified type of objects. It just takes struct name, converts
+// DropTable drops database table used to store specified type of objects. It just takes struct name, converts
 // it to lowercase-with-underscore table name and executes "DROP TABLE" query using attached DB connection
-func (c Controller) DropDBTable(obj interface{}) *ErrController {
+func (c Controller) DropTable(obj interface{}) *ErrController {
 	h, err := c.getSQLGenerator(obj)
 	if err != nil {
 		return err

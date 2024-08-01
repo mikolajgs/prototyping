@@ -166,7 +166,7 @@ func createController() {
 }
 
 func createDBStructure() {
-	testController.struct2db.CreateDBTables(testStructObj)
+	testController.struct2db.CreateTables(testStructObj)
 }
 
 func getWrappedHTTPHandler(next http.Handler) http.Handler {

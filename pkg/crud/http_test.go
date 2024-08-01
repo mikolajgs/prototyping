@@ -181,7 +181,7 @@ func TestHTTPHandlerGetMethodWithoutID(t *testing.T) {
 		// Key must be unique
 		ts.Key = fmt.Sprintf("%d%s", i, "123456789012345678901234567890")
 		ts.Age = ts.Age + 1
-		testController.struct2db.SaveToDB(ts)
+		testController.struct2db.Save(ts)
 	}
 	b := makeGETListRequest(map[string]string{
 		"limit":                "10",

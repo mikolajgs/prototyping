@@ -8,11 +8,11 @@ import (
 	"github.com/mikolajgs/crud/pkg/struct2sql"
 )
 
-// SaveToDB takes object, validates its field values and saves it in the database.
+// Save takes object, validates its field values and saves it in the database.
 // If ID field is already set (it's greater than 0) then the function assumes that record with such ID already
 // exists in the database and the function with execute an "UPDATE" query. Otherwise it will be "INSERT". After
 // inserting, new record ID is set to struct's ID field
-func (c Controller) SaveToDB(obj interface{}) *ErrController {
+func (c Controller) Save(obj interface{}) *ErrController {
 	h, err := c.getSQLGenerator(obj)
 	if err != nil {
 		return err
@@ -50,9 +50,9 @@ func (c Controller) SaveToDB(obj interface{}) *ErrController {
 	return nil
 }
 
-// SetFromDB sets object's fields with values from the database table with a specific id. If record does not exist
+// Load sets object's fields with values from the database table with a specific id. If record does not exist
 // in the database, all field values in the struct are zeroed
-func (c Controller) SetFromDB(obj interface{}, id string) *ErrController {
+func (c Controller) Load(obj interface{}, id string) *ErrController {
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
 		return &ErrController{
@@ -80,9 +80,9 @@ func (c Controller) SetFromDB(obj interface{}, id string) *ErrController {
 	}
 }
 
-// DeleteFromDB removes object from the database table and it does that only when ID field is set (greater than 0).
+// Delete removes object from the database table and it does that only when ID field is set (greater than 0).
 // Once deleted from the DB, all field values are zeroed
-func (c Controller) DeleteFromDB(obj interface{}) *ErrController {
+func (c Controller) Delete(obj interface{}) *ErrController {
 	h, err := c.getSQLGenerator(obj)
 	if err != nil {
 		return err
@@ -101,9 +101,9 @@ func (c Controller) DeleteFromDB(obj interface{}) *ErrController {
 	return nil
 }
 
-// GetFromDB runs a select query on the database with specified filters, order, limit and offset and returns a
+// Get runs a select query on the database with specified filters, order, limit and offset and returns a
 // list of objects
-func (c Controller) GetFromDB(newObjFunc func() interface{}, order []string, limit int, offset int, filters map[string]interface{}) ([]interface{}, *ErrController) {
+func (c Controller) Get(newObjFunc func() interface{}, order []string, limit int, offset int, filters map[string]interface{}) ([]interface{}, *ErrController) {
 	obj := newObjFunc()
 	h, err := c.getSQLGenerator(obj)
 	if err != nil {
@@ -199,4 +199,10 @@ func (c *Controller) GetFieldNameFromDBCol(obj interface{}, dbCol string) (strin
 	}
 	fieldName := h.GetFieldNameFromDBCol(dbCol)
 	return fieldName, nil
+}
+
+// DeleteHorizontal deletes an object along with linked objects that would usually be selected with JOIN
+// TODO: Re-phrase it
+func (c Controller) DeleteHorizontal(obj interface{}, lnks ...interface{}) *ErrController {
+	return nil
 }
