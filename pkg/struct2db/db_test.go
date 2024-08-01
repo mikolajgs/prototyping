@@ -35,20 +35,20 @@ type TestStruct struct {
 	Key string `json:"key" 2db:"req uniq lenmin:30 lenmax:255"`
 }
 
-// Test structs for DeleteCascade
-type TestChildStruct struct {
-	ID int64 `json:"test_child_struct_id"`
+// Test structs for DeleteHorizontal
+type TestProduct struct {
+	ID   int64  `json:"test_product_id"`
 	Name string `json:"name"`
-	TestParentStructID int64 `json:"test_parent_struct_id"`
 }
-type TestParentStruct struct {
-	ID int64 `json:"test_parent_struct_id"`
-	Title string `json:"title"`
-	TestParentParentStructID int64 `json:"test_parent_parent_struct_id"`
+type TestProductPrice struct {
+	ID            int64 `json:"test_product_price_id"`
+	Price         int   `json:"price"`
+	TestProductID int64 `json:"test_product_id"`
 }
-type TestParentParentStruct struct {
-	ID int64 `json:"test_parent_parent_struct_id"`
-	Key string `json:"key"`
+type TestProductInfo struct {
+	ID            int64  `json:"test_product_info_id"`
+	Info          string `json:"info"`
+	TestProductID int64  `json:"test_product_id"`
 }
 
 func getTestStructWithData() *TestStruct {
@@ -73,19 +73,13 @@ func recreateTestStructTable() {
 	testController.CreateTable(&TestStruct{})
 }
 
-func recreateTestParentStructTable() {
-	testController.DropTable(&TestParentStruct{})
-	testController.CreateTable(&TestParentStruct{})
-}
-
-func recreateTestParentParentStructTable() {
-	testController.DropTable(&TestParentParentStruct{})
-	testController.CreateTable(&TestParentParentStruct{})
-}
-
-func recreateTestChildStructTable() {
-	testController.DropTable(&TestChildStruct{})
-	testController.CreateTable(&TestChildStruct{})
+func recreateTestProductTables() {
+	testController.DropTable(&TestProduct{})
+	testController.CreateTable(&TestProduct{})
+	testController.DropTable(&TestProductPrice{})
+	testController.CreateTable(&TestProductPrice{})
+	testController.DropTable(&TestProductInfo{})
+	testController.CreateTable(&TestProductInfo{})
 }
 
 func areTestStructObjectsSame(ts1 *TestStruct, ts2 *TestStruct) bool {
@@ -178,7 +172,7 @@ func TestSave(t *testing.T) {
 		t.Fatalf("Save failed to update struct in the table: %s", err2.Error())
 	}
 
-	if ts2.ID == 0  {
+	if ts2.ID == 0 {
 		t.Fatalf("Save failed to update struct in the table")
 	}
 }
@@ -294,31 +288,33 @@ func TestGetWithoutFilters(t *testing.T) {
 	}
 }
 
-// TestDeleteCascade tests if DeleteCascade can save linked structs
-func TestDeleteCascade(t *testing.T) {
-	recreateTestStructTable()
-	recreateTestParentParentStructTable()
-	recreateTestParentStructTable()
-	recreateTestChildStructTable()
+// TestDeleteHorizontal tests if DeleteHorizontal can delete structs that are usually linked with JOIN
+// in the SQL query into row:
+// SELECT ... FROM tbl1 INNER JOIN tbl2 ON tbl1.id=tbl2.tbl1_id INNER JOIN tlb3 tbl1.id=tbl3.tbl1_id and so on...
+func TestDeleteHorizontal(t *testing.T) {
+	recreateTestProductTables()
 
-	// ParentParent has Parents which has Children
+	// Prepare a structure
+	var tp *TestProduct
 	for i := 1; i < 5; i++ {
-		testController.Save(&TestParentParentStruct{
-			Key: fmt.Sprintf("Key%d", i),
-		})
-		for j := 1; j < 3; j++ {
-			testController.Save(&TestParentStruct{
-				Title: fmt.Sprintf("Title%d_%d", i, j)
-				TestParentParentStructID: i,
-			})
-			for k := 1; k < 10; i++ {
-				testController.Save(&TestChildStruct{
-					Name: fmt.Sprintf("Name%d_%d_%d", i, j, k),
-					TestParentStructID: parentStruct.ID,
-				})
-			}
+		tp = &TestProduct{
+			Name: fmt.Sprintf("Name%d", i),
 		}
+		testController.Save(tp)
+		testController.Save(&TestProductPrice{
+			Price:         44,
+			TestProductID: tp.ID,
+		})
+		testController.Save(&TestProductInfo{
+			Info:          fmt.Sprintf("Info%d", i),
+			TestProductID: tp.ID,
+		})
 	}
 
-	// TODO
+	err := testController.DeleteHorizontal(tp, &TestProductPrice{}, &TestProductInfo{})
+	if err != nil {
+		t.Fatalf("DeleteHorizontal failed to delete records: %s", err.Op)
+	}
+
+	// TODO: Write actual tests
 }

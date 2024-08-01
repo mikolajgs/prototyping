@@ -11,7 +11,7 @@ type Controller struct {
 	dbConn        *sql.DB
 	dbTblPrefix   string
 	sqlGenerators map[string]*struct2sql.Struct2sql
-	tagName string
+	tagName       string
 }
 
 type ControllerConfig struct {

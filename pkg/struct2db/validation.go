@@ -18,7 +18,7 @@ func (c Controller) Validate(obj interface{}, filters map[string]interface{}) (b
 
 	valid, failedFields := validator.Validate(obj, &validator.ValidationOptions{
 		ValidateWhenSuffix: true,
-		OverwriteTagName:     c.tagName,
+		OverwriteTagName:   c.tagName,
 	})
 	return valid, failedFields, nil
 }

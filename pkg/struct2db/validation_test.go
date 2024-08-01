@@ -76,7 +76,7 @@ func TestValidateWithValidStructAndListOfFields(t *testing.T) {
 	ts.PrimaryEmail = "thisis@valid.email.com"
 	b, failedFields, err := testController.Validate(ts, map[string]interface{}{
 		"PrimaryEmail": true,
-		"Price": true,
+		"Price":        true,
 	})
 	if !b {
 		t.Fatalf("Validate failed to validate listed fields")

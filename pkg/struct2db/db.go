@@ -200,3 +200,9 @@ func (c *Controller) GetFieldNameFromDBCol(obj interface{}, dbCol string) (strin
 	fieldName := h.GetFieldNameFromDBCol(dbCol)
 	return fieldName, nil
 }
+
+// DeleteHorizontal deletes an object along with linked objects that would usually be selected with JOIN
+// TODO: Re-phrase it
+func (c Controller) DeleteHorizontal(obj interface{}, lnks ...interface{}) *ErrController {
+	return nil
+}
