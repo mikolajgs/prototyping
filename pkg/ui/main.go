@@ -11,8 +11,6 @@ import (
 type Controller struct {
 	struct2db *struct2db.Controller
 	uriStructNameFunc map[string]map[string]func() interface{}
-	uriStructArgsName map[string]map[int]string
-	structNames map[string][]string
 }
 
 // NewController returns new Controller object
