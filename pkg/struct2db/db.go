@@ -101,6 +101,44 @@ func (c Controller) Delete(obj interface{}) *ErrController {
 	return nil
 }
 
+// DeleteMultiple removes objects from the database based on specified filters
+func (c Controller) DeleteMultiple(newObjFunc func() interface{}, filters map[string]interface{}) (*ErrController) {
+	obj := newObjFunc()
+	h, err := c.getSQLGenerator(obj)
+	if err != nil {
+		return err
+	}
+
+	if len(filters) > 0 {
+		b, invalidFields, err1 := c.Validate(obj, filters)
+		if err1 != nil {
+			return &ErrController{
+				Op:  "ValidateFilters",
+				Err: fmt.Errorf("Error when trying to validate filters: %w", err1),
+			}
+		}
+
+		if !b {
+			return &ErrController{
+				Op: "ValidateFilters",
+				Err: &ErrValidation{
+					Fields: invalidFields,
+				},
+			}
+		}
+	}
+
+	_, err2 := c.dbConn.Exec(h.GetQueryDelete(filters, nil), c.GetFiltersInterfaces(filters)...)
+	if err2 != nil {
+		return &ErrController{
+			Op:  "DBQuery",
+			Err: fmt.Errorf("Error executing DB query: %w", err2),
+		}
+	}
+
+	return nil
+}
+
 // Get runs a select query on the database with specified filters, order, limit and offset and returns a
 // list of objects
 func (c Controller) Get(newObjFunc func() interface{}, order []string, limit int, offset int, filters map[string]interface{}) ([]interface{}, *ErrController) {
@@ -152,6 +190,46 @@ func (c Controller) Get(newObjFunc func() interface{}, order []string, limit int
 	}
 
 	return v, nil
+}
+
+// GetCount runs a 'SELECT COUNT(*)' query on the database with specified filters, order, limit and offset and returns count of rows
+func (c Controller) GetCount(newObjFunc func() interface{}, filters map[string]interface{}) (int64, *ErrController) {
+	obj := newObjFunc()
+	h, err := c.getSQLGenerator(obj)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(filters) > 0 {
+		b, invalidFields, err1 := c.Validate(obj, filters)
+		if err1 != nil {
+			return 0, &ErrController{
+				Op:  "ValidateFilters",
+				Err: fmt.Errorf("Error when trying to validate filters: %w", err1),
+			}
+		}
+
+		if !b {
+			return 0, &ErrController{
+				Op: "ValidateFilters",
+				Err: &ErrValidation{
+					Fields: invalidFields,
+				},
+			}
+		}
+	}
+
+	row := c.dbConn.QueryRow(h.GetQuerySelectCount(filters, nil), c.GetFiltersInterfaces(filters)...)
+	var cnt int64
+	err3 := row.Scan(&cnt)
+	if err3 != nil {
+		return 0, &ErrController{
+			Op:  "DBQueryRowScan",
+			Err: fmt.Errorf("Error scanning DB query row: %w", err3),
+		}
+	}
+
+	return cnt, nil
 }
 
 // AddSQLGenerator adds Struct2sql object to sqlGenerators

@@ -1,29 +1,17 @@
 package main
 
-type User struct {
-	ID                 int64  `json:"user_id"`
-	Flags              int64  `json:"user_flags"`
-	Email              string `json:"email" crud:"req email"`
-	Password           string `json:"password" crud:"lenmax:255"`
-	EmailActivationKey string `json:"email_activation_key"`
-	CreatedAt          int64  `json:"created_at"`
-	CreatedByUserID    int64  `json:"created_by_user_id"`
+type Person struct {
+	ID int64
+	Flags int64
+	Name string `ui:"req lenmin:5 lenmax:200"`
+	Age int `ui:"req valmin:0 valmax:150"`
+	PostCode string `ui_regexp:"^[0-9][0-9]-[0-9][0-9][0-9]$"`
+	Email string `ui:"req email"`
 }
 
-type Session struct {
-	ID        int64  `json:"session_id"`
-	Flags     int64  `json:"session_flags"`
-	Key       string `json:"session_key" crud:"lenmax:50"`
-	ExpiresAt int64  `json:"expires_at" crud:"req"`
-	UserID    int64  `json:"user_id" crud:"req"`
-}
-
-type Something struct {
-	ID           int64  `json:"something_id"`
-	Flags        int64  `json:"something_flags"`
-	Email        string `json:"email" crud:"req lenmin:10 lenmax:255 email"`
-	Age          int    `json:"age" crud:"req valmin:18 valmax:120"`
-	Price        int    `json:"price" crud:"req valmin:5 valmax:3580"`
-	CurrencyRate int    `json:"currency_rate" crud:"req valmin:10 valmax:50004"`
-	PostCode     string `json:"post_code" crud:"req lenmin:6 regexp:^[0-9]{2}\\-[0-9]{3}$"`
+type Group struct {
+	ID int64
+	Flags int64
+	Name string `ui:"req lenmin:3 lenmax:100"`
+	Description string `ui:"lenmax:5000"`
 }

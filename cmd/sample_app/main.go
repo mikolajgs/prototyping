@@ -4,80 +4,47 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net/http"
 	_ "os"
 	_ "time"
 
-	"github.com/mikolajgs/crud/pkg/crud"
-
-	"github.com/ory/dockertest/v3"
+	"github.com/mikolajgs/crud/pkg/struct2db"
+	"github.com/mikolajgs/crud/pkg/ui"
 
 	_ "github.com/lib/pq"
 )
 
-const dbUser = "testing"
-const dbPass = "secret"
-const dbName = "testing"
-
-const httpURI = "test_struct1s"
-const httpPort = "32777"
-
-var db *sql.DB
-var pool *dockertest.Pool
-var resource *dockertest.Resource
+const dbUser = "uiuser"
+const dbPass = "uipass"
+const dbName = "uidb"
+const dbPort = "54320"
 
 func main() {
-
-	var err error
-	if pool == nil {
-		pool, err = dockertest.NewPool("")
-		if err != nil {
-			log.Fatalf("Could not connect to docker: %s", err)
-		}
-	}
-	if resource == nil {
-		resource, err = pool.Run("postgres", "13", []string{"POSTGRES_PASSWORD=" + dbPass, "POSTGRES_USER=" + dbUser, "POSTGRES_DB=" + dbName})
-		if err != nil {
-			log.Fatalf("Could not start resource: %s", err)
-		}
-	}
-
-	if db == nil {
-		if err = pool.Retry(func() error {
-			var err error
-			db, err = sql.Open("postgres", fmt.Sprintf("host=localhost user=%s password=%s port=%s dbname=%s sslmode=disable", dbUser, dbPass, resource.GetPort("5432/tcp"), dbName))
-			if err != nil {
-				return err
-			}
-			return db.Ping()
-		}); err != nil {
-			log.Fatalf("Could not connect to docker: %s", err)
-		}
-	}
-
-	mc := crud.NewController(db, "dupa_")
-
-	user := &User{}
-	session := &Session{}
-
-	models := []interface{}{
-		user, session,
-	}
-
-	// Drop all structure
-	err = mc.DropDBTables(models...)
+	db, err := sql.Open("postgres", fmt.Sprintf("host=localhost user=%s password=%s port=%s dbname=%s sslmode=disable", dbUser, dbPass, dbPort, dbName))
 	if err != nil {
-		log.Printf("Error with DropAllDBTables: %s", err)
+		log.Fatal("Error connecting to db")
 	}
 
-	// Create structure
-	err = mc.CreateDBTables(models...)
-	if err != nil {
-		log.Printf("Error with CreateTables: %s", err)
+	ctl := ui.NewController(db, "ui_")
+	s2db := struct2db.NewController(db, "ui_", nil)
+
+	person := &Person{}
+	group := &Group{}
+
+	err2 := s2db.DropTables(person, group)
+	if err2 != nil {
+		log.Printf("Error with dropping tables: %s", err2.Error())
 	}
-	/*
-		http.HandleFunc("/users/", mc.GetHTTPHandler(func() interface{} {
-			return &User{}
-		}, "/users/"))
-		log.Fatal(http.ListenAndServe(":9001", nil))
-	*/
+
+	err2 = s2db.CreateTables(person, group)
+	if err2 != nil {
+		log.Fatalf("Error with creating tables: %s", err.Error())
+	}
+	
+	http.Handle("/ui/v1/", ctl.GetHTTPHandler(
+		"/ui/v1/",
+		func() interface{}{ return &Person{} },
+		func() interface{}{ return &Group{} },
+	))
+	log.Fatal(http.ListenAndServe(":9001", nil))
 }

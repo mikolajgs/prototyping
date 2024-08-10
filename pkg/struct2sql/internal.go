@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode"
@@ -113,6 +114,8 @@ func (h *Struct2sql) reflectStructForDBQueries(u interface{}, dbTablePrefix stri
 	h.queryInsert = fmt.Sprintf("INSERT INTO %s(%s) VALUES (%s) RETURNING %s", h.dbTbl, colsWithoutID, valsWithoutID, idCol)
 	h.queryUpdateById = fmt.Sprintf("UPDATE %s SET %s WHERE %s = $%d", h.dbTbl, colVals, idCol, valCnt)
 	h.querySelectPrefix = fmt.Sprintf("SELECT %s FROM %s", cols, h.dbTbl)
+	h.querySelectCountPrefix = fmt.Sprintf("SELECT COUNT(*) AS cnt FROM %s", h.dbTbl)
+	h.queryDeletePrefix = fmt.Sprintf("DELETE FROM %s", h.dbTbl)
 }
 
 func (h *Struct2sql) reflectStructForValidation(u interface{}) {
@@ -259,4 +262,69 @@ func (h *Struct2sql) getPluralName(s string) string {
 		return s + "es"
 	}
 	return s + "s"
+}
+
+func (h *Struct2sql) getQueryOrder(order []string, orderFieldsToInclude map[string]bool) string {
+	qOrder := ""
+	if len(order) > 0 {
+		for i := 0; i < len(order); i = i + 2 {
+			k := order[i]
+			v := order[i+1]
+
+			if len(orderFieldsToInclude) > 0 && !orderFieldsToInclude[k] && !orderFieldsToInclude[h.dbCols[k]] {
+				continue
+			}
+
+			if h.dbFieldCols[k] == "" && h.dbCols[k] == "" {
+				continue
+			}
+
+			d := "ASC"
+			if v == strings.ToLower("desc") {
+				d = "DESC"
+			}
+			if h.dbFieldCols[k] != "" {
+				qOrder = h.addWithComma(qOrder, h.dbFieldCols[k]+" "+d)
+			} else {
+				qOrder = h.addWithComma(qOrder, k+" "+d)
+			}
+		}
+	}
+	return qOrder
+}
+
+func (h *Struct2sql) getQueryLimitOffset(limit int, offset int) string {
+	qLimitOffset := ""
+	if limit > 0 {
+		if offset > 0 {
+			qLimitOffset = fmt.Sprintf("LIMIT %d OFFSET %d", limit, offset)
+		} else {
+			qLimitOffset = fmt.Sprintf("LIMIT %d", limit)
+		}
+	}
+	return qLimitOffset
+}
+
+func (h *Struct2sql) getQueryFilters(filters map[string]interface{}, filterFieldsToInclude map[string]bool) string {
+	qWhere := ""
+	i := 1
+	if len(filters) > 0 {
+		sorted := []string{}
+		for k := range filters {
+			if h.dbFieldCols[k] == "" {
+				continue
+			}
+			if len(filterFieldsToInclude) > 0 && !filterFieldsToInclude[k] {
+				continue
+			}
+			sorted = append(sorted, h.dbFieldCols[k])
+		}
+		sort.Strings(sorted)
+		for _, col := range sorted {
+			qWhere = h.addWithAnd(qWhere, fmt.Sprintf(col+"=$%d", i))
+			i++
+		}
+	}
+
+	return qWhere
 }

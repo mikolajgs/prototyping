@@ -1,0 +1,22 @@
+<h3>List of {{ .Name }} items</h3>
+<p>
+  <button>add</button>
+  select:
+  <button>all</button>
+  <button>none</button>
+  <button>invert</button>
+  do with selected:
+  <button>delete</button>
+</p>
+
+<table>
+  <thead>
+    {{ range .Fields }}
+      <th>{{ . }}</th>
+    {{ end }}
+    <th>Actions</th>
+  </thead>
+  <tbody>
+
+  </tbody>
+</table>

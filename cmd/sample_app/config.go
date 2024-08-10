@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"log"
+	"os"
 )
 
 // Config struct defined app config
@@ -25,7 +25,7 @@ func (c *Config) SetFromJSON(b []byte) {
 
 // NewConfig returns config instance
 func NewConfig(p string) *Config {
-	c, err := ioutil.ReadFile(p)
+	c, err := os.ReadFile(p)
 	if err != nil {
 		log.Fatal("Error reading config file")
 	}
