@@ -12,6 +12,7 @@ type Struct2sql struct {
 	queryDeleteById   string
 	querySelectPrefix string
 	querySelectCountPrefix string
+	queryDeletePrefix string
 
 	dbTbl       string
 	dbColPrefix string
@@ -106,6 +107,15 @@ func (h *Struct2sql) GetQuerySelect(order []string, limit int, offset int, filte
 
 func (h *Struct2sql) GetQuerySelectCount(filters map[string]interface{}, filterFieldsToInclude map[string]bool) string {
 	s := h.querySelectCountPrefix
+	qWhere := h.getQueryFilters(filters, filterFieldsToInclude)
+	if qWhere != "" {
+		s += " WHERE " + qWhere
+	}
+	return s
+}
+
+func (h *Struct2sql) GetQueryDelete(filters map[string]interface{}, filterFieldsToInclude map[string]bool) string {
+	s := h.queryDeletePrefix
 	qWhere := h.getQueryFilters(filters, filterFieldsToInclude)
 	if qWhere != "" {
 		s += " WHERE " + qWhere

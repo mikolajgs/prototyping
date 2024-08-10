@@ -126,6 +126,16 @@ func TestSQLSelectCountQueries(t *testing.T) {
 	}
 }
 
+func TestSQLDeleteWithFiltersQueries(t *testing.T) {
+	h := NewStruct2sql(testStructObj, "", "", nil)
+
+	got := h.GetQueryDelete(map[string]interface{}{"Price": 4444, "PostCode2": "11-111"}, map[string]bool{"Price": true})
+	want := "DELETE FROM test_structs WHERE price=$1"
+	if got != want {
+		t.Fatalf("want %v, got %v", want, got)
+	}
+}
+
 func TestPluralName(t *testing.T) {
 	type Category struct{}
 	type Cross struct{}

@@ -115,6 +115,7 @@ func (h *Struct2sql) reflectStructForDBQueries(u interface{}, dbTablePrefix stri
 	h.queryUpdateById = fmt.Sprintf("UPDATE %s SET %s WHERE %s = $%d", h.dbTbl, colVals, idCol, valCnt)
 	h.querySelectPrefix = fmt.Sprintf("SELECT %s FROM %s", cols, h.dbTbl)
 	h.querySelectCountPrefix = fmt.Sprintf("SELECT COUNT(*) AS cnt FROM %s", h.dbTbl)
+	h.queryDeletePrefix = fmt.Sprintf("DELETE FROM %s", h.dbTbl)
 }
 
 func (h *Struct2sql) reflectStructForValidation(u interface{}) {
