@@ -104,21 +104,11 @@ func (h *Struct2sql) GetQuerySelect(order []string, limit int, offset int, filte
 	return s
 }
 
-func (h *Struct2sql) GetQuerySelectCount(order []string, limit int, offset int, filters map[string]interface{}, orderFieldsToInclude map[string]bool, filterFieldsToInclude map[string]bool) string {
+func (h *Struct2sql) GetQuerySelectCount(filters map[string]interface{}, filterFieldsToInclude map[string]bool) string {
 	s := h.querySelectCountPrefix
-
-	qOrder := h.getQueryOrder(order, orderFieldsToInclude)
-	qLimitOffset := h.getQueryLimitOffset(limit, offset)
 	qWhere := h.getQueryFilters(filters, filterFieldsToInclude)
-
 	if qWhere != "" {
 		s += " WHERE " + qWhere
-	}
-	if qOrder != "" {
-		s += " ORDER BY " + qOrder
-	}
-	if qLimitOffset != "" {
-		s += " " + qLimitOffset
 	}
 	return s
 }

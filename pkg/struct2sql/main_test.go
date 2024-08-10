@@ -119,8 +119,8 @@ func TestSQLSelectQueries(t *testing.T) {
 func TestSQLSelectCountQueries(t *testing.T) {
 	h := NewStruct2sql(testStructObj, "", "", nil)
 
-	got := h.GetQuerySelectCount([]string{"EmailSecondary", "desc", "Age", "asc"}, 67, 13, map[string]interface{}{"Price": 4444, "PostCode2": "11-111"}, map[string]bool{"EmailSecondary": true}, map[string]bool{"Price": true})
-	want := "SELECT COUNT(*) AS cnt FROM test_structs WHERE price=$1 ORDER BY email_secondary DESC LIMIT 67 OFFSET 13"
+	got := h.GetQuerySelectCount(map[string]interface{}{"Price": 4444, "PostCode2": "11-111"}, map[string]bool{"Price": true})
+	want := "SELECT COUNT(*) AS cnt FROM test_structs WHERE price=$1"
 	if got != want {
 		t.Fatalf("want %v, got %v", want, got)
 	}

@@ -154,6 +154,46 @@ func (c Controller) Get(newObjFunc func() interface{}, order []string, limit int
 	return v, nil
 }
 
+// GetCount runs a 'SELECT COUNT(*)' query on the database with specified filters, order, limit and offset and returns count of rows
+func (c Controller) GetCount(newObjFunc func() interface{}, filters map[string]interface{}) (int64, *ErrController) {
+	obj := newObjFunc()
+	h, err := c.getSQLGenerator(obj)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(filters) > 0 {
+		b, invalidFields, err1 := c.Validate(obj, filters)
+		if err1 != nil {
+			return 0, &ErrController{
+				Op:  "ValidateFilters",
+				Err: fmt.Errorf("Error when trying to validate filters: %w", err1),
+			}
+		}
+
+		if !b {
+			return 0, &ErrController{
+				Op: "ValidateFilters",
+				Err: &ErrValidation{
+					Fields: invalidFields,
+				},
+			}
+		}
+	}
+
+	row := c.dbConn.QueryRow(h.GetQuerySelectCount(filters, nil), c.GetFiltersInterfaces(filters)...)
+	var cnt int64
+	err3 := row.Scan(&cnt)
+	if err3 != nil {
+		return 0, &ErrController{
+			Op:  "DBQueryRowScan",
+			Err: fmt.Errorf("Error scanning DB query row: %w", err3),
+		}
+	}
+
+	return cnt, nil
+}
+
 // AddSQLGenerator adds Struct2sql object to sqlGenerators
 func (c *Controller) AddSQLGenerator(obj interface{}, parentObj interface{}, overwrite bool) *ErrController {
 	n := c.getSQLGeneratorName(obj)

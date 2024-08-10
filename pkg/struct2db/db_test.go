@@ -262,3 +262,37 @@ func TestGetWithoutFilters(t *testing.T) {
 		t.Fatalf("Get failed to return correct list of objects, want %v, got %v", 47, testStructs[2].(*TestStruct).Age)
 	}
 }
+
+// TestGetCount tests if Get properly gets count of objects from the database, filtered
+func TestGetCount(t *testing.T) {
+	recreateTestStructTable()
+
+	// Insert some data that should be ignored by Get later on
+	for i := 1; i < 51; i++ {
+		ts := getTestStructWithData()
+		ts.ID = 0
+		ts.Age = 10 + i
+		ts.Price = 444
+		ts.PrimaryEmail = "another@example.com"
+		testController.Save(ts)
+	}
+
+	// Insert data that should be selected by filters
+	for i := 1; i < 151; i++ {
+		ts := getTestStructWithData()
+		ts.ID = 0
+		ts.Age = 30
+		testController.Save(ts)
+	}
+
+	// Get the data from the database
+	cnt, err := testController.GetCount(func() interface{} {
+		return &TestStruct{}
+	}, map[string]interface{}{"Price": 444, "PrimaryEmail": "primary@example.com"})
+	if err != nil {
+		t.Fatalf("Get failed to return list of objects: %s", err.Op)
+	}
+	if cnt != 150 {
+		t.Fatalf("Get failed to return list of objects, want %v, got %v", 150, cnt)
+	}
+}
