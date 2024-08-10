@@ -267,7 +267,7 @@ func TestGetWithoutFilters(t *testing.T) {
 func TestGetCount(t *testing.T) {
 	recreateTestStructTable()
 
-	// Insert some data that should be ignored by Get later on
+	// Insert some data that should be ignored by GetCount later on
 	for i := 1; i < 51; i++ {
 		ts := getTestStructWithData()
 		ts.ID = 0
@@ -294,5 +294,40 @@ func TestGetCount(t *testing.T) {
 	}
 	if cnt != 150 {
 		t.Fatalf("Get failed to return list of objects, want %v, got %v", 150, cnt)
+	}
+}
+
+// TestDeleteMultiple tests if DeleteMultiple removes objects from database based on specified filters
+func TestDeleteMultiple(t *testing.T) {
+	recreateTestStructTable()
+
+	// Insert some data that should not be removed
+	for i := 1; i < 51; i++ {
+		ts := getTestStructWithData()
+		ts.ID = 0
+		ts.Age = 10 + i
+		ts.PrimaryEmail = "another@example.com"
+		testController.Save(ts)
+	}
+
+	// Insert data that should be delete
+	for i := 1; i < 151; i++ {
+		ts := getTestStructWithData()
+		ts.ID = 0
+		ts.Age = 30
+		testController.Save(ts)
+	}
+
+	// Delete multiple rows from the database
+	err := testController.DeleteMultiple(func() interface{} {
+		return &TestStruct{}
+	}, map[string]interface{}{"Price": 444, "PrimaryEmail": "primary@example.com"})
+	if err != nil {
+		t.Fatalf("DeleteMultiple failed to delete objects: %s", err.Op)
+	}
+
+	cnt, _ := testController.GetCount(func() interface{} { return &TestStruct{} }, map[string]interface{}{})
+	if cnt != 50 {
+		t.Fatalf("DeleteMultiple removed invalid number of rows, there are %d rows left, instead of %d", cnt, 50)
 	}
 }
