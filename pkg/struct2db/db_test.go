@@ -224,7 +224,12 @@ func TestGet(t *testing.T) {
 	// Get the data from the database
 	testStructs, err := testController.Get(func() interface{} {
 		return &TestStruct{}
-	}, []string{"Age", "asc", "Price", "asc"}, 10, 20, map[string]interface{}{"Price": 444, "PrimaryEmail": "primary@example.com"})
+	}, GetOptions{
+		Order: []string{"Age", "asc", "Price", "asc"},
+		Limit: 10,
+		Offset: 20,
+		Filters: map[string]interface{}{"Price": 444, "PrimaryEmail": "primary@example.com"},
+	})
 	if err != nil {
 		t.Fatalf("Get failed to return list of objects: %s", err.Op)
 	}
@@ -251,7 +256,11 @@ func TestGetWithoutFilters(t *testing.T) {
 	// Get the data
 	testStructs, err := testController.Get(func() interface{} {
 		return &TestStruct{}
-	}, []string{"Age", "asc", "Price", "asc"}, 13, 14, nil)
+	}, GetOptions{
+		Order: []string{"Age", "asc", "Price", "asc"},
+		Limit: 13,
+		Offset: 14,
+	})
 	if err != nil {
 		t.Fatalf("Get failed to return list of objects: %s", err.Op)
 	}
@@ -288,7 +297,9 @@ func TestGetCount(t *testing.T) {
 	// Get the data from the database
 	cnt, err := testController.GetCount(func() interface{} {
 		return &TestStruct{}
-	}, map[string]interface{}{"Price": 444, "PrimaryEmail": "primary@example.com"})
+	}, GetCountOptions{
+		Filters: map[string]interface{}{"Price": 444, "PrimaryEmail": "primary@example.com"},
+	})
 	if err != nil {
 		t.Fatalf("Get failed to return list of objects: %s", err.Op)
 	}
@@ -326,7 +337,7 @@ func TestDeleteMultiple(t *testing.T) {
 		t.Fatalf("DeleteMultiple failed to delete objects: %s", err.Op)
 	}
 
-	cnt, _ := testController.GetCount(func() interface{} { return &TestStruct{} }, map[string]interface{}{})
+	cnt, _ := testController.GetCount(func() interface{} { return &TestStruct{} }, GetCountOptions{})
 	if cnt != 50 {
 		t.Fatalf("DeleteMultiple removed invalid number of rows, there are %d rows left, instead of %d", cnt, 50)
 	}

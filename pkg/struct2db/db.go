@@ -8,6 +8,18 @@ import (
 	"github.com/mikolajgs/crud/pkg/struct2sql"
 )
 
+type GetOptions struct {
+	Order []string
+	Limit int
+	Offset int
+	Filters map[string]interface{}
+	RowObjTransform func(interface{}) interface{}
+}
+
+type GetCountOptions struct {
+	Filters map[string]interface{}
+}
+
 // Save takes object, validates its field values and saves it in the database.
 // If ID field is already set (it's greater than 0) then the function assumes that record with such ID already
 // exists in the database and the function with execute an "UPDATE" query. Otherwise it will be "INSERT". After
@@ -141,15 +153,15 @@ func (c Controller) DeleteMultiple(newObjFunc func() interface{}, filters map[st
 
 // Get runs a select query on the database with specified filters, order, limit and offset and returns a
 // list of objects
-func (c Controller) Get(newObjFunc func() interface{}, order []string, limit int, offset int, filters map[string]interface{}) ([]interface{}, *ErrController) {
+func (c Controller) Get(newObjFunc func() interface{}, options GetOptions) ([]interface{}, *ErrController) {
 	obj := newObjFunc()
 	h, err := c.getSQLGenerator(obj)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(filters) > 0 {
-		b, invalidFields, err1 := c.Validate(obj, filters)
+	if len(options.Filters) > 0 {
+		b, invalidFields, err1 := c.Validate(obj, options.Filters)
 		if err1 != nil {
 			return nil, &ErrController{
 				Op:  "ValidateFilters",
@@ -168,7 +180,7 @@ func (c Controller) Get(newObjFunc func() interface{}, order []string, limit int
 	}
 
 	var v []interface{}
-	rows, err2 := c.dbConn.Query(h.GetQuerySelect(order, limit, offset, filters, nil, nil), c.GetFiltersInterfaces(filters)...)
+	rows, err2 := c.dbConn.Query(h.GetQuerySelect(options.Order, options.Limit, options.Offset, options.Filters, nil, nil), c.GetFiltersInterfaces(options.Filters)...)
 	if err2 != nil {
 		return nil, &ErrController{
 			Op:  "DBQuery",
@@ -193,15 +205,15 @@ func (c Controller) Get(newObjFunc func() interface{}, order []string, limit int
 }
 
 // GetCount runs a 'SELECT COUNT(*)' query on the database with specified filters, order, limit and offset and returns count of rows
-func (c Controller) GetCount(newObjFunc func() interface{}, filters map[string]interface{}) (int64, *ErrController) {
+func (c Controller) GetCount(newObjFunc func() interface{}, options GetCountOptions) (int64, *ErrController) {
 	obj := newObjFunc()
 	h, err := c.getSQLGenerator(obj)
 	if err != nil {
 		return 0, err
 	}
 
-	if len(filters) > 0 {
-		b, invalidFields, err1 := c.Validate(obj, filters)
+	if len(options.Filters) > 0 {
+		b, invalidFields, err1 := c.Validate(obj, options.Filters)
 		if err1 != nil {
 			return 0, &ErrController{
 				Op:  "ValidateFilters",
@@ -219,7 +231,7 @@ func (c Controller) GetCount(newObjFunc func() interface{}, filters map[string]i
 		}
 	}
 
-	row := c.dbConn.QueryRow(h.GetQuerySelectCount(filters, nil), c.GetFiltersInterfaces(filters)...)
+	row := c.dbConn.QueryRow(h.GetQuerySelectCount(options.Filters, nil), c.GetFiltersInterfaces(options.Filters)...)
 	var cnt int64
 	err3 := row.Scan(&cnt)
 	if err3 != nil {

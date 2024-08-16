@@ -10,6 +10,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/mikolajgs/crud/pkg/struct2db"
 )
 
 func (c Controller) handleHTTPPut(w http.ResponseWriter, r *http.Request, newObjFunc func() interface{}, id string) {
@@ -103,7 +105,12 @@ func (c Controller) handleHTTPGet(w http.ResponseWriter, r *http.Request, newObj
 			}
 		}
 
-		xobj, err1 := c.struct2db.Get(newObjFunc, order, limit, offset, filters)
+		xobj, err1 := c.struct2db.Get(newObjFunc, struct2db.GetOptions{
+			Order: order,
+			Limit: limit,
+			Offset: offset,
+			Filters: filters,
+		})
 		if err1 != nil {
 			if err1.Op == "ValidateFilters" {
 				c.writeErrText(w, http.StatusBadRequest, "invalid_filter_value")
