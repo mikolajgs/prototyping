@@ -1,6 +1,7 @@
+{{ $uri := .URI }}
 <h3>List of {{ .Name }} items</h3>
 <p>
-  <button>add</button>
+  <button hx-get="{{ $uri }}x/struct_item_add/{{ .Name }}/" hx-trigger="click" hx-target="#add_content" hx-swap="innerHTML">add</button>
   select:
   <button>all</button>
   <button>none</button>
@@ -8,6 +9,8 @@
   do with selected:
   <button>delete</button>
 </p>
+
+<div id="add_content"></div>
 
 <table>
   <thead>

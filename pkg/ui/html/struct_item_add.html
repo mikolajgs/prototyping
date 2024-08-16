@@ -1,0 +1,17 @@
+{{ $uri := .URI }}
+
+{{ .MsgHTML }}
+
+{{ if not .OnlyMsg }}
+
+<h3>Add {{ .Name }} item</h3>
+
+<form hx-post="{{ $uri }}x/struct_item_add/{{ .Name }}/" hx-target="closest div">
+
+{{ .FieldsHTML }}
+
+<button type="submit">add</button>
+<button type="reset">reset</button>
+</form>
+
+{{ end }}

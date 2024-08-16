@@ -4,7 +4,7 @@ go 1.22.5
 
 require (
 	github.com/lib/pq v1.10.9
-	github.com/mikolajgs/struct-validator v0.3.1
+	github.com/mikolajgs/struct-validator v0.4.3
 	github.com/ory/dockertest/v3 v3.10.0
 )
 
