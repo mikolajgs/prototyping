@@ -29,7 +29,7 @@ func (c *Controller) getStructItemAddTplObj(uri string, objFunc func() interface
 	a := &StructItemAddTplObj{
 		URI: uri,
 		Name: struct2sql.GetStructName(o),
-		FieldsHTML: struct2html.GetFields(o, postValues),
+		FieldsHTML: struct2html.GetFields(o, postValues, false),
 		MsgHTML: c.getMsgHTML(msgType, msg),
 		OnlyMsg: onlyMsg,
 	}

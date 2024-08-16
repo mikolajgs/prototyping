@@ -13,7 +13,7 @@ type GetOptions struct {
 	Limit int
 	Offset int
 	Filters map[string]interface{}
-	RowObjTransform func(interface{}) interface{}
+	RowObjTransformFunc func(interface{}) interface{}
 }
 
 type GetCountOptions struct {
@@ -198,6 +198,14 @@ func (c Controller) Get(newObjFunc func() interface{}, options GetOptions) ([]in
 				Err: fmt.Errorf("Error scanning DB query row: %w", err3),
 			}
 		}
+
+		// If options.RowObjTransformFunc is defined then call it on the row
+		if options.RowObjTransformFunc != nil {
+			v = append(v, options.RowObjTransformFunc(newObj))
+			continue
+		}
+
+		// Normal append
 		v = append(v, newObj)
 	}
 

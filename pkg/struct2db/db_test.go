@@ -2,6 +2,9 @@ package struct2db
 
 import (
 	"fmt"
+	"html"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -269,6 +272,65 @@ func TestGetWithoutFilters(t *testing.T) {
 	}
 	if testStructs[2].(*TestStruct).Age != 47 {
 		t.Fatalf("Get failed to return correct list of objects, want %v, got %v", 47, testStructs[2].(*TestStruct).Age)
+	}
+}
+
+// TestGetWithRowObjTransformFunc tests if Get can properly return a list of custom elements (eg. string) 
+// where each object (row from the database) is transform with a specific function
+func TestGetWithRowObjTransformFunc(t *testing.T) {
+	recreateTestStructTable()
+
+	// Insert data to the database
+	for i := 1; i < 3; i++ {
+		ts := getTestStructWithData()
+		ts.ID = 0
+		ts.Age = 30 + i
+		ts.FirstName = fmt.Sprintf("%s %d", ts.FirstName, i)
+		testController.Save(ts)
+	}
+
+	// Get the data
+	testCustomList, err := testController.Get(func() interface{} {
+		return &TestStruct{}
+	}, GetOptions{
+		Order: []string{"Age", "asc"},
+		RowObjTransformFunc: func(obj interface{}) interface{} {
+			out := "<tr>"
+
+			v := reflect.ValueOf(obj)
+			elem := v.Elem()
+			i := reflect.Indirect(v)
+			s := i.Type()
+			for j := 0; j < s.NumField(); j++ {
+				out += "<td>"
+				field := s.Field(j)
+				fieldType := field.Type.Kind()
+				if fieldType == reflect.String {
+					out += html.EscapeString(elem.Field(j).String())
+				}
+				if fieldType == reflect.Bool {
+					out += fmt.Sprintf("%v", elem.Field(j).Bool())
+				}
+				if fieldType == reflect.Int || fieldType == reflect.Int64 {
+					out += fmt.Sprintf("%d", elem.Field(j).Int())
+				}
+				out += "</td>"
+			}
+
+			out += "</tr>"
+
+			return out
+		},
+	})
+	if err != nil {
+		t.Fatalf("Get failed to return list of objects modified with transform func: %s", err.Op)
+	}
+	if len(testCustomList) != 2 {
+		t.Fatalf("Get with transform func returned invalid number of objects, wanted %d got %d", 2, len(testCustomList))
+	}
+	// One of the columns is a random number so testing just the beginning
+	if !strings.HasPrefix(testCustomList[0].(string), "<tr><td>1</td><td>4</td><td>primary@example.com</td><td>secondary@example.com</td><td>John 1</td><td>Smith</td><td>31</td><td>444</td><td>00-000</td><td>11-111</td><td>yyy</td><td>4</td><td>") || !strings.HasPrefix(testCustomList[1].(string), "<tr><td>2</td><td>4</td><td>primary@example.com</td><td>secondary@example.com</td><td>John 2</td><td>Smith</td><td>32</td><td>444</td><td>00-000</td><td>11-111</td><td>yyy</td><td>4</td><td>") {
+		t.Fatalf("Get with transform func returned invalid objects")
 	}
 }
 

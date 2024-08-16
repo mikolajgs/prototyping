@@ -74,8 +74,8 @@ func (c *Controller) renderStructItemAdd(w http.ResponseWriter, r *http.Request,
 	w.Write([]byte(tpl))
 }
 
-func (c *Controller) renderStructItemEdit(w http.ResponseWriter, r *http.Request, uri string, objFunc func() interface{}, id string) {
-	tpl, err := c.getStructItemEditHTML(uri, objFunc, id)
+func (c *Controller) renderStructItemEdit(w http.ResponseWriter, r *http.Request, uri string, objFunc func() interface{}, id string, postValues map[string]string, msgType int, msg string) {
+	tpl, err := c.getStructItemEditHTML(uri, objFunc, id, postValues, msgType, msg)
 	if err != nil {
 		log.Print(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)

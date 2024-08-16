@@ -87,7 +87,7 @@ func (c *Controller) tryGetStructItemEdit(w http.ResponseWriter, r *http.Request
 			return true
 		}
 		
-		c.renderStructItemEdit(w, r, uri, c.uriStructNameFunc[uri][structNameIDArr[0]], structNameIDArr[1])
+		c.renderStructItemEdit(w, r, uri, c.uriStructNameFunc[uri][structNameIDArr[0]], structNameIDArr[1], map[string]string{}, 0, "")
 		return true
 	}
 	return false

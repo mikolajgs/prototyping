@@ -56,6 +56,8 @@ github.com/mikolajgs/struct-validator v0.4.2 h1:dSiD+C9nSnqwAphVDdy6KPhvoAnYGY2I
 github.com/mikolajgs/struct-validator v0.4.2/go.mod h1:Ks0Lm870PpN0ZuQ+LDKYhCazSNyN3zvX5NrFxwlS69g=
 github.com/mikolajgs/struct-validator v0.4.3 h1:ELki57QYisnLYeNXz79xhlM/iDz/UW5uaa7MyKRGiIQ=
 github.com/mikolajgs/struct-validator v0.4.3/go.mod h1:Ks0Lm870PpN0ZuQ+LDKYhCazSNyN3zvX5NrFxwlS69g=
+github.com/mikolajgs/struct-validator v0.4.5 h1:k1OiUQ918IpDY+lvCZENgVN8muvcSxzsGiGTIZvCjC8=
+github.com/mikolajgs/struct-validator v0.4.5/go.mod h1:Ks0Lm870PpN0ZuQ+LDKYhCazSNyN3zvX5NrFxwlS69g=
 github.com/mitchellh/mapstructure v1.4.1 h1:CpVNEelQCZBooIPDn+AR3NpivK/TIKU8bDxdASFVQag=
 github.com/mitchellh/mapstructure v1.4.1/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
 github.com/moby/sys/mountinfo v0.5.0/go.mod h1:3bMD3Rg+zkqx8MRYPi7Pyb0Ie97QEBmdxbhnCLlSvSU=

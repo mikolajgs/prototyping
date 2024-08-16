@@ -11,13 +11,14 @@ const TypeInt64 = 64
 const TypeInt = 128
 const TypeString = 256
 
-func GetFields(u interface{}, values map[string]string) string {
+func GetFields(u interface{}, values map[string]string, withFieldValues bool) string {
 	fieldHTMLs := structvalidator.GenerateHTML(u, &structvalidator.HTMLOptions{
 		OverwriteTagName: "ui",
 		ExcludeFields: map[string]bool{
 			"ID": true,
 		},
-		Values: values,
+		OverwriteValues: values,
+		FieldValues: true,
 	})
 
 	htm := ""

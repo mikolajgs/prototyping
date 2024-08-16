@@ -1,4 +1,5 @@
 {{ $uri := .URI }}
+{{ $name := .Name }}
 <h3>List of {{ .Name }} items</h3>
 <p>
   <button hx-get="{{ $uri }}x/struct_item_add/{{ .Name }}/" hx-trigger="click" hx-target="#add_content" hx-swap="innerHTML">add</button>
@@ -14,12 +15,23 @@
 
 <table>
   <thead>
+      <th></th>
     {{ range .Fields }}
       <th>{{ . }}</th>
     {{ end }}
     <th>Actions</th>
   </thead>
   <tbody>
-
+    {{ range .ItemsHTML }}
+      <tr>
+        {{ $split := SplitRow . }}
+        <td>checkbox</td>
+        {{ index $split 1 }}
+        <td>
+          <button class="small_btn" hx-get="{{ $uri }}x/struct_item_edit/{{ $name }}/{{ index $split 0 }}" hx-trigger="click" hx-target="closest div" hx-swap="innerHTML">edit</button>
+          <button class="small_btn">remove</button>
+        </td>
+      </tr>
+    {{ end }}
   </tbody>
 </table>
