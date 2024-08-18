@@ -8,19 +8,19 @@ import (
 	"text/template"
 )
 
-type StructListTplObj struct {
-	Structs []*StructListTplObjItem
+type structListTplObj struct {
+	Structs []*structListTplObjItem
 	URI string
 }
 
-type StructListTplObjItem struct {
+type structListTplObjItem struct {
 	Name string
 }
 
-func (c *Controller) getStructListTplObj(uri string, objFuncs... func() interface{}) (*StructListTplObj, error) {
-	l := &StructListTplObj{
+func (c *Controller) getStructListTplObj(uri string, objFuncs... func() interface{}) (*structListTplObj, error) {
+	l := &structListTplObj{
 		URI: uri,
-		Structs: []*StructListTplObjItem{},
+		Structs: []*structListTplObjItem{},
 	}
 
 	for _, objFunc := range objFuncs {
@@ -28,7 +28,7 @@ func (c *Controller) getStructListTplObj(uri string, objFuncs... func() interfac
 		v := reflect.ValueOf(o)
 		i := reflect.Indirect(v)
 		s := i.Type()
-		l.Structs = append(l.Structs, &StructListTplObjItem{
+		l.Structs = append(l.Structs, &structListTplObjItem{
 			Name: s.Name(),
 		})
 	}

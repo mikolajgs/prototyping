@@ -13,14 +13,14 @@ import (
 	"github.com/mikolajgs/crud/pkg/struct2sql"
 )	
 
-type StructItemsTplObj struct {
+type structItemsTplObj struct {
 	Name string
 	URI string
 	Fields []string
 	ItemsHTML []interface{}
 }
 
-func (c *Controller) getStructItemsTplObj(uri string, objFunc func() interface{}) (*StructItemsTplObj, error) {
+func (c *Controller) getStructItemsTplObj(uri string, objFunc func() interface{}) (*structItemsTplObj, error) {
 	o := objFunc()
 
 	itemsHTML, err := c.struct2db.Get(objFunc, struct2db.GetOptions{
@@ -58,7 +58,7 @@ func (c *Controller) getStructItemsTplObj(uri string, objFunc func() interface{}
 		return nil, err
 	}
 
-	its := &StructItemsTplObj{
+	its := &structItemsTplObj{
 		URI: uri,
 		Name: struct2sql.GetStructName(o),
 		Fields: struct2sql.GetStructFieldNames(o),
