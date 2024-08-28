@@ -5,7 +5,7 @@
 test: ## Runs tests
 	cd pkg/struct2sql && go test
 	cd pkg/struct2db && go test
-	cd pkg/crud && go test
+	cd pkg/restapi && go test
 	cd pkg/ui && go test
 
 run-sample-app: ## Runs sample app

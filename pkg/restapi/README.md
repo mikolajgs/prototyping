@@ -1,6 +1,6 @@
-# crud
+# restapi
 
-Package CRUD is meant to create CRUD HTTP endpoint for simple data management.
+Package `restapi` is meant to create REST API HTTP endpoint for simple data management.
 
 HTTP endpoint can be set to allow creating, updating, removing new object, along with returning its details,
 or list of objects. All requests and responses are in the JSON format.
@@ -42,7 +42,7 @@ type Something struct {
 
 
 #### Field tags
-Struct tags define ORM behaviour. `crud` parses tags such as `crud`, `http` and various tags starting with 
+Struct tags define ORM behaviour. `restapi` parses tags such as `crud`, `http` and various tags starting with 
 `crud_`. Apart from the last one, a tag define many properties which are separated with space char, and if they
 contain a value other than bool (true, false), it is added after semicolon char.
 See below list of all the tags with examples.
@@ -68,7 +68,7 @@ Property | Explanation
 
 
 ### Database storage
-Currently, `crud` supports only PostgreSQL as a storage for objects. 
+Currently, `restapi` supports only PostgreSQL as a storage for objects. 
 
 #### Controller
 To perform model database actions, a `Controller` object must be created. See below example that modify object(s) 
@@ -79,15 +79,15 @@ in the database.
 conn, _ := sql.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", dbHost, dbPort, dbUser, dbPass, dbName))
 defer conn.Close()
 
-// Create CRUD controller and an instance of a struct
-c := crud.NewController(conn, "app1_")
+// Create RESTAPI controller and an instance of a struct
+c := restapi.NewController(conn, "app1_")
 user := &User{}
 
 err = c.CreateTable(user) // Run 'CREATE TABLE'
 ```
 
 ### HTTP Endpoints
-With `crud`, HTTP endpoints can be created to manage objects stored in the database.
+With `restapi`, HTTP endpoints can be created to manage objects stored in the database.
 
 If User struct is used for HTTP endpoint, fields such as `Password` will be present when listing users. Therefore, 
 it's necessary to create new structs to define CRUD endpoints' input and/or output. These structs unfortunately need
