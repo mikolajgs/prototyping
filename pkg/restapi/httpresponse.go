@@ -1,4 +1,4 @@
-package crud
+package restapi
 
 // HTTPResponse is a base structure for all the HTTP responses from HTTP endpoints
 type HTTPResponse struct {

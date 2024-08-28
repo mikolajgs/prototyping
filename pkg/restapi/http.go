@@ -1,8 +1,8 @@
-package crud
+package restapi
 
 import "net/http"
 
-// GetHTTPHandler returns a CRUD HTTP handler that can be attached to HTTP server. It creates a CRUD endpoint
+// GetHTTPHandler returns a REST API HTTP handler that can be attached to HTTP server. It creates a CRUD endpoint
 // for creating, reading, updating, deleting and listing objects.
 // Each of the func() argument should be funcs that create new object (instance of a struct). For each of the
 // operation (create, read etc.), a different struct with different fields can be used. It's important to pass
