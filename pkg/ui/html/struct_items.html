@@ -4,11 +4,14 @@
 <p>
   <button hx-get="{{ $uri }}x/struct_item/{{ .Name }}/" hx-trigger="click" hx-target="#add_content" hx-swap="innerHTML">add</button>
   select:
-  <button>all</button>
-  <button>none</button>
-  <button>invert</button>
+  <button onclick="tickAllStructItems('{{ $name }}');">all</button>
+  <button onclick="untickAllStructItems('{{ $name }}');">none</button>
+  <button onclick="invertAllStructItems('{{ $name }}');">invert</button>
   do with selected:
-  <button>delete</button>
+  <button hx-on-htmx-after-request="removeTickedStructItemTableRows('{{ $name }}');"
+          hx-delete="{{ $uri }}x/struct_items/{{ $name }}/"
+          hx-vals="js:{ ids: getTickedStructItems('{{ $name }}') }"
+          hx-trigger="click">delete</button>
 </p>
 
 <div id="add_content"></div>
@@ -23,13 +26,13 @@
   </thead>
   <tbody>
     {{ range .ItemsHTML }}
-      <tr>
-        {{ $split := SplitRow . }}
-        <td>checkbox</td>
+    {{ $split := SplitRow . }}
+      <tr struct-item-row="{{ $name }}" struct-item-id="{{ index $split 0 }}">
+        <td><input type="checkbox" struct-item-checkbox="{{ $name }}" struct-item-id="{{ index $split 0 }}"/></td>
         {{ index $split 1 }}
         <td>
           <button class="small_btn" hx-get="{{ $uri }}x/struct_item/{{ $name }}/{{ index $split 0 }}" hx-trigger="click" hx-target="closest div" hx-swap="innerHTML">edit</button>
-          <button class="small_btn" hx-delete="{{ $uri }}x/struct_item/{{ $name }}/{{ index $split 0 }}" hx-trigger="click" hx-target="closest tr" hx-swap="delete">remove</button>
+          <button class="small_btn" hx-delete="{{ $uri }}x/struct_item/{{ $name }}/{{ index $split 0 }}" hx-trigger="click" hx-target="closest tr" hx-swap="delete">delete</button>
         </td>
       </tr>
     {{ end }}

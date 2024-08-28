@@ -21,6 +21,7 @@ func (c *Controller) GetHTTPHandler(uri string, objFuncs ...func() interface{}) 
 		}
 
 		if c.tryStructItem(w, r, uri) { return }
+		if c.tryStructItems(w, r, uri) { return }
 
 		w.WriteHeader(http.StatusBadRequest)
 	})
