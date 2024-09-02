@@ -8,6 +8,7 @@ import (
 	_ "os"
 	_ "time"
 
+	"github.com/mikolajgs/crud/pkg/restapi"
 	"github.com/mikolajgs/crud/pkg/struct2db"
 	"github.com/mikolajgs/crud/pkg/ui"
 
@@ -26,6 +27,7 @@ func main() {
 	}
 
 	ctl := ui.NewController(db, "ui_")
+	apiCtl := restapi.NewController(db, "ui_")
 	s2db := struct2db.NewController(db, "ui_", nil)
 
 	person := &Person{}
@@ -44,6 +46,24 @@ func main() {
 	http.Handle("/ui/v1/", ctl.GetHTTPHandler(
 		"/ui/v1/",
 		func() interface{}{ return &Person{} },
+		func() interface{}{ return &Group{} },
+	))
+	http.Handle("/api/v1/persons/", apiCtl.GetHTTPHandler(
+		"/api/v1/persons/",
+		func() interface{}{ return &Person{} },
+		func() interface{}{ return &Person{} },
+		func() interface{}{ return &Person{} },
+		func() interface{}{ return &Person{} },
+		func() interface{}{ return &Person{} },
+		func() interface{}{ return &Person{} },
+	))
+	http.Handle("/api/v1/groups/", apiCtl.GetHTTPHandler(
+		"/api/v1/groups/",
+		func() interface{}{ return &Group{} },
+		func() interface{}{ return &Group{} },
+		func() interface{}{ return &Group{} },
+		func() interface{}{ return &Group{} },
+		func() interface{}{ return &Group{} },
 		func() interface{}{ return &Group{} },
 	))
 	log.Fatal(http.ListenAndServe(":9001", nil))
