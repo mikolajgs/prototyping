@@ -11,7 +11,7 @@
   <button hx-on-htmx-after-request="removeTickedStructItemTableRows('{{ $name }}');"
           hx-delete="{{ $uri }}x/struct_items/{{ $name }}/"
           hx-vals="js:{ ids: getTickedStructItems('{{ $name }}') }"
-          hx-trigger="click">delete</button>
+          hx-trigger="click" hx-swap="none">delete</button>
 </p>
 
 <div id="add_content"></div>
