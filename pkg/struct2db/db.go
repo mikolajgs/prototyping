@@ -16,6 +16,10 @@ type GetOptions struct {
 	RowObjTransformFunc func(interface{}) interface{}
 }
 
+type DeleteMultipleOptions struct {
+	Filters map[string]interface{}
+}
+
 type GetCountOptions struct {
 	Filters map[string]interface{}
 }
@@ -114,15 +118,15 @@ func (c Controller) Delete(obj interface{}) *ErrController {
 }
 
 // DeleteMultiple removes objects from the database based on specified filters
-func (c Controller) DeleteMultiple(newObjFunc func() interface{}, filters map[string]interface{}) (*ErrController) {
+func (c Controller) DeleteMultiple(newObjFunc func() interface{}, options DeleteMultipleOptions) (*ErrController) {
 	obj := newObjFunc()
 	h, err := c.getSQLGenerator(obj)
 	if err != nil {
 		return err
 	}
 
-	if len(filters) > 0 {
-		b, invalidFields, err1 := c.Validate(obj, filters)
+	if len(options.Filters) > 0 {
+		b, invalidFields, err1 := c.Validate(obj, options.Filters)
 		if err1 != nil {
 			return &ErrController{
 				Op:  "ValidateFilters",
@@ -140,7 +144,7 @@ func (c Controller) DeleteMultiple(newObjFunc func() interface{}, filters map[st
 		}
 	}
 
-	_, err2 := c.dbConn.Exec(h.GetQueryDelete(filters, nil), c.GetFiltersInterfaces(filters)...)
+	_, err2 := c.dbConn.Exec(h.GetQueryDelete(options.Filters, nil), c.GetFiltersInterfaces(options.Filters)...)
 	if err2 != nil {
 		return &ErrController{
 			Op:  "DBQuery",

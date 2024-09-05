@@ -394,7 +394,9 @@ func TestDeleteMultiple(t *testing.T) {
 	// Delete multiple rows from the database
 	err := testController.DeleteMultiple(func() interface{} {
 		return &TestStruct{}
-	}, map[string]interface{}{"Price": 444, "PrimaryEmail": "primary@example.com"})
+	}, DeleteMultipleOptions{
+		Filters: map[string]interface{}{"Price": 444, "PrimaryEmail": "primary@example.com"},
+	})
 	if err != nil {
 		t.Fatalf("DeleteMultiple failed to delete objects: %s", err.Op)
 	}
