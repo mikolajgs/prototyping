@@ -348,14 +348,17 @@ func (h *Struct2sql) getQueryFilters(filters map[string]interface{}, filterField
 		return qWhere
 	}
 
-	if qWhere != "" {
-		qWhere = fmt.Sprintf("(%s)", qWhere)
-		conjunction, ok := filters["_rawConjuction"].(int)
-		if !ok || conjunction != RawConjuctionOR {
-			qWhere += " AND ("
-		} else {
-			qWhere += " OR ("
+	if rawQuery != "" {
+		if qWhere != "" {
+			qWhere = fmt.Sprintf("(%s)", qWhere)
+			conjunction, ok := filters["_rawConjuction"].(int)
+			if !ok || conjunction != RawConjuctionOR {
+				qWhere += " AND "
+			} else {
+				qWhere += " OR "
+			}
 		}
+		qWhere += "("
 
 		reField := regexp.MustCompile(`\.[a-zA-Z0-9]+`)
 		foundFields := reField.FindAllString(rawQuery, -1)
