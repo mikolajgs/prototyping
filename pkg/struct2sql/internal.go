@@ -307,23 +307,99 @@ func (h *Struct2sql) getQueryLimitOffset(limit int, offset int) string {
 
 func (h *Struct2sql) getQueryFilters(filters map[string]interface{}, filterFieldsToInclude map[string]bool) string {
 	qWhere := ""
+	// Variable number in the query, the '$x'
 	i := 1
-	if len(filters) > 0 {
-		sorted := []string{}
-		for k := range filters {
-			if h.dbFieldCols[k] == "" {
-				continue
-			}
-			if len(filterFieldsToInclude) > 0 && !filterFieldsToInclude[k] {
-				continue
-			}
-			sorted = append(sorted, h.dbFieldCols[k])
+
+	if len(filters) == 0 {
+		return ""
+	}
+
+	sorted := []string{}
+	for k := range filters {
+		if h.dbFieldCols[k] == "" {
+			continue
 		}
+		if len(filterFieldsToInclude) > 0 && !filterFieldsToInclude[k] {
+			continue
+		}
+		// _raw is a special entry that allows almost-raw SQL query
+		if k == "_raw" {
+			continue
+		}
+		sorted = append(sorted, h.dbFieldCols[k])
+	}
+
+	if len(sorted) > 0 {
 		sort.Strings(sorted)
+
 		for _, col := range sorted {
 			qWhere = h.addWithAnd(qWhere, fmt.Sprintf(col+"=$%d", i))
 			i++
 		}
+	}
+
+	rawQueryArr, ok := filters["_raw"]
+	if !ok || len(rawQueryArr.([]interface{})) == 0 {
+		return qWhere
+	}
+
+	rawQuery := filters["_raw"].([]interface{})[0].(string)
+	if rawQuery == "" {
+		return qWhere
+	}
+
+	if qWhere != "" {
+		qWhere = fmt.Sprintf("(%s)", qWhere)
+		conjunction, ok := filters["_rawConjuction"].(int)
+		if !ok || conjunction != RawConjuctionOR {
+			qWhere += " AND ("
+		} else {
+			qWhere += " OR ("
+		}
+
+		reField := regexp.MustCompile(`\.[a-zA-Z0-9]+`)
+		foundFields := reField.FindAllString(rawQuery, -1)
+		alreadyReplaced := map[string]bool{}
+		for _, f := range foundFields {
+			if !alreadyReplaced[f] {
+				fieldName := strings.Replace(f, ".", "", 1)
+
+				// If field does not exist, it won't be processed
+				if h.dbFieldCols[fieldName] == "" {
+					continue
+				}
+
+				rawQuery = strings.ReplaceAll(rawQuery, f, h.dbFieldCols[fieldName])
+				alreadyReplaced[f] = true
+			}
+		}
+
+		for j := 1; j < len(filters["_raw"].([]interface{})); j++ {
+			val, ok := filters["_raw"].([]interface{})[j].([]int8)
+			if ok {
+				// Value is an array so replace ? with multiple $'s, eg. $3,$4,$5
+				queryVal := ""
+				for k := 0; k < len(val); k++ {
+					if k == 0 {
+						queryVal += fmt.Sprintf("$%d", i)
+						i++
+						continue
+					}
+					queryVal += fmt.Sprintf(",$%d", i)
+					i++
+				}
+				rawQuery = strings.Replace(rawQuery, "?", queryVal, 1)
+				continue
+			}
+			_, ok = filters["_raw"].([]interface{})[j].(int)
+			if ok {
+				// Value is a single value so just replace ? with $x, eg $2
+				rawQuery = strings.Replace(rawQuery, "?", fmt.Sprintf("$%d", i), 1)
+				i++
+			}
+		}
+
+		qWhere += rawQuery + ")"
 	}
 
 	return qWhere

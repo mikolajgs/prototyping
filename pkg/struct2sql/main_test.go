@@ -114,6 +114,33 @@ func TestSQLSelectQueries(t *testing.T) {
 	if got != want {
 		t.Fatalf("want %v, got %v", want, got)
 	}
+
+	got = h.GetQuerySelect([]string{"EmailSecondary", "asc", "Age", "desc"}, 1, 3, map[string]interface{}{
+		"Price": 33,
+		"PostCode2": "11-111",
+		"_raw": []interface{}{
+			".Price=? OR (.EmailSecondary=? AND .Age IN (?)) OR (.Age IN (?)) OR (.EmailSecondary IN (?))",
+			// We do not really care about the values, the query contains $x only symbols
+			// However, we need to pass either value or an array so that an array can be extracted into multiple $x's
+			0,
+			0,
+			[]int8{30,31,32,33},
+			[]int8{40,41,42},
+			[]int8{0, 0},
+		},
+		"_rawConjuction": RawConjuctionOR,
+	}, map[string]bool{
+		"EmailSecondary": true,
+	}, map[string]bool{
+		"Price": true,
+	})
+	want = "SELECT test_struct_id,test_struct_flags,primary_email,email_secondary,first_name,last_name,age,price,post_code,post_code2,password,created_by_user_id,key"
+	want += " FROM test_structs WHERE"
+	want += " (price=$1) OR (price=$2 OR (email_secondary=$3 AND age IN ($4,$5,$6,$7)) OR (age IN ($8,$9,$10)) OR (email_secondary IN ($11,$12)))"
+	want += " ORDER BY email_secondary ASC LIMIT 1 OFFSET 3"
+	if got != want {
+		t.Fatalf("want %v, got %v", want, got)
+	}
 }
 
 func TestSQLSelectCountQueries(t *testing.T) {
@@ -131,6 +158,22 @@ func TestSQLDeleteWithFiltersQueries(t *testing.T) {
 
 	got := h.GetQueryDelete(map[string]interface{}{"Price": 4444, "PostCode2": "11-111"}, map[string]bool{"Price": true})
 	want := "DELETE FROM test_structs WHERE price=$1"
+	if got != want {
+		t.Fatalf("want %v, got %v", want, got)
+	}
+
+	got = h.GetQueryDelete(map[string]interface{}{
+		"Price": 4444,
+		"PostCode2": "11-111",
+		"_rawConjuction": RawConjuctionAND,
+		"_raw": []interface{}{
+			".Price=? OR .EmailSecondary=? OR .Age IN (?)",
+			0,
+			0,
+			[]int8{30,31,32},
+		},
+	}, map[string]bool{"Price": true})
+	want = "DELETE FROM test_structs WHERE (price=$1) AND (price=$2 OR email_secondary=$3 OR age IN ($4,$5,$6))"
 	if got != want {
 		t.Fatalf("want %v, got %v", want, got)
 	}
