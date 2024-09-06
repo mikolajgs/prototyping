@@ -8,6 +8,9 @@ import (
 	"github.com/mikolajgs/crud/pkg/struct2sql"
 )
 
+const RawConjuctionOR = 1
+const RawConjuctionAND = 2
+
 type GetOptions struct {
 	Order []string
 	Limit int
