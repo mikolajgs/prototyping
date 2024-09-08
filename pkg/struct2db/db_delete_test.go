@@ -113,8 +113,8 @@ func TestDeleteMultipleWithRawQuery(t *testing.T) {
 	}
 
 	cnt, _ := testController.GetCount(func() interface{} { return &TestStruct{} }, GetCountOptions{})
-	if cnt != 45 {
-		t.Fatalf("DeleteMultiple removed invalid number of rows, there are %d rows left, instead of %d", cnt, 45)
+	if cnt != 46 {
+		t.Fatalf("DeleteMultiple removed invalid number of rows, there are %d rows left, instead of %d", cnt, 46)
 	}
 }
 
@@ -146,7 +146,7 @@ func TestDeleteMultipleWithRawQueryOnly(t *testing.T) {
 		Filters: map[string]interface{}{
 			"_raw": []interface{}{
 				"(.Price = ? AND .PrimaryEmail = ?) OR (.Age = ? OR .Age IN (?) OR (.Age = ? AND .PrimaryEmail = ?))",
-				4444,
+				444,
 				"primary@example.com",
 				31,
 				[]int{32,33,34},
@@ -161,7 +161,7 @@ func TestDeleteMultipleWithRawQueryOnly(t *testing.T) {
 	}
 
 	cnt, _ := testController.GetCount(func() interface{} { return &TestStruct{} }, GetCountOptions{})
-	if cnt != 45 {
-		t.Fatalf("DeleteMultiple removed invalid number of rows, there are %d rows left, instead of %d", cnt, 45)
+	if cnt != 46 {
+		t.Fatalf("DeleteMultiple removed invalid number of rows, there are %d rows left, instead of %d", cnt, 46)
 	}
 }

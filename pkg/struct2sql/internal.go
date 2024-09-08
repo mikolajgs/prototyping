@@ -378,11 +378,10 @@ func (h *Struct2sql) getQueryFilters(filters map[string]interface{}, filterField
 		}
 
 		for j := 1; j < len(filters["_raw"].([]interface{})); j++ {
-			val, ok := filters["_raw"].([]interface{})[j].([]int8)
-			if ok {
-				// Value is an array so replace ? with multiple $'s, eg. $3,$4,$5
+			rt := reflect.TypeOf(filters["_raw"].([]interface{})[j])
+			if rt.Kind() == reflect.Slice || rt.Kind() == reflect.Array {
 				queryVal := ""
-				for k := 0; k < len(val); k++ {
+				for k := 0; k < reflect.ValueOf(filters["_raw"].([]interface{})[j]).Len(); k++ {
 					if k == 0 {
 						queryVal += fmt.Sprintf("$%d", i)
 						i++
@@ -394,12 +393,11 @@ func (h *Struct2sql) getQueryFilters(filters map[string]interface{}, filterField
 				rawQuery = strings.Replace(rawQuery, "?", queryVal, 1)
 				continue
 			}
-			_, ok = filters["_raw"].([]interface{})[j].(int)
-			if ok {
-				// Value is a single value so just replace ? with $x, eg $2
-				rawQuery = strings.Replace(rawQuery, "?", fmt.Sprintf("$%d", i), 1)
-				i++
-			}
+
+
+			// Value is a single value so just replace ? with $x, eg $2
+			rawQuery = strings.Replace(rawQuery, "?", fmt.Sprintf("$%d", i), 1)
+			i++
 		}
 
 		qWhere += rawQuery + ")"

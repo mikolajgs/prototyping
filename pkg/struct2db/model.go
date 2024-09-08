@@ -34,17 +34,44 @@ func (c Controller) GetModelFieldInterfaces(obj interface{}) []interface{} {
 func (c Controller) GetFiltersInterfaces(mf map[string]interface{}) []interface{} {
 	var xi []interface{}
 
-	if len(mf) > 0 {
-		sorted := []string{}
-		for k := range mf {
-			sorted = append(sorted, k)
-		}
-		sort.Strings(sorted)
+	if len(mf) == 0 {
+		return xi
+	}
 
-		for _, v := range sorted {
-			xi = append(xi, mf[v])
+	sorted := []string{}
+	for k := range mf {
+		if k == "_raw" || k == "_rawConjuction" {
+			continue
+		}
+		sorted = append(sorted, k)
+	}
+	sort.Strings(sorted)
+
+	for _, v := range sorted {
+		xi = append(xi, mf[v])
+	}
+
+	// Get pointers to values from raw query
+	raw, ok := mf["_raw"]
+	if !ok {
+		return xi
+	}
+	rawVal, ok := raw.([]interface{})
+	if !ok || len(rawVal) < 2 {
+		return xi
+	}
+
+	for i:=1; i<len(rawVal); i++ {
+		rawValArr, ok := rawVal[i].([]int)
+		if ok {
+			for j:=0; j<len(rawValArr); j++ {
+				xi = append(xi, rawValArr[j])
+			}
+		} else {
+			xi = append(xi, rawVal[i])
 		}
 	}
+
 	return xi
 }
 
