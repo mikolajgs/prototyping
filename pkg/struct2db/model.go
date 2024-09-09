@@ -34,17 +34,73 @@ func (c Controller) GetModelFieldInterfaces(obj interface{}) []interface{} {
 func (c Controller) GetFiltersInterfaces(mf map[string]interface{}) []interface{} {
 	var xi []interface{}
 
-	if len(mf) > 0 {
-		sorted := []string{}
-		for k := range mf {
-			sorted = append(sorted, k)
-		}
-		sort.Strings(sorted)
+	if len(mf) == 0 {
+		return xi
+	}
 
-		for _, v := range sorted {
-			xi = append(xi, mf[v])
+	sorted := []string{}
+	for k := range mf {
+		if k == "_raw" || k == "_rawConjuction" {
+			continue
+		}
+		sorted = append(sorted, k)
+	}
+	sort.Strings(sorted)
+
+	for _, v := range sorted {
+		xi = append(xi, mf[v])
+	}
+
+	// Get pointers to values from raw query
+	_, ok := mf["_raw"]
+	if !ok {
+		return xi
+	}
+
+	rt := reflect.TypeOf(mf["_raw"])
+	if rt.Kind() != reflect.Slice && rt.Kind() != reflect.Array {
+		return xi
+	}
+	if reflect.ValueOf(mf["_raw"]).Len() < 2 {
+		return xi
+	}
+
+	for i:=1; i<reflect.ValueOf(mf["_raw"]).Len(); i++ {
+		rt2 := reflect.TypeOf(mf["_raw"].([]interface{})[i])
+		if rt2.Kind() == reflect.Slice || rt2.Kind() == reflect.Array {
+			// TODO: Replace with generics
+			valInts, ok := mf["_raw"].([]interface{})[i].([]int)
+			if ok {
+				for j:=0; j<len(valInts); j++ {
+					xi = append(xi, valInts[j])
+				}
+				continue
+			}
+			valInt64s, ok := mf["_raw"].([]interface{})[i].([]int64)
+			if ok {
+				for j:=0; j<len(valInt64s); j++ {
+					xi = append(xi, valInt64s[j])
+				}
+				continue
+			}
+			valBools, ok := mf["_raw"].([]interface{})[i].([]bool)
+			if ok {
+				for j:=0; j<len(valBools); j++ {
+					xi = append(xi, valBools[j])
+				}
+				continue
+			}
+			valStrings, ok := mf["_raw"].([]interface{})[i].([]bool)
+			if ok {
+				for j:=0; j<len(valStrings); j++ {
+					xi = append(xi, valStrings[j])
+				}
+			}
+		} else {
+			xi = append(xi, mf["_raw"].([]interface{})[i])
 		}
 	}
+
 	return xi
 }
 

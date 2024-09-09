@@ -3,10 +3,11 @@ package ui
 import (
 	"fmt"
 	"net/http"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/mikolajgs/crud/pkg/struct2db"
 )
 
 
@@ -41,29 +42,23 @@ func (c *Controller) tryStructItems(w http.ResponseWriter, r *http.Request, uri 
 		}
 
 		// Run delete for multiple rows
-		// TODO: Replace it with a single delete happening on many IDs
 		idsList := strings.Split(ids, ",")
-		errInLoop := false
+		idsInt := []int64{}
 		for _, id := range idsList {
-			obj := newObjFunc()
-
-			val := reflect.ValueOf(obj).Elem()
-			valField := val.FieldByName("ID")
-			if !valField.CanSet() {
-				errInLoop = true
-				continue
-			}
-			i, _ := strconv.ParseInt(id, 10, 64)
-			valField.SetInt(i)
-
-			err2 := c.struct2db.Delete(obj)
-			if err2 != nil {
-				errInLoop = true
-				continue
-			}
+			idInt, _ := strconv.ParseInt(id, 10, 64)
+			idsInt = append(idsInt, idInt)
 		}
 
-		if errInLoop {
+		err2 := c.struct2db.DeleteMultiple(newObjFunc, struct2db.DeleteMultipleOptions{
+			Filters: map[string]interface{}{
+				"_raw": []interface{}{
+					".ID IN (?)",
+					idsInt,
+				},
+			},
+		})
+
+		if err2 != nil {
 			c.renderMsg(w, r, MsgFailure, fmt.Sprintf("Problem with removing %s items.", structName))
 			return true
 		}

@@ -124,9 +124,9 @@ func TestSQLSelectQueries(t *testing.T) {
 			// However, we need to pass either value or an array so that an array can be extracted into multiple $x's
 			0,
 			0,
-			[]int8{0,0,0,0},
-			[]int8{0,0,0},
-			[]int8{0,0},
+			[]int{0,0,0,0},
+			[]int{0,0,0},
+			[]int{0,0},
 		},
 		"_rawConjuction": RawConjuctionOR,
 	}, map[string]bool{
@@ -170,7 +170,7 @@ func TestSQLDeleteWithFiltersQueries(t *testing.T) {
 			".Price=? OR .EmailSecondary=? OR .Age IN (?)",
 			0,
 			0,
-			[]int8{0,0,0},
+			[]int{0,0,0},
 		},
 	}, map[string]bool{"Price": true})
 	want = "DELETE FROM test_structs WHERE (price=$1) AND (price=$2 OR email_secondary=$3 OR age IN ($4,$5,$6))"
@@ -183,7 +183,7 @@ func TestSQLDeleteWithFiltersQueries(t *testing.T) {
 			".Price=? OR .EmailSecondary=? OR .Age IN (?)",
 			0,
 			0,
-			[]int8{0,0,0},
+			[]int{0,0,0},
 		},
 	}, map[string]bool{"Price": true})
 	want = "DELETE FROM test_structs WHERE (price=$1 OR email_secondary=$2 OR age IN ($3,$4,$5))"
