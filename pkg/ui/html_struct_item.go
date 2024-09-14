@@ -52,7 +52,7 @@ func (c *Controller) getStructItemTplObj(uri string, objFunc func() interface{},
 } 
 
 
-func (c *Controller) getStructItemHTML(uri string, objFunc func() interface{}, id string, postValues map[string]string, msgType int, msg string) (string, error) {
+func (c *Controller) getStructItemHTML(uri string, options GetHTTPHandlerOptions, objFunc func() interface{}, id string, postValues map[string]string, msgType int, msg string) (string, error) {
 	structItemTpl, err := embed.FS.ReadFile(htmlDir, "html/struct_item.html")
 	if err != nil {
 		return "", fmt.Errorf("error reading struct item template from embed: %w", err)

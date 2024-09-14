@@ -10,7 +10,7 @@ import (
 	validator "github.com/mikolajgs/struct-validator"
 )
 
-func (c *Controller) tryStructItem(w http.ResponseWriter, r *http.Request, uri string) bool {
+func (c *Controller) tryStructItem(w http.ResponseWriter, r *http.Request, uri string, options GetHTTPHandlerOptions) bool {
 	structName, id := c.getStructAndIDFromURI("x/struct_item/", c.getRealURI(uri, r.RequestURI))
 
 	if structName == "" {
@@ -109,19 +109,19 @@ func (c *Controller) tryStructItem(w http.ResponseWriter, r *http.Request, uri s
 		for k, _ := range failedFields {
 			invVals = append(invVals, k)
 		}
-		c.renderStructItem(w, r, uri, c.uriStructNameFunc[uri][structName], id, postValues, MsgFailure, fmt.Sprintf("The following fields have invalid values: %s", strings.Join(invVals, ",")))
+		c.renderStructItem(w, r, uri, options, c.uriStructNameFunc[uri][structName], id, postValues, MsgFailure, fmt.Sprintf("The following fields have invalid values: %s", strings.Join(invVals, ",")))
 		return true
 	}
 
 	err2 := c.struct2db.Save(obj)
 	if err2 != nil {
-		c.renderStructItem(w, r, uri, c.uriStructNameFunc[uri][structName], id, postValues, MsgFailure, fmt.Sprintf("Problem with saving: %s", err2.Unwrap().Error()))
+		c.renderStructItem(w, r, uri, options, c.uriStructNameFunc[uri][structName], id, postValues, MsgFailure, fmt.Sprintf("Problem with saving: %s", err2.Unwrap().Error()))
 		return true
 	}
 
 	// Update
 	if id != "" {
-		c.renderStructItem(w, r, uri, c.uriStructNameFunc[uri][structName], id, postValues, MsgSuccess, fmt.Sprintf("%s item has been successfully updated.", structName))
+		c.renderStructItem(w, r, uri, options, c.uriStructNameFunc[uri][structName], id, postValues, MsgSuccess, fmt.Sprintf("%s item has been successfully updated.", structName))
 		return true
 	}
 

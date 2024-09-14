@@ -45,6 +45,26 @@ func main() {
 	
 	http.Handle("/ui/v1/", ctl.GetHTTPHandler(
 		"/ui/v1/",
+		ui.GetHTTPHandlerOptions{
+			ExpandIntToFlags: map[string][]ui.Flag{
+				"Person.Flags": {
+					{
+						Value: 1,
+						Name: "Active",
+					},
+					{
+						Value: 2,
+						Name: "EmailConfirmed",
+					},
+				},
+				"Group.Flags": {
+					{
+						Value: 1,
+						Name: "Active",
+					},
+				},
+			},
+		},
 		func() interface{}{ return &Person{} },
 		func() interface{}{ return &Group{} },
 	))

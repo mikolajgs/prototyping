@@ -47,7 +47,7 @@ func (c *Controller) tryGetStructItems(w http.ResponseWriter, r *http.Request, u
 	return false
 }
 
-func (c *Controller) tryGetStructItem(w http.ResponseWriter, r *http.Request, uri string) bool {
+func (c *Controller) tryGetStructItem(w http.ResponseWriter, r *http.Request, uri string, options GetHTTPHandlerOptions) bool {
 	structName, id := c.getStructAndIDFromURI("x/struct_item/", c.getRealURI(uri, r.RequestURI))
 
 	if structName == "" {
@@ -62,7 +62,7 @@ func (c *Controller) tryGetStructItem(w http.ResponseWriter, r *http.Request, ur
 	}
 
 	// Render the page
-	c.renderStructItem(w, r, uri, c.uriStructNameFunc[uri][structName], id, map[string]string{}, 0, "")
+	c.renderStructItem(w, r, uri, options, c.uriStructNameFunc[uri][structName], id, map[string]string{}, 0, "")
 
 	return true
 }

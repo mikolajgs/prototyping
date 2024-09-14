@@ -96,6 +96,7 @@ func createHTTPServer() {
 		go func() {
 			http.Handle(httpURI, testController.GetHTTPHandler(
 				httpURI, 
+				GetHTTPHandlerOptions{},
 				func() interface{}{ return &Person{} },
 				func() interface{}{ return &Group{} },
 			))
