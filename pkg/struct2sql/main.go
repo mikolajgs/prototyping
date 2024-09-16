@@ -8,6 +8,7 @@ type Struct2sql struct {
 	queryCreateTable  string
 	queryInsert       string
 	queryUpdateById   string
+	queryInsertOnConflictUpdate string
 	querySelectById   string
 	queryDeleteById   string
 	querySelectPrefix string
@@ -77,6 +78,11 @@ func (h *Struct2sql) GetQueryInsert() string {
 // GetQueryUpdateById returns update query
 func (h *Struct2sql) GetQueryUpdateById() string {
 	return h.queryUpdateById
+}
+
+// GetQueryInsertOnConflictUpdate returns an "upsert" query
+func (h *Struct2sql) GetQueryInsertOnConflictUpdate() string {
+	return h.queryInsertOnConflictUpdate
 }
 
 // GetQuerySelectById returns select query

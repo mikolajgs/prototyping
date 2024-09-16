@@ -63,12 +63,15 @@ func (h *Struct2sql) reflectStructForDBQueries(u interface{}, dbTablePrefix stri
 
 	colsWithTypes := ""
 	cols := ""
+	vals := ""
 	valsWithoutID := ""
 	colsWithoutID := ""
 	colVals := ""
+	colValsAgain := ""
 	idCol := h.dbColPrefix + "_id"
 
-	valCnt := 1
+	valCnt := 0
+	valWithoutIDCnt := 0
 	for j := 0; j < s.NumField(); j++ {
 		field := s.Field(j)
 		if field.Type.Kind() != reflect.Int64 && field.Type.Kind() != reflect.String && field.Type.Kind() != reflect.Int {
@@ -99,12 +102,39 @@ func (h *Struct2sql) reflectStructForDBQueries(u interface{}, dbTablePrefix stri
 
 		if field.Name != "ID" {
 			colsWithoutID = h.addWithComma(colsWithoutID, dbCol)
-			valsWithoutID = h.addWithComma(valsWithoutID, "$"+strconv.Itoa(valCnt))
-			colVals = h.addWithComma(colVals, dbCol+"=$"+strconv.Itoa(valCnt))
-			valCnt++
+			colVals = h.addWithComma(colVals, dbCol+"=?")
+			valWithoutIDCnt++
 		}
 
+		valCnt++
+
 		h.fields = append(h.fields, field.Name)
+	}
+
+	colValsAgain = colVals
+
+	if valCnt > 0 {
+		vals = "?"
+		if valCnt > 1 {
+			vals = vals + strings.Repeat(",?", valCnt-1)
+		}
+	}
+	if valWithoutIDCnt > 0 {
+		valsWithoutID = "?"
+		if valWithoutIDCnt > 1 {
+			valsWithoutID = valsWithoutID + strings.Repeat(",?", valWithoutIDCnt-1)
+		}
+	}
+	if valCnt > 0 {
+		for i:=1; i<=valCnt; i++ {
+			vals = strings.Replace(vals, "?", fmt.Sprintf("$%d", i), 1)
+			valsWithoutID = strings.Replace(valsWithoutID, "?", fmt.Sprintf("$%d", i), 1)
+			colVals = strings.Replace(colVals, "?", fmt.Sprintf("$%d", i), 1)
+		}
+		dollarCnt := strings.Count(vals, "$")
+		for i:=dollarCnt+1; i<=dollarCnt+valCnt; i++ {
+			colValsAgain = strings.Replace(colValsAgain, "?", fmt.Sprintf("$%d", i), 1)
+		}
 	}
 
 	h.queryDropTable = fmt.Sprintf("DROP TABLE IF EXISTS %s", h.dbTbl)
@@ -113,6 +143,7 @@ func (h *Struct2sql) reflectStructForDBQueries(u interface{}, dbTablePrefix stri
 	h.querySelectById = fmt.Sprintf("SELECT %s FROM %s WHERE %s = $1", cols, h.dbTbl, idCol)
 	h.queryInsert = fmt.Sprintf("INSERT INTO %s(%s) VALUES (%s) RETURNING %s", h.dbTbl, colsWithoutID, valsWithoutID, idCol)
 	h.queryUpdateById = fmt.Sprintf("UPDATE %s SET %s WHERE %s = $%d", h.dbTbl, colVals, idCol, valCnt)
+	h.queryInsertOnConflictUpdate = fmt.Sprintf("INSERT INTO %s(%s) VALUES (%s) ON CONFLICT (%s) DO UPDATE SET %s", h.dbTbl, cols, vals, idCol, colValsAgain)
 	h.querySelectPrefix = fmt.Sprintf("SELECT %s FROM %s", cols, h.dbTbl)
 	h.querySelectCountPrefix = fmt.Sprintf("SELECT COUNT(*) AS cnt FROM %s", h.dbTbl)
 	h.queryDeletePrefix = fmt.Sprintf("DELETE FROM %s", h.dbTbl)

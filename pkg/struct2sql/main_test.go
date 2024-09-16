@@ -72,6 +72,18 @@ func TestSQLUpdateQueries(t *testing.T) {
 	}
 }
 
+func TestSQLInsertOnConflictUpdateQueries(t *testing.T) {
+	h := NewStruct2sql(testStructObj, "", "", nil)
+
+	got := h.GetQueryInsertOnConflictUpdate()
+	want := "INSERT INTO test_structs(test_struct_id,test_struct_flags,primary_email,email_secondary,first_name,last_name,age,price,post_code,post_code2,password,created_by_user_id,key)"
+	want += " VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)"
+	want += " ON CONFLICT (test_struct_id) DO UPDATE SET test_struct_flags=$14,primary_email=$15,email_secondary=$16,first_name=$17,last_name=$18,age=$19,price=$20,post_code=$21,post_code2=$22,password=$23,created_by_user_id=$24,key=$25"
+	if got != want {
+		t.Fatalf("Want %v, got %v", want, got)
+	}
+}
+
 func TestSQLDeleteQueries(t *testing.T) {
 	h := NewStruct2sql(testStructObj, "", "", nil)
 
