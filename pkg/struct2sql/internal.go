@@ -143,7 +143,7 @@ func (h *Struct2sql) reflectStructForDBQueries(u interface{}, dbTablePrefix stri
 	h.querySelectById = fmt.Sprintf("SELECT %s FROM %s WHERE %s = $1", cols, h.dbTbl, idCol)
 	h.queryInsert = fmt.Sprintf("INSERT INTO %s(%s) VALUES (%s) RETURNING %s", h.dbTbl, colsWithoutID, valsWithoutID, idCol)
 	h.queryUpdateById = fmt.Sprintf("UPDATE %s SET %s WHERE %s = $%d", h.dbTbl, colVals, idCol, valCnt)
-	h.queryInsertOnConflictUpdate = fmt.Sprintf("INSERT INTO %s(%s) VALUES (%s) ON CONFLICT (%s) DO UPDATE SET %s", h.dbTbl, cols, vals, idCol, colValsAgain)
+	h.queryInsertOnConflictUpdate = fmt.Sprintf("INSERT INTO %s(%s) VALUES (%s) ON CONFLICT (%s) DO UPDATE SET %s RETURNING %s", h.dbTbl, cols, vals, idCol, colValsAgain, idCol)
 	h.querySelectPrefix = fmt.Sprintf("SELECT %s FROM %s", cols, h.dbTbl)
 	h.querySelectCountPrefix = fmt.Sprintf("SELECT COUNT(*) AS cnt FROM %s", h.dbTbl)
 	h.queryDeletePrefix = fmt.Sprintf("DELETE FROM %s", h.dbTbl)
