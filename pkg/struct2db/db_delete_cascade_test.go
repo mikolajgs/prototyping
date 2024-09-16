@@ -50,4 +50,76 @@ type DelChildUpdate struct {
 }
 
 func TestDeleteCascade(t *testing.T) {
+	// Create a test parent (with children) and get its ID
+	p := createTestDelParentWithChildren()
+
+	// Delete the parent object
+	_ = testController.Delete(p, DeleteOptions{
+		Constructors: map[string]func() interface{}{
+			"DelChildNone": func() interface{} { return &DelChildNone{}; },
+			"DelChildDelete": func() interface{} { return &DelChildDelete{}; },
+			"DelChildUpdate": func() interface{} { return &DelChildUpdate{}; },
+		},
+	})
+
+	// Check things
+}
+
+func createTestDelParentWithChildren() interface{} {
+	recreateTestDelTables();
+
+	// create DelParent
+	p := &DelParent{ Name: "Parent1" } // 1
+	testController.Save(p)
+
+	// create children
+	for i:=0; i<2; i++ {
+		cNone := &DelChildNone{ DelParentID: p.ID } // 1,2
+		cDelete := &DelChildDelete{ DelParentID: p.ID } // 1,2
+		cUpdate := &DelChildUpdate{ DelParentID: p.ID } // 1,2
+		testController.Save(cNone)
+		testController.Save(cDelete)
+		testController.Save(cUpdate)
+	}
+
+	// create grandchildren
+	for i:=0; i<2; i++ {
+		for j:=0; j<2; j++ {
+			cDeleteNone := &DelChildNone{ DelParentID: int64(i) } // 3,5, 7,9
+			cDeleteDelete := &DelChildDelete{ DelParentID: int64(i) } // 3,5, 7,9
+			cDeleteUpdate := &DelChildUpdate{ DelParentID: int64(i) } // 3,5, 7,9
+			cUpdateNone := &DelChildNone{ DelParentID: int64(i) } // 4,6, 8,10
+			cUpdateDelete := &DelChildDelete{ DelParentID: int64(i) } // 4,6, 8,10
+			cUpdateUpdate := &DelChildUpdate{ DelParentID: int64(i) } // 4,6, 8,10
+			testController.Save(cDeleteNone)
+			testController.Save(cDeleteDelete)
+			testController.Save(cDeleteUpdate)
+			testController.Save(cUpdateNone)
+			testController.Save(cUpdateDelete)
+			testController.Save(cUpdateUpdate)
+		}
+	}
+
+	// create grandgrandchildren
+	cDeleteDeleteDelete := &DelChildDelete{ DelParentID: int64(9) } // 11
+	cDeleteDeleteUpdate := &DelChildUpdate{ DelParentID: int64(9) } // 11
+	cUpdateUpdateDelete := &DelChildDelete{ DelParentID: int64(10) } // 12
+	cUpdateUpdateUpdate := &DelChildUpdate{ DelParentID: int64(10) } // 12
+	testController.Save(cDeleteDeleteDelete)
+	testController.Save(cDeleteDeleteUpdate)
+	testController.Save(cUpdateUpdateUpdate)
+	testController.Save(cUpdateUpdateDelete)
+
+	return p
+}
+
+func recreateTestDelTables() {
+	testController.DropTable(&DelParent{});
+	testController.DropTable(&DelChildNone{});
+	testController.DropTable(&DelChildDelete{});
+	testController.DropTable(&DelChildUpdate{});
+	testController.CreateTable(&DelParent{});
+	testController.CreateTable(&DelChildNone{});
+	testController.CreateTable(&DelChildDelete{});
+	testController.CreateTable(&DelChildUpdate{});
 }

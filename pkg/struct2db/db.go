@@ -19,6 +19,10 @@ type GetOptions struct {
 	RowObjTransformFunc func(interface{}) interface{}
 }
 
+type DeleteOptions struct {
+	Constructors map[string]func() interface{}
+}
+
 type DeleteMultipleOptions struct {
 	Filters map[string]interface{}
 }
@@ -101,7 +105,7 @@ func (c Controller) Load(obj interface{}, id string) *ErrController {
 
 // Delete removes object from the database table and it does that only when ID field is set (greater than 0).
 // Once deleted from the DB, all field values are zeroed
-func (c Controller) Delete(obj interface{}) *ErrController {
+func (c Controller) Delete(obj interface{}, options DeleteOptions) *ErrController {
 	h, err := c.getSQLGenerator(obj)
 	if err != nil {
 		return err

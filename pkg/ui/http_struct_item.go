@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/mikolajgs/crud/pkg/struct2db"
 	validator "github.com/mikolajgs/struct-validator"
 )
 
@@ -48,7 +49,7 @@ func (c *Controller) tryStructItem(w http.ResponseWriter, r *http.Request, uri s
 
 	// Handle delete here
 	if r.Method == http.MethodDelete {
-		err2 := c.struct2db.Delete(obj)
+		err2 := c.struct2db.Delete(obj, struct2db.DeleteOptions{})
 		if err2 != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return true

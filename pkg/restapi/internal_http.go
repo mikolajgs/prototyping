@@ -164,7 +164,7 @@ func (c Controller) handleHTTPDelete(w http.ResponseWriter, r *http.Request, new
 		return
 	}
 
-	err = c.struct2db.Delete(objClone)
+	err = c.struct2db.Delete(objClone, struct2db.DeleteOptions{})
 	if err != nil {
 		c.writeErrText(w, http.StatusInternalServerError, "cannot_delete_from_db")
 		return

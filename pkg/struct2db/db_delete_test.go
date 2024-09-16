@@ -14,7 +14,7 @@ func TestDelete(t *testing.T) {
 	testController.Save(ts)
 
 	// Delete it
-	err := testController.Delete(ts)
+	err := testController.Delete(ts, DeleteOptions{})
 	if err != nil {
 		t.Fatalf("Delete failed to remove: %s", err.Op)
 	}
