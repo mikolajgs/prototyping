@@ -29,7 +29,7 @@ func (c Controller) handleHTTPPut(w http.ResponseWriter, r *http.Request, newObj
 			c.writeErrText(w, http.StatusInternalServerError, "cannot_get_from_db")
 			return
 		}
-		if c.struct2db.GetModelIDValue(objClone) == 0 {
+		if c.struct2db.GetObjIDValue(objClone) == 0 {
 			c.writeErrText(w, http.StatusNotFound, "not_found_in_db")
 			return
 		}
@@ -49,7 +49,7 @@ func (c Controller) handleHTTPPut(w http.ResponseWriter, r *http.Request, newObj
 		return
 	}
 
-	err2 := c.struct2db.Save(objClone)
+	err2 := c.struct2db.Save(objClone, struct2db.SaveOptions{})
 	if err2 != nil {
 		c.writeErrText(w, http.StatusInternalServerError, "cannot_save_to_db")
 		return
@@ -57,11 +57,11 @@ func (c Controller) handleHTTPPut(w http.ResponseWriter, r *http.Request, newObj
 
 	if id != "" {
 		c.writeOK(w, http.StatusOK, map[string]interface{}{
-			"id": c.struct2db.GetModelIDValue(objClone),
+			"id": c.struct2db.GetObjIDValue(objClone),
 		})
 	} else {
 		c.writeOK(w, http.StatusCreated, map[string]interface{}{
-			"id": c.struct2db.GetModelIDValue(objClone),
+			"id": c.struct2db.GetObjIDValue(objClone),
 		})
 	}
 }
@@ -136,7 +136,7 @@ func (c Controller) handleHTTPGet(w http.ResponseWriter, r *http.Request, newObj
 		return
 	}
 
-	if c.struct2db.GetModelIDValue(objClone) == 0 {
+	if c.struct2db.GetObjIDValue(objClone) == 0 {
 		c.writeErrText(w, http.StatusNotFound, "not_found_in_db")
 		return
 	}
@@ -159,7 +159,7 @@ func (c Controller) handleHTTPDelete(w http.ResponseWriter, r *http.Request, new
 		c.writeErrText(w, http.StatusInternalServerError, "cannot_get_from_db")
 		return
 	}
-	if c.struct2db.GetModelIDValue(objClone) == 0 {
+	if c.struct2db.GetObjIDValue(objClone) == 0 {
 		c.writeErrText(w, http.StatusNotFound, "not_found_in_db")
 		return
 	}

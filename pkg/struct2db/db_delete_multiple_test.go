@@ -14,7 +14,7 @@ func TestDeleteMultiple(t *testing.T) {
 		ts.ID = 0
 		ts.Age = 10 + i
 		ts.PrimaryEmail = "another@example.com"
-		testController.Save(ts)
+		testController.Save(ts, SaveOptions{})
 	}
 
 	// Insert data that should be deleted
@@ -22,7 +22,7 @@ func TestDeleteMultiple(t *testing.T) {
 		ts := getTestStructWithData()
 		ts.ID = 0
 		ts.Age = 30
-		testController.Save(ts)
+		testController.Save(ts, SaveOptions{})
 	}
 
 	// Delete multiple rows from the database
@@ -52,7 +52,7 @@ func TestDeleteMultipleWithRawQuery(t *testing.T) {
 		ts.ID = 0
 		ts.Age = 10 + i
 		ts.PrimaryEmail = "another@example.com"
-		testController.Save(ts)
+		testController.Save(ts, SaveOptions{})
 	}
 
 	// Insert data that should be deleted
@@ -60,7 +60,7 @@ func TestDeleteMultipleWithRawQuery(t *testing.T) {
 		ts := getTestStructWithData()
 		ts.ID = 0
 		ts.Age = 30
-		testController.Save(ts)
+		testController.Save(ts, SaveOptions{})
 	}
 
 	// Delete multiple rows from the database
@@ -100,7 +100,7 @@ func TestDeleteMultipleWithRawQueryOnly(t *testing.T) {
 		ts.ID = 0
 		ts.Age = 10 + i
 		ts.PrimaryEmail = "another@example.com"
-		testController.Save(ts)
+		testController.Save(ts, SaveOptions{})
 	}
 
 	// Insert data that should be deleted
@@ -108,7 +108,7 @@ func TestDeleteMultipleWithRawQueryOnly(t *testing.T) {
 		ts := getTestStructWithData()
 		ts.ID = 0
 		ts.Age = 30
-		testController.Save(ts)
+		testController.Save(ts, SaveOptions{})
 	}
 
 	// Delete multiple rows from the database

@@ -5,23 +5,27 @@ import (
 	"sort"
 )
 
-// GetModelIDInterface returns an interface{} to ID field of an object
-func (c *Controller) GetModelIDInterface(obj interface{}) interface{} {
+// GetObjIDInterface returns an interface{} to ID field of an object
+func (c *Controller) GetObjIDInterface(obj interface{}) interface{} {
 	return reflect.ValueOf(obj).Elem().FieldByName("ID").Addr().Interface()
 }
 
-// GetModelIDValue returns value of ID field (int64) of an object
-func (c *Controller) GetModelIDValue(obj interface{}) int64 {
+// GetObjIDValue returns value of ID field (int64) of an object
+func (c *Controller) GetObjIDValue(obj interface{}) int64 {
 	return reflect.ValueOf(obj).Elem().FieldByName("ID").Int()
 }
 
-// GetModelFieldInterfaces returns list of interfaces to object's fields without the ID field
-func (c Controller) GetModelFieldInterfaces(obj interface{}) []interface{} {
+// GetObjFieldInterfaces return list of interfaces to object's fields
+// Argument includeID tells it to include or omit the ID field
+func (c Controller) GetObjFieldInterfaces(obj interface{}, includeID bool) []interface{} {
 	val := reflect.ValueOf(obj).Elem()
 
 	var v []interface{}
-	for i := 1; i < val.NumField(); i++ {
+	for i := 0; i < val.NumField(); i++ {
 		valueField := val.Field(i)
+		if val.Type().Field(i).Name == "ID" && !includeID {
+			continue
+		}
 		if valueField.Kind() != reflect.Int64 && valueField.Kind() != reflect.Int && valueField.Kind() != reflect.String {
 			continue
 		}

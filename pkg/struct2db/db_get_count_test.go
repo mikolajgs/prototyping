@@ -15,7 +15,7 @@ func TestGetCount(t *testing.T) {
 		ts.Age = 10 + i
 		ts.Price = 444
 		ts.PrimaryEmail = "another@example.com"
-		testController.Save(ts)
+		testController.Save(ts, SaveOptions{})
 	}
 
 	// Insert data that should be selected by filters
@@ -23,7 +23,7 @@ func TestGetCount(t *testing.T) {
 		ts := getTestStructWithData()
 		ts.ID = 0
 		ts.Age = 30
-		testController.Save(ts)
+		testController.Save(ts, SaveOptions{})
 	}
 
 	// Get the data from the database
@@ -51,7 +51,7 @@ func TestGetCountWithRawQuery(t *testing.T) {
 		ts.Age = 10 + i
 		ts.Price = 444
 		ts.PrimaryEmail = "another@example.com"
-		testController.Save(ts)
+		testController.Save(ts, SaveOptions{})
 	}
 
 	// Insert data that should be selected by filters
@@ -59,7 +59,7 @@ func TestGetCountWithRawQuery(t *testing.T) {
 		ts := getTestStructWithData()
 		ts.ID = 0
 		ts.Age = 30
-		testController.Save(ts)
+		testController.Save(ts, SaveOptions{})
 	}
 
 	// Get the data from the database

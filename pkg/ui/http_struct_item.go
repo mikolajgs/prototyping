@@ -114,7 +114,7 @@ func (c *Controller) tryStructItem(w http.ResponseWriter, r *http.Request, uri s
 		return true
 	}
 
-	err2 := c.struct2db.Save(obj)
+	err2 := c.struct2db.Save(obj, struct2db.SaveOptions{})
 	if err2 != nil {
 		c.renderStructItem(w, r, uri, c.uriStructNameFunc[uri][structName], id, postValues, MsgFailure, fmt.Sprintf("Problem with saving: %s", err2.Unwrap().Error()))
 		return true

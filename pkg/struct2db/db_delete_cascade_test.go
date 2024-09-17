@@ -70,16 +70,16 @@ func createTestDelParentWithChildren() interface{} {
 
 	// create DelParent
 	p := &DelParent{ Name: "Parent1" } // 1
-	testController.Save(p)
+	testController.Save(p, SaveOptions{})
 
 	// create children
 	for i:=0; i<2; i++ {
 		cNone := &DelChildNone{ DelParentID: p.ID } // 1,2
 		cDelete := &DelChildDelete{ DelParentID: p.ID } // 1,2
 		cUpdate := &DelChildUpdate{ DelParentID: p.ID } // 1,2
-		testController.Save(cNone)
-		testController.Save(cDelete)
-		testController.Save(cUpdate)
+		testController.Save(cNone, SaveOptions{})
+		testController.Save(cDelete, SaveOptions{})
+		testController.Save(cUpdate, SaveOptions{})
 	}
 
 	// create grandchildren
@@ -91,12 +91,12 @@ func createTestDelParentWithChildren() interface{} {
 			cUpdateNone := &DelChildNone{ DelParentID: int64(i) } // 4,6, 8,10
 			cUpdateDelete := &DelChildDelete{ DelParentID: int64(i) } // 4,6, 8,10
 			cUpdateUpdate := &DelChildUpdate{ DelParentID: int64(i) } // 4,6, 8,10
-			testController.Save(cDeleteNone)
-			testController.Save(cDeleteDelete)
-			testController.Save(cDeleteUpdate)
-			testController.Save(cUpdateNone)
-			testController.Save(cUpdateDelete)
-			testController.Save(cUpdateUpdate)
+			testController.Save(cDeleteNone, SaveOptions{})
+			testController.Save(cDeleteDelete, SaveOptions{})
+			testController.Save(cDeleteUpdate, SaveOptions{})
+			testController.Save(cUpdateNone, SaveOptions{})
+			testController.Save(cUpdateDelete, SaveOptions{})
+			testController.Save(cUpdateUpdate, SaveOptions{})
 		}
 	}
 
@@ -105,10 +105,10 @@ func createTestDelParentWithChildren() interface{} {
 	cDeleteDeleteUpdate := &DelChildUpdate{ DelParentID: int64(9) } // 11
 	cUpdateUpdateDelete := &DelChildDelete{ DelParentID: int64(10) } // 12
 	cUpdateUpdateUpdate := &DelChildUpdate{ DelParentID: int64(10) } // 12
-	testController.Save(cDeleteDeleteDelete)
-	testController.Save(cDeleteDeleteUpdate)
-	testController.Save(cUpdateUpdateUpdate)
-	testController.Save(cUpdateUpdateDelete)
+	testController.Save(cDeleteDeleteDelete, SaveOptions{})
+	testController.Save(cDeleteDeleteUpdate, SaveOptions{})
+	testController.Save(cUpdateUpdateUpdate, SaveOptions{})
+	testController.Save(cUpdateUpdateDelete, SaveOptions{})
 
 	return p
 }

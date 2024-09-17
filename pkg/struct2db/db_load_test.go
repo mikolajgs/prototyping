@@ -11,7 +11,7 @@ func TestLoad(t *testing.T) {
 
 	// Insert an object first
 	ts := getTestStructWithData()
-	testController.Save(ts)
+	testController.Save(ts, SaveOptions{})
 
 	// Get the object
 	ts2 := &TestStruct{}

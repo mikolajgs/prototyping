@@ -11,6 +11,10 @@ import (
 const RawConjuctionOR = 1
 const RawConjuctionAND = 2
 
+type SaveOptions struct {
+	NoInsert bool
+}
+
 type GetOptions struct {
 	Order []string
 	Limit int
@@ -32,10 +36,9 @@ type GetCountOptions struct {
 }
 
 // Save takes object, validates its field values and saves it in the database.
-// If ID field is already set (it's greater than 0) then the function assumes that record with such ID already
-// exists in the database and the function with execute an "UPDATE" query. Otherwise it will be "INSERT". After
-// inserting, new record ID is set to struct's ID field
-func (c Controller) Save(obj interface{}) *ErrController {
+// If ID is not present then an INSERT will be performed
+// If ID is set then an "upsert" is performed
+func (c Controller) Save(obj interface{}, options SaveOptions) *ErrController {
 	h, err := c.getSQLGenerator(obj)
 	if err != nil {
 		return err
@@ -59,10 +62,17 @@ func (c Controller) Save(obj interface{}) *ErrController {
 	}
 
 	var err3 error
-	if c.GetModelIDValue(obj) != 0 {
-		_, err3 = c.dbConn.Exec(h.GetQueryUpdateById(), append(c.GetModelFieldInterfaces(obj), c.GetModelIDInterface(obj))...)
+	if c.GetObjIDValue(obj) != 0 {
+		// do no try to insert if NoInsert is set
+		// TODO: error handling, we should check if object exists - for now nothing happens, UPDATE gets executed and updates nothing
+		if options.NoInsert {
+			_, err3 = c.dbConn.Exec(h.GetQueryUpdateById(), append(c.GetObjFieldInterfaces(obj, false), c.GetObjIDInterface(obj))...)
+		} else {
+			// try to insert - if ID already exists then try to update it
+			_, err3 = c.dbConn.Exec(h.GetQueryInsertOnConflictUpdate(), append(c.GetObjFieldInterfaces(obj, true), c.GetObjFieldInterfaces(obj, false)...)...)
+		}
 	} else {
-		err3 = c.dbConn.QueryRow(h.GetQueryInsert(), c.GetModelFieldInterfaces(obj)...).Scan(c.GetModelIDInterface(obj))
+		err3 = c.dbConn.QueryRow(h.GetQueryInsert(), c.GetObjFieldInterfaces(obj, false)...).Scan(c.GetObjIDInterface(obj))
 	}
 	if err3 != nil {
 		return &ErrController{
@@ -88,7 +98,7 @@ func (c Controller) Load(obj interface{}, id string) *ErrController {
 	if err2 != nil {
 		return err2
 	}
-	err3 := c.dbConn.QueryRow(h.GetQuerySelectById(), int64(idInt)).Scan(append(append(make([]interface{}, 0), c.GetModelIDInterface(obj)), c.GetModelFieldInterfaces(obj)...)...)
+	err3 := c.dbConn.QueryRow(h.GetQuerySelectById(), int64(idInt)).Scan(c.GetObjFieldInterfaces(obj, true)...)
 	switch {
 	case err3 == sql.ErrNoRows:
 		c.ResetFields(obj)
@@ -110,10 +120,10 @@ func (c Controller) Delete(obj interface{}, options DeleteOptions) *ErrControlle
 	if err != nil {
 		return err
 	}
-	if c.GetModelIDValue(obj) == 0 {
+	if c.GetObjIDValue(obj) == 0 {
 		return nil
 	}
-	_, err2 := c.dbConn.Exec(h.GetQueryDeleteById(), c.GetModelIDInterface(obj))
+	_, err2 := c.dbConn.Exec(h.GetQueryDeleteById(), c.GetObjIDInterface(obj))
 	if err2 != nil {
 		return &ErrController{
 			Op:  "DBQuery",
@@ -202,7 +212,7 @@ func (c Controller) Get(newObjFunc func() interface{}, options GetOptions) ([]in
 
 	for rows.Next() {
 		newObj := newObjFunc()
-		err3 := rows.Scan(append(append(make([]interface{}, 0), c.GetModelIDInterface(newObj)), c.GetModelFieldInterfaces(newObj)...)...)
+		err3 := rows.Scan(c.GetObjFieldInterfaces(newObj, true)...)
 		if err3 != nil {
 			return nil, &ErrController{
 				Op:  "DBQueryRowsScan",

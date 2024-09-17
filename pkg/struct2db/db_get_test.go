@@ -19,7 +19,7 @@ func TestGet(t *testing.T) {
 		ts.Age = 10 + i
 		ts.Price = 444
 		ts.PrimaryEmail = "another@example.com"
-		testController.Save(ts)
+		testController.Save(ts, SaveOptions{})
 	}
 
 	// Insert data that should be selected by filters
@@ -27,7 +27,7 @@ func TestGet(t *testing.T) {
 		ts := getTestStructWithData()
 		ts.ID = 0
 		ts.Age = 30 + i
-		testController.Save(ts)
+		testController.Save(ts, SaveOptions{})
 	}
 
 	// Get the data from the database
@@ -59,7 +59,7 @@ func TestGetWithoutFilters(t *testing.T) {
 		ts := getTestStructWithData()
 		ts.ID = 0
 		ts.Age = 30 + i
-		testController.Save(ts)
+		testController.Save(ts, SaveOptions{})
 	}
 
 	// Get the data
@@ -92,7 +92,7 @@ func TestGetWithRowObjTransformFunc(t *testing.T) {
 		ts.ID = 0
 		ts.Age = 30 + i
 		ts.FirstName = fmt.Sprintf("%s %d", ts.FirstName, i)
-		testController.Save(ts)
+		testController.Save(ts, SaveOptions{})
 	}
 
 	// Get the data

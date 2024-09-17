@@ -11,7 +11,7 @@ func TestDelete(t *testing.T) {
 
 	// Insert an object first
 	ts := getTestStructWithData()
-	testController.Save(ts)
+	testController.Save(ts, SaveOptions{})
 
 	// Delete it
 	err := testController.Delete(ts, DeleteOptions{})
