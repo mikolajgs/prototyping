@@ -85,6 +85,7 @@ func (c Controller) Save(obj interface{}, options SaveOptions) *ErrController {
 
 // Load sets object's fields with values from the database table with a specific id. If record does not exist
 // in the database, all field values in the struct are zeroed
+// TODO: Should it return an ErrNotExist?
 func (c Controller) Load(obj interface{}, id string) *ErrController {
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
