@@ -147,6 +147,7 @@ func (h *Struct2sql) reflectStructForDBQueries(u interface{}, dbTablePrefix stri
 	h.querySelectPrefix = fmt.Sprintf("SELECT %s FROM %s", cols, h.dbTbl)
 	h.querySelectCountPrefix = fmt.Sprintf("SELECT COUNT(*) AS cnt FROM %s", h.dbTbl)
 	h.queryDeletePrefix = fmt.Sprintf("DELETE FROM %s", h.dbTbl)
+	h.queryUpdatePrefix = fmt.Sprintf("UPDATE %s SET", h.dbTbl)
 }
 
 func (h *Struct2sql) reflectStructForValidation(u interface{}) {
@@ -336,10 +337,42 @@ func (h *Struct2sql) getQueryLimitOffset(limit int, offset int) string {
 	return qLimitOffset
 }
 
-func (h *Struct2sql) getQueryFilters(filters map[string]interface{}, filterFieldsToInclude map[string]bool) string {
-	qWhere := ""
+func (h *Struct2sql) getQuerySet(values map[string]interface{}, valueFieldsToInclude map[string]bool) (string, int) {
+	qSet := ""
 	// Variable number in the query, the '$x'
 	i := 1
+
+	if len(values) == 0 {
+		return "", 0
+	}
+
+	sorted := []string{}
+	for k := range values {
+		if h.dbFieldCols[k] == "" {
+			continue
+		}
+		if len(valueFieldsToInclude) > 0 && !valueFieldsToInclude[k] {
+			continue
+		}
+		sorted = append(sorted, h.dbFieldCols[k])
+	}
+
+	if len(sorted) > 0 {
+		sort.Strings(sorted)
+
+		for _, col := range sorted {
+			qSet = h.addWithComma(qSet, fmt.Sprintf(col+"=$%d", i))
+			i++
+		}
+	}	
+
+	return qSet, i-1
+}
+
+func (h *Struct2sql) getQueryFilters(filters map[string]interface{}, filterFieldsToInclude map[string]bool, firstNumber int) string {
+	qWhere := ""
+	// Variable number in the query, the '$x'
+	i := firstNumber
 
 	if len(filters) == 0 {
 		return ""

@@ -14,6 +14,7 @@ type Struct2sql struct {
 	querySelectPrefix string
 	querySelectCountPrefix string
 	queryDeletePrefix string
+	queryUpdatePrefix string
 
 	dbTbl       string
 	dbColPrefix string
@@ -100,7 +101,7 @@ func (h *Struct2sql) GetQuerySelect(order []string, limit int, offset int, filte
 
 	qOrder := h.getQueryOrder(order, orderFieldsToInclude)
 	qLimitOffset := h.getQueryLimitOffset(limit, offset)
-	qWhere := h.getQueryFilters(filters, filterFieldsToInclude)
+	qWhere := h.getQueryFilters(filters, filterFieldsToInclude, 1)
 
 	if qWhere != "" {
 		s += " WHERE " + qWhere
@@ -116,7 +117,7 @@ func (h *Struct2sql) GetQuerySelect(order []string, limit int, offset int, filte
 
 func (h *Struct2sql) GetQuerySelectCount(filters map[string]interface{}, filterFieldsToInclude map[string]bool) string {
 	s := h.querySelectCountPrefix
-	qWhere := h.getQueryFilters(filters, filterFieldsToInclude)
+	qWhere := h.getQueryFilters(filters, filterFieldsToInclude, 1)
 	if qWhere != "" {
 		s += " WHERE " + qWhere
 	}
@@ -125,10 +126,24 @@ func (h *Struct2sql) GetQuerySelectCount(filters map[string]interface{}, filterF
 
 func (h *Struct2sql) GetQueryDelete(filters map[string]interface{}, filterFieldsToInclude map[string]bool) string {
 	s := h.queryDeletePrefix
-	qWhere := h.getQueryFilters(filters, filterFieldsToInclude)
+	qWhere := h.getQueryFilters(filters, filterFieldsToInclude, 1)
 	if qWhere != "" {
 		s += " WHERE " + qWhere
 	}
+	return s
+}
+
+func (h *Struct2sql) GetQueryUpdate(values map[string]interface{}, filters map[string]interface{}, valueFieldsToInclude map[string]bool, filterFieldsToInclude map[string]bool) string {
+	s := h.queryUpdatePrefix
+
+	qSet, lastVarNumber := h.getQuerySet(values, valueFieldsToInclude)
+	s += " " + qSet
+
+	qWhere := h.getQueryFilters(filters, filterFieldsToInclude, lastVarNumber+1)
+	if qWhere != "" {
+		s += " WHERE " + qWhere
+	}
+
 	return s
 }
 

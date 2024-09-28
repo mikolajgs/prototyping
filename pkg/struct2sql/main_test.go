@@ -62,7 +62,7 @@ func TestSQLInsertQueries(t *testing.T) {
 	}
 }
 
-func TestSQLUpdateQueries(t *testing.T) {
+func TestSQLUpdateByIdQueries(t *testing.T) {
 	h := NewStruct2sql(testStructObj, "", "", nil)
 
 	got := h.GetQueryUpdateById()
@@ -200,6 +200,32 @@ func TestSQLDeleteWithFiltersQueries(t *testing.T) {
 		},
 	}, map[string]bool{"Price": true})
 	want = "DELETE FROM test_structs WHERE (price=$1 OR email_secondary=$2 OR age IN ($3,$4,$5))"
+	if got != want {
+		t.Fatalf("want %v, got %v", want, got)
+	}
+}
+
+func TestSQLUpdateQueries(t *testing.T) {
+	h := NewStruct2sql(testStructObj, "", "", nil)
+
+	got := h.GetQueryUpdate(
+		map[string]interface{}{"Price": 1234, "PostCode2": "12-345"},
+		map[string]interface{}{"PrimaryEmail": "primary@example.com"},
+		nil,
+		nil,
+	)
+	want := "UPDATE test_structs SET post_code2=$1,price=$2 WHERE primary_email=$3"
+	if got != want {
+		t.Fatalf("want %v, got %v", want, got)
+	}
+
+	got = h.GetQueryUpdate(
+		map[string]interface{}{"Price": 1234, "PostCode2": "12-345", "FirstName": "Jane", "LastName": "Doe"},
+		map[string]interface{}{"PrimaryEmail": "primary@example.com", "PostCode": "11-111"},
+		map[string]bool{"FirstName": true, "LastName": true},
+		map[string]bool{"PostCode": true},
+	)
+	want = "UPDATE test_structs SET first_name=$1,last_name=$2 WHERE post_code=$3"
 	if got != want {
 		t.Fatalf("want %v, got %v", want, got)
 	}
