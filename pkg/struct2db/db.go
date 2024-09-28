@@ -2,8 +2,13 @@ package struct2db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
+	"log"
+	"reflect"
+	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/mikolajgs/crud/pkg/struct2sql"
 )
@@ -29,6 +34,7 @@ type DeleteOptions struct {
 
 type DeleteMultipleOptions struct {
 	Filters map[string]interface{}
+	CascadeDeleteDepth int
 }
 
 type GetCountOptions struct {
@@ -116,12 +122,16 @@ func (c Controller) Load(obj interface{}, id string) *ErrController {
 
 // Delete removes object from the database table and it does that only when ID field is set (greater than 0).
 // Once deleted from the DB, all field values are zeroed
+// TODO: Error handling probably needs re-designing
 func (c Controller) Delete(obj interface{}, options DeleteOptions) *ErrController {
 	h, err := c.getSQLGenerator(obj)
 	if err != nil {
 		return err
 	}
-	if c.GetObjIDValue(obj) == 0 {
+
+	id := c.GetObjIDValue(obj)
+
+	if id == 0 {
 		return nil
 	}
 	_, err2 := c.dbConn.Exec(h.GetQueryDeleteById(), c.GetObjIDInterface(obj))
@@ -132,6 +142,63 @@ func (c Controller) Delete(obj interface{}, options DeleteOptions) *ErrControlle
 		}
 	}
 	c.ResetFields(obj)
+
+	// Loop through fields to delete cascade
+	val := reflect.ValueOf(obj).Elem()
+	typ := val.Type()
+	structName := typ.Name()
+
+	tagRegexp := regexp.MustCompile(`[a-zA-Z0-9_]+\:[a-zA-Z0-9_-]+`)
+
+	for i := 0; i < val.NumField(); i++ {
+		valueField := val.Field(i)
+		if valueField.Kind() == reflect.Slice && valueField.Type().Elem().Kind() == reflect.Ptr && valueField.Type().Elem().Elem().Kind() == reflect.Struct {
+			childStructName := valueField.Type().Elem().Elem().Name()
+
+			// Check if constructor is passed in the options - if not then then ignore the child
+			_, ok := options.Constructors[childStructName]
+			if !ok {
+				continue
+			}
+
+			// Get 2db tag, loop through its value on determine action based on it
+			tag := typ.Field(i).Tag.Get(c.tagName)
+			if tag != "" {
+				tags := strings.Split(tag, " ")
+				tagsMap := map[string]string{}
+				for _, t := range tags {
+					m := tagRegexp.MatchString(t)
+					if m {
+						mArr := strings.Split(t, ":")
+						tagsMap[mArr[0]] = mArr[1]
+					}
+				}
+				// Perform delete
+				if tagsMap["on_del"] == "del" {
+					parentIDField := structName + "ID"
+					if tagsMap["del_field"] != "" {
+						parentIDField = tagsMap["del_field"]
+					}
+					// Delete from children table where parent ID = id of deleted object
+					errCtl := c.DeleteMultiple(options.Constructors[childStructName], DeleteMultipleOptions{
+						Filters: map[string]interface{}{
+							parentIDField: id,
+						},
+						CascadeDeleteDepth: 1,
+					})
+					if errCtl != nil {
+						return &ErrController{
+							Op: "CascadeDelete",
+							Err: errors.New("Error from DeleteMultiple"),
+						}
+					}
+				}
+			}
+
+			log.Printf("%v", tag)
+		}
+	}
+
 	return nil
 }
 
