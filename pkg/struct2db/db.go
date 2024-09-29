@@ -2,15 +2,11 @@ package struct2db
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
-	"log"
 	"reflect"
-	"regexp"
 	"strconv"
-	"strings"
 
-	"github.com/mikolajgs/crud/pkg/struct2sql"
+	stsql "github.com/mikolajgs/struct-sql-postgres"
 )
 
 const RawConjuctionOR = 1
@@ -150,96 +146,9 @@ func (c Controller) Delete(obj interface{}, options DeleteOptions) *ErrControlle
 	c.ResetFields(obj)
 
 	// Loop through fields to delete cascade
-	val := reflect.ValueOf(obj).Elem()
-	typ := val.Type()
-	structName := typ.Name()
-
-	tagRegexp := regexp.MustCompile(`[a-zA-Z0-9_]+\:[a-zA-Z0-9_-]+`)
-
-	for i := 0; i < val.NumField(); i++ {
-		valueField := val.Field(i)
-		if valueField.Kind() == reflect.Slice && valueField.Type().Elem().Kind() == reflect.Ptr && valueField.Type().Elem().Elem().Kind() == reflect.Struct {
-			childStructName := valueField.Type().Elem().Elem().Name()
-
-			// Check if constructor is passed in the options - if not then then ignore the child
-			_, ok := options.Constructors[childStructName]
-			if !ok {
-				continue
-			}
-
-			// Get 2db tag, loop through its value on determine action based on it
-			tag := typ.Field(i).Tag.Get(c.tagName)
-			if tag != "" {
-				tags := strings.Split(tag, " ")
-				tagsMap := map[string]string{}
-				for _, t := range tags {
-					m := tagRegexp.MatchString(t)
-					if m {
-						mArr := strings.Split(t, ":")
-						tagsMap[mArr[0]] = mArr[1]
-					}
-				}
-
-				// Perform delete
-				if tagsMap["on_del"] == "del" {
-					parentIDField := structName + "ID"
-					if tagsMap["del_field"] != "" {
-						parentIDField = tagsMap["del_field"]
-					}
-					// Delete from children table where parent ID = id of deleted object
-					errCtl := c.DeleteMultiple(options.Constructors[childStructName], DeleteMultipleOptions{
-						Filters: map[string]interface{}{
-							parentIDField: id,
-						},
-						CascadeDeleteDepth: 1,
-					})
-					if errCtl != nil {
-						return &ErrController{
-							Op: "CascadeDelete",
-							Err: errors.New("Error from DeleteMultiple"),
-						}
-					}
-				}
-				
-				// Perform update
-				if tagsMap["on_del"] == "upd" {
-					updField := tagsMap["del_upd_field"]
-					updValue := tagsMap["del_upd_val"]
-					if updField == "" {
-						return &ErrController{
-							Op: "CascadeDelete",
-							Err: errors.New("Missing update field in tags"),
-						}
-					}
-
-					parentIDField := structName + "ID"
-					if tagsMap["del_field"] != "" {
-						parentIDField = tagsMap["del_field"]
-					}
-					// Update children table where parent ID = id of deleted object
-					errCtl := c.UpdateMultiple(options.Constructors[childStructName],
-						map[string]interface{}{
-							updField: updValue,
-						},
-						UpdateMultipleOptions{
-							Filters: map[string]interface{}{
-								parentIDField: id,
-							},
-							CascadeDeleteDepth: 1,
-							ConvertValuesFromString: true,
-						},
-					)
-					if errCtl != nil {
-						return &ErrController{
-							Op: "CascadeDelete",
-							Err: errors.New("Error from UpdateMultiple"),
-						}
-					}
-				}
-			}
-
-			log.Printf("%v", tag)
-		}
+	err3 := c.runOnDelete(obj, options.Constructors, c.tagName, id)
+	if err3 != nil {
+		return err3
 	}
 
 	return nil
@@ -450,7 +359,7 @@ func (c Controller) GetCount(newObjFunc func() interface{}, options GetCountOpti
 	return cnt, nil
 }
 
-// AddSQLGenerator adds Struct2sql object to sqlGenerators
+// AddSQLGenerator adds StructSQL object to sqlGenerators
 func (c *Controller) AddSQLGenerator(obj interface{}, parentObj interface{}, overwrite bool) *ErrController {
 	n := c.getSQLGeneratorName(obj)
 
@@ -462,25 +371,30 @@ func (c *Controller) AddSQLGenerator(obj interface{}, parentObj interface{}, ove
 		}
 	}
 
-	var sourceHelper *struct2sql.Struct2sql
+	var sourceHelper *stsql.StructSQL
 	var forceName string
 	if parentObj != nil {
 		h, err := c.getSQLGenerator(parentObj)
 		if err != nil {
 			return &ErrController{
 				Op:  "GetHelper",
-				Err: fmt.Errorf("Error getting Struct2sql: %w", h.Err()),
+				Err: fmt.Errorf("Error getting StructSQL: %w", h.Err()),
 			}
 		}
 		sourceHelper = h
 		forceName = c.getSQLGeneratorName(parentObj)
 	}
 
-	h := struct2sql.NewStruct2sql(obj, c.dbTblPrefix, forceName, sourceHelper)
+	h := stsql.NewStructSQL(obj, stsql.StructSQLOptions{
+		DatabaseTablePrefix: c.dbTblPrefix,
+		ForceName: forceName,
+		SourceStructSQL: sourceHelper,
+		TagName: c.tagName,
+	})
 	if h.Err() != nil {
 		return &ErrController{
 			Op:  "GetHelper",
-			Err: fmt.Errorf("Error getting Struct2sql: %w", h.Err()),
+			Err: fmt.Errorf("Error getting StructSQL: %w", h.Err()),
 		}
 	}
 	c.sqlGenerators[n] = h
