@@ -10,27 +10,27 @@ type TestStruct struct {
 	Flags int64 `json:"test_struct_flags"`
 
 	// Test email validation
-	PrimaryEmail   string `json:"email" 2sql:"req"`
-	EmailSecondary string `json:"email2" 2sql:"req email"`
+	PrimaryEmail   string `json:"email"`
+	EmailSecondary string `json:"email2"`
 
 	// Test length validation
-	FirstName string `json:"first_name" 2sql:"req lenmin:2 lenmax:30"`
-	LastName  string `json:"last_name" 2sql:"req lenmin:0 lenmax:255"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
 
 	// Test int value validation
-	Age   int `json:"age" 2sql:"valmin:1 valmax:120"`
-	Price int `json:"price" 2sql:"valmin:0 valmax:999"`
+	Age   int `json:"age"`
+	Price int `json:"price"`
 
 	// Test regular expression
-	PostCode  string `json:"post_code" 2sql:"req lenmin:6 regexp:^[0-9]{2}\\-[0-9]{3}$"`
-	PostCode2 string `json:"post_code2" 2sql:"lenmin:6" 2sql_regexp:"^[0-9]{2}\\-[0-9]{3}$"`
+	PostCode  string `json:"post_code"`
+	PostCode2 string `json:"post_code2"`
 
 	// Test HTTP endpoint tags
 	Password        string `json:"password"`
-	CreatedByUserID int64  `json:"created_by_user_id" 2sql_val:"55"`
+	CreatedByUserID int64  `json:"created_by_user_id"`
 
 	// Test unique tag
-	Key string `json:"key" 2sql:"req uniq lenmin:30 lenmax:255"`
+	Key string `json:"key" 2sql:"uniq"`
 }
 
 // Instance of the test object
