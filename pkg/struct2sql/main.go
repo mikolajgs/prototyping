@@ -32,16 +32,31 @@ type Struct2sql struct {
 	defaultFieldsTags map[string]map[string]string
 
 	err *ErrStruct2sql
+
+	tagName string
 }
 
 const RawConjuctionOR = 1
 const RawConjuctionAND = 2
 
+type Struct2sqlOptions struct {
+	DatabaseTablePrefix string
+	ForceName string
+	SourceStruct2sql *Struct2sql
+	TagName string
+}
+
 // NewStruct2sql takes object and database table name prefix as arguments and returns Struct2sql instance.
-func NewStruct2sql(obj interface{}, dbTblPrefix string, forceName string, sourceStruct2sql *Struct2sql) *Struct2sql {
+func NewStruct2sql(obj interface{}, options Struct2sqlOptions) *Struct2sql {
 	h := &Struct2sql{}
-	h.setDefaultTags(sourceStruct2sql)
-	h.reflectStruct(obj, dbTblPrefix, forceName)
+
+	h.tagName = "2sql"
+	if options.TagName != "" {
+		h.tagName = options.TagName
+	}
+
+	h.setDefaultTags(options.SourceStruct2sql)
+	h.reflectStruct(obj, options.DatabaseTablePrefix, options.ForceName)
 	return h
 }
 

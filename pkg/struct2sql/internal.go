@@ -147,14 +147,14 @@ func (h *Struct2sql) reflectStructForValidation(u interface{}) {
 			continue
 		}
 
-		crudTag := f.Tag.Get("crud")
-		crudValTag := f.Tag.Get("crud_val")
+		crudTag := f.Tag.Get(h.tagName)
+		crudValTag := f.Tag.Get(h.tagName+"_val")
 		if h.defaultFieldsTags != nil {
-			if crudTag == "" && h.defaultFieldsTags[f.Name]["crud"] != "" {
-				crudTag = h.defaultFieldsTags[f.Name]["crud"]
+			if crudTag == "" && h.defaultFieldsTags[f.Name][h.tagName] != "" {
+				crudTag = h.defaultFieldsTags[f.Name][h.tagName]
 			}
-			if crudValTag == "" && h.defaultFieldsTags[f.Name]["crud_val"] != "" {
-				crudValTag = h.defaultFieldsTags[f.Name]["crud_val"]
+			if crudValTag == "" && h.defaultFieldsTags[f.Name][h.tagName+"_val"] != "" {
+				crudValTag = h.defaultFieldsTags[f.Name][h.tagName+"_val"]
 			}
 		}
 
@@ -168,8 +168,8 @@ func (h *Struct2sql) reflectStructForValidation(u interface{}) {
 		}
 
 		h.fieldsTags[f.Name] = make(map[string]string)
-		h.fieldsTags[f.Name]["crud"] = f.Tag.Get("crud")
-		h.fieldsTags[f.Name]["crud_val"] = f.Tag.Get("crud_val")
+		h.fieldsTags[f.Name][h.tagName] = f.Tag.Get(h.tagName)
+		h.fieldsTags[f.Name][h.tagName+"_val"] = f.Tag.Get(h.tagName+"_val")
 	}
 }
 

@@ -10,34 +10,34 @@ type TestStruct struct {
 	Flags int64 `json:"test_struct_flags"`
 
 	// Test email validation
-	PrimaryEmail   string `json:"email" crud:"req"`
-	EmailSecondary string `json:"email2" crud:"req email"`
+	PrimaryEmail   string `json:"email" 2sql:"req"`
+	EmailSecondary string `json:"email2" 2sql:"req email"`
 
 	// Test length validation
-	FirstName string `json:"first_name" crud:"req lenmin:2 lenmax:30"`
-	LastName  string `json:"last_name" crud:"req lenmin:0 lenmax:255"`
+	FirstName string `json:"first_name" 2sql:"req lenmin:2 lenmax:30"`
+	LastName  string `json:"last_name" 2sql:"req lenmin:0 lenmax:255"`
 
 	// Test int value validation
-	Age   int `json:"age" crud:"valmin:1 valmax:120"`
-	Price int `json:"price" crud:"valmin:0 valmax:999"`
+	Age   int `json:"age" 2sql:"valmin:1 valmax:120"`
+	Price int `json:"price" 2sql:"valmin:0 valmax:999"`
 
 	// Test regular expression
-	PostCode  string `json:"post_code" crud:"req lenmin:6 regexp:^[0-9]{2}\\-[0-9]{3}$"`
-	PostCode2 string `json:"post_code2" crud:"lenmin:6" crud_regexp:"^[0-9]{2}\\-[0-9]{3}$"`
+	PostCode  string `json:"post_code" 2sql:"req lenmin:6 regexp:^[0-9]{2}\\-[0-9]{3}$"`
+	PostCode2 string `json:"post_code2" 2sql:"lenmin:6" 2sql_regexp:"^[0-9]{2}\\-[0-9]{3}$"`
 
 	// Test HTTP endpoint tags
 	Password        string `json:"password"`
-	CreatedByUserID int64  `json:"created_by_user_id" crud_val:"55"`
+	CreatedByUserID int64  `json:"created_by_user_id" 2sql_val:"55"`
 
 	// Test unique tag
-	Key string `json:"key" crud:"req uniq lenmin:30 lenmax:255"`
+	Key string `json:"key" 2sql:"req uniq lenmin:30 lenmax:255"`
 }
 
 // Instance of the test object
 var testStructObj = &TestStruct{}
 
 func TestSQLQueries(t *testing.T) {
-	h := NewStruct2sql(testStructObj, "", "", nil)
+	h := NewStruct2sql(testStructObj, Struct2sqlOptions{})
 
 	got := h.GetQueryDropTable()
 	want := "DROP TABLE IF EXISTS test_structs"
@@ -53,7 +53,7 @@ func TestSQLQueries(t *testing.T) {
 }
 
 func TestSQLInsertQueries(t *testing.T) {
-	h := NewStruct2sql(testStructObj, "", "", nil)
+	h := NewStruct2sql(testStructObj, Struct2sqlOptions{})
 
 	got := h.GetQueryInsert()
 	want := "INSERT INTO test_structs(test_struct_flags,primary_email,email_secondary,first_name,last_name,age,price,post_code,post_code2,password,created_by_user_id,key) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING test_struct_id"
@@ -63,7 +63,7 @@ func TestSQLInsertQueries(t *testing.T) {
 }
 
 func TestSQLUpdateByIdQueries(t *testing.T) {
-	h := NewStruct2sql(testStructObj, "", "", nil)
+	h := NewStruct2sql(testStructObj, Struct2sqlOptions{})
 
 	got := h.GetQueryUpdateById()
 	want := "UPDATE test_structs SET test_struct_flags=$1,primary_email=$2,email_secondary=$3,first_name=$4,last_name=$5,age=$6,price=$7,post_code=$8,post_code2=$9,password=$10,created_by_user_id=$11,key=$12 WHERE test_struct_id = $13"
@@ -73,7 +73,7 @@ func TestSQLUpdateByIdQueries(t *testing.T) {
 }
 
 func TestSQLInsertOnConflictUpdateQueries(t *testing.T) {
-	h := NewStruct2sql(testStructObj, "", "", nil)
+	h := NewStruct2sql(testStructObj, Struct2sqlOptions{})
 
 	got := h.GetQueryInsertOnConflictUpdate()
 	want := "INSERT INTO test_structs(test_struct_id,test_struct_flags,primary_email,email_secondary,first_name,last_name,age,price,post_code,post_code2,password,created_by_user_id,key)"
@@ -86,7 +86,7 @@ func TestSQLInsertOnConflictUpdateQueries(t *testing.T) {
 }
 
 func TestSQLDeleteQueries(t *testing.T) {
-	h := NewStruct2sql(testStructObj, "", "", nil)
+	h := NewStruct2sql(testStructObj, Struct2sqlOptions{})
 
 	got := h.GetQueryDeleteById()
 	want := "DELETE FROM test_structs WHERE test_struct_id = $1"
@@ -96,7 +96,7 @@ func TestSQLDeleteQueries(t *testing.T) {
 }
 
 func TestSQLSelectQueries(t *testing.T) {
-	h := NewStruct2sql(testStructObj, "", "", nil)
+	h := NewStruct2sql(testStructObj, Struct2sqlOptions{})
 
 	got := h.GetQuerySelectById()
 	want := "SELECT test_struct_id,test_struct_flags,primary_email,email_secondary,first_name,last_name,age,price,post_code,post_code2,password,created_by_user_id,key FROM test_structs WHERE test_struct_id = $1"
@@ -157,7 +157,7 @@ func TestSQLSelectQueries(t *testing.T) {
 }
 
 func TestSQLSelectCountQueries(t *testing.T) {
-	h := NewStruct2sql(testStructObj, "", "", nil)
+	h := NewStruct2sql(testStructObj, Struct2sqlOptions{})
 
 	got := h.GetQuerySelectCount(map[string]interface{}{"Price": 4444, "PostCode2": "11-111"}, map[string]bool{"Price": true})
 	want := "SELECT COUNT(*) AS cnt FROM test_structs WHERE price=$1"
@@ -167,7 +167,7 @@ func TestSQLSelectCountQueries(t *testing.T) {
 }
 
 func TestSQLDeleteWithFiltersQueries(t *testing.T) {
-	h := NewStruct2sql(testStructObj, "", "", nil)
+	h := NewStruct2sql(testStructObj, Struct2sqlOptions{})
 
 	got := h.GetQueryDelete(map[string]interface{}{"Price": 4444, "PostCode2": "11-111"}, map[string]bool{"Price": true})
 	want := "DELETE FROM test_structs WHERE price=$1"
@@ -206,7 +206,7 @@ func TestSQLDeleteWithFiltersQueries(t *testing.T) {
 }
 
 func TestSQLUpdateQueries(t *testing.T) {
-	h := NewStruct2sql(testStructObj, "", "", nil)
+	h := NewStruct2sql(testStructObj, Struct2sqlOptions{})
 
 	got := h.GetQueryUpdate(
 		map[string]interface{}{"Price": 1234, "PostCode2": "12-345"},
@@ -237,10 +237,10 @@ func TestPluralName(t *testing.T) {
 	type ProductCategory struct{}
 	type UserCart struct{}
 
-	h1 := NewStruct2sql(&Category{}, "", "", nil)
-	h2 := NewStruct2sql(&Cross{}, "", "", nil)
-	h3 := NewStruct2sql(&ProductCategory{}, "", "", nil)
-	h4 := NewStruct2sql(&UserCart{}, "", "", nil)
+	h1 := NewStruct2sql(&Category{}, Struct2sqlOptions{})
+	h2 := NewStruct2sql(&Cross{}, Struct2sqlOptions{})
+	h3 := NewStruct2sql(&ProductCategory{}, Struct2sqlOptions{})
+	h4 := NewStruct2sql(&UserCart{}, Struct2sqlOptions{})
 
 	got := h1.GetQueryDropTable()
 	want := "DROP TABLE IF EXISTS categories"
