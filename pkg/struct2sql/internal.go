@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"unicode"
 )
@@ -15,24 +14,6 @@ func (h *Struct2sql) setDefaultTags(src *Struct2sql) {
 		h.defaultFieldsTags = make(map[string]map[string]string)
 		h.defaultFieldsTags = src.getFieldsTags()
 	}
-}
-
-// TODO Is it used?
-func (h *Struct2sql) getColsCommaSeparated(fields []string) (string, int, string, string) {
-	cols := ""
-	colCnt := 0
-	vals := ""
-	colVals := ""
-	for _, k := range fields {
-		if h.dbFieldCols[k] == "" {
-			continue
-		}
-		cols = h.addWithComma(cols, h.dbFieldCols[k])
-		colCnt++
-		vals = h.addWithComma(vals, "$"+strconv.Itoa(colCnt))
-		colVals = h.addWithComma(colVals, h.dbFieldCols[k]+"=$"+strconv.Itoa(colCnt))
-	}
-	return cols, colCnt, vals, colVals
 }
 
 func (h *Struct2sql) getFieldsTags() map[string]map[string]string {
@@ -49,6 +30,7 @@ func (h *Struct2sql) reflectStructForDBQueries(u interface{}, dbTablePrefix stri
 	i := reflect.Indirect(v)
 	s := i.Type()
 
+	// Get table name
 	usName := h.getUnderscoredName(s.Name())
 	if forceName != "" {
 		usName = h.getUnderscoredName(forceName)
@@ -73,34 +55,29 @@ func (h *Struct2sql) reflectStructForDBQueries(u interface{}, dbTablePrefix stri
 	valCnt := 0
 	valWithoutIDCnt := 0
 	for j := 0; j < s.NumField(); j++ {
-		field := s.Field(j)
-		if field.Type.Kind() != reflect.Int64 && field.Type.Kind() != reflect.String && field.Type.Kind() != reflect.Int {
+		f := s.Field(j)
+		k := f.Type.Kind()
+
+		// Only basic golang types are included as columns for the database table.
+		// Check the function below for the details.
+		if !IsFieldKindSupported(k) {
 			continue
 		}
 
-		if field.Type.Kind() == reflect.Int64 {
-			h.fieldsFlags[field.Name] += TypeInt64
-		}
-		if field.Type.Kind() == reflect.Int {
-			h.fieldsFlags[field.Name] += TypeInt
-		}
-		if field.Type.Kind() == reflect.String {
-			h.fieldsFlags[field.Name] += TypeString
-		}
-
-		dbCol := h.getDBCol(field.Name)
-		h.dbFieldCols[field.Name] = dbCol
-		h.dbCols[dbCol] = field.Name
+		dbCol := h.getDBCol(f.Name)
+		h.dbFieldCols[f.Name] = dbCol
+		h.dbCols[dbCol] = f.Name
 		uniq := false
-		if h.fieldsUniq[field.Name] {
+		if h.fieldsUniq[f.Name] {
 			uniq = true
 		}
-		dbColParams := h.getDBColParams(field.Name, field.Type.String(), uniq)
+		dbColParams := h.getDBColParams(f.Name, f.Type.String(), uniq)
 
 		colsWithTypes = h.addWithComma(colsWithTypes, dbCol+" "+dbColParams)
 		cols = h.addWithComma(cols, dbCol)
 
-		if field.Name != "ID" {
+		// Assuming that primary field is named ID
+		if f.Name != "ID" {
 			colsWithoutID = h.addWithComma(colsWithoutID, dbCol)
 			colVals = h.addWithComma(colVals, dbCol+"=?")
 			valWithoutIDCnt++
@@ -108,7 +85,7 @@ func (h *Struct2sql) reflectStructForDBQueries(u interface{}, dbTablePrefix stri
 
 		valCnt++
 
-		h.fields = append(h.fields, field.Name)
+		h.fields = append(h.fields, f.Name)
 	}
 
 	colValsAgain = colVals
@@ -137,6 +114,7 @@ func (h *Struct2sql) reflectStructForDBQueries(u interface{}, dbTablePrefix stri
 		}
 	}
 
+	// Full SQL queries or their prefixes. Query parts such as columns and values in UPDATE or conditions after WHERE etc. must be generated on the fly and cannot be cached.
 	h.queryDropTable = fmt.Sprintf("DROP TABLE IF EXISTS %s", h.dbTbl)
 	h.queryCreateTable = fmt.Sprintf("CREATE TABLE %s (%s)", h.dbTbl, colsWithTypes)
 	h.queryDeleteById = fmt.Sprintf("DELETE FROM %s WHERE %s = $1", h.dbTbl, idCol)
@@ -155,55 +133,54 @@ func (h *Struct2sql) reflectStructForValidation(u interface{}) {
 	i := reflect.Indirect(v)
 	s := i.Type()
 
-	h.fieldsFlags = make(map[string]int)
 	h.fieldsDefaultValue = make(map[string]string)
 	h.fieldsUniq = make(map[string]bool)
 	h.fieldsTags = make(map[string]map[string]string)
 
 	for j := 0; j < s.NumField(); j++ {
-		field := s.Field(j)
-		if field.Type.Kind() != reflect.Int64 && field.Type.Kind() != reflect.String && field.Type.Kind() != reflect.Int {
+		f := s.Field(j)
+		k := f.Type.Kind()
+
+		// Only basic golang types are included as columns for the database table.
+		// Check the function below for the details.
+		if !IsFieldKindSupported(k) {
 			continue
 		}
 
-		crudTag := field.Tag.Get("crud")
-		crudValTag := field.Tag.Get("crud_val")
+		crudTag := f.Tag.Get("crud")
+		crudValTag := f.Tag.Get("crud_val")
 		if h.defaultFieldsTags != nil {
-			if crudTag == "" && h.defaultFieldsTags[field.Name]["crud"] != "" {
-				crudTag = h.defaultFieldsTags[field.Name]["crud"]
+			if crudTag == "" && h.defaultFieldsTags[f.Name]["crud"] != "" {
+				crudTag = h.defaultFieldsTags[f.Name]["crud"]
 			}
-			if crudValTag == "" && h.defaultFieldsTags[field.Name]["crud_val"] != "" {
-				crudValTag = h.defaultFieldsTags[field.Name]["crud_val"]
+			if crudValTag == "" && h.defaultFieldsTags[f.Name]["crud_val"] != "" {
+				crudValTag = h.defaultFieldsTags[f.Name]["crud_val"]
 			}
 		}
 
-		h.setFieldFromTag(crudTag, j, field.Name)
+		h.setFieldFromTag(crudTag, f.Name)
 		if h.err != nil {
 			return
 		}
 
 		if crudValTag != "" {
-			h.fieldsDefaultValue[field.Name] = crudValTag
+			h.fieldsDefaultValue[f.Name] = crudValTag
 		}
 
-		h.fieldsTags[field.Name] = make(map[string]string)
-		h.fieldsTags[field.Name]["crud"] = field.Tag.Get("crud")
-		h.fieldsTags[field.Name]["crud_val"] = field.Tag.Get("crud_val")
+		h.fieldsTags[f.Name] = make(map[string]string)
+		h.fieldsTags[f.Name]["crud"] = f.Tag.Get("crud")
+		h.fieldsTags[f.Name]["crud_val"] = f.Tag.Get("crud_val")
 	}
 }
 
-func (h *Struct2sql) setFieldFromTag(tag string, fieldIdx int, fieldName string) {
-	var ErrStruct2sql *ErrStruct2sql
+func (h *Struct2sql) setFieldFromTag(tag string, fieldName string) {
 	opts := strings.SplitN(tag, " ", -1)
 	for _, opt := range opts {
-		if ErrStruct2sql != nil {
-			break
-		}
-		h.setFieldFromTagOptWithoutVal(opt, fieldIdx, fieldName)
+		h.setFieldFromTagOptWithoutVal(opt, fieldName)
 	}
 }
 
-func (h *Struct2sql) setFieldFromTagOptWithoutVal(opt string, fieldIdx int, fieldName string) {
+func (h *Struct2sql) setFieldFromTagOptWithoutVal(opt string, fieldName string) {
 	if opt == "uniq" {
 		h.fieldsUniq[fieldName] = true
 	}

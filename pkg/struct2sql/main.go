@@ -27,8 +27,6 @@ type Struct2sql struct {
 	fieldsUniq         map[string]bool
 	fieldsTags         map[string]map[string]string
 
-	fieldsFlags map[string]int
-
 	flags int
 
 	defaultFieldsTags map[string]map[string]string
@@ -36,14 +34,10 @@ type Struct2sql struct {
 	err *ErrStruct2sql
 }
 
-const TypeInt64 = 64
-const TypeInt = 128
-const TypeString = 256
-
 const RawConjuctionOR = 1
 const RawConjuctionAND = 2
 
-// NewStruct2sql takes object and database table name prefix as arguments and returns Struct2sql instance
+// NewStruct2sql takes object and database table name prefix as arguments and returns Struct2sql instance.
 func NewStruct2sql(obj interface{}, dbTblPrefix string, forceName string, sourceStruct2sql *Struct2sql) *Struct2sql {
 	h := &Struct2sql{}
 	h.setDefaultTags(sourceStruct2sql)
@@ -56,46 +50,54 @@ func (h *Struct2sql) Err() *ErrStruct2sql {
 	return h.err
 }
 
-// GetFlags returns flags
+// GetFlags returns Struct2sql flags.
 func (h *Struct2sql) GetFlags() int {
 	return h.flags
 }
 
-// GetQueryDropTable returns drop table query
+// GetQueryDropTable returns a DROP TABLE query.
 func (h Struct2sql) GetQueryDropTable() string {
 	return h.queryDropTable
 }
 
-// GetQueryCreateTable return create table query
+// GetQueryCreateTable return a CREATE TABLE query.
+// Columns in the query are ordered the same way as they are defined in the struct, eg. SELECT field1_column, field2_column, ... etc.
 func (h Struct2sql) GetQueryCreateTable() string {
 	return h.queryCreateTable
 }
 
-// GetQueryInsert returns insert query
+// GetQueryInsert returns an INSERT query.
+// Columns in the INSERT query are ordered the same way as they are defined in the struct, eg. SELECT field1_column, field2_column, ... etc.
 func (h *Struct2sql) GetQueryInsert() string {
 	return h.queryInsert
 }
 
-// GetQueryUpdateById returns update query
+// GetQueryUpdateById returns an UPDATE query with WHERE condition on ID field.
+// Columns in the UPDATE query are ordered the same way as they are defined in the struct, eg. SELECT field1_column, field2_column, ... etc.
 func (h *Struct2sql) GetQueryUpdateById() string {
 	return h.queryUpdateById
 }
 
-// GetQueryInsertOnConflictUpdate returns an "upsert" query
+// GetQueryInsertOnConflictUpdate returns an "upsert" query, which will INSERT data when it does not exist or UPDATE it otherwise.
+// Columns in the query are ordered the same way as they are defined in the struct, eg. SELECT field1_column, field2_column, ... etc.
 func (h *Struct2sql) GetQueryInsertOnConflictUpdate() string {
 	return h.queryInsertOnConflictUpdate
 }
 
-// GetQuerySelectById returns select query
+// GetQuerySelectById returns a SELECT query with WHERE condition on ID field.
+// Columns in the SELECT query are ordered the same way as they are defined in the struct, eg. SELECT field1_column, field2_column, ... etc.
 func (h *Struct2sql) GetQuerySelectById() string {
 	return h.querySelectById
 }
 
-// GetQueryDeleteById returns delete query
+// GetQueryDeleteById returns a DELETE query with WHERE condition on ID field.
 func (h *Struct2sql) GetQueryDeleteById() string {
 	return h.queryDeleteById
 }
 
+// GetQuerySelect returns a SELECT query with WHERE condition built from 'filters' (field-value pairs).
+// Struct fields in 'filters' argument are sorted alphabetically. Hence, when used with database connection, their values (or pointers to it) must be sorted as well.
+// Columns in the SELECT query are ordered the same way as they are defined in the struct, eg. SELECT field1_column, field2_column, ... etc.
 func (h *Struct2sql) GetQuerySelect(order []string, limit int, offset int, filters map[string]interface{}, orderFieldsToInclude map[string]bool, filterFieldsToInclude map[string]bool) string {
 	s := h.querySelectPrefix
 
@@ -115,6 +117,8 @@ func (h *Struct2sql) GetQuerySelect(order []string, limit int, offset int, filte
 	return s
 }
 
+// GetQuerySelectCount returns a SELECT COUNT(*) query to count rows with WHERE condition built from 'filters' (field-value pairs).
+// Struct fields in 'filters' argument are sorted alphabetically. Hence, when used with database connection, their values (or pointers to it) must be sorted as well.
 func (h *Struct2sql) GetQuerySelectCount(filters map[string]interface{}, filterFieldsToInclude map[string]bool) string {
 	s := h.querySelectCountPrefix
 	qWhere := h.getQueryFilters(filters, filterFieldsToInclude, 1)
@@ -124,6 +128,8 @@ func (h *Struct2sql) GetQuerySelectCount(filters map[string]interface{}, filterF
 	return s
 }
 
+// GetQueryDelete return a DELETE query with WHERE condition built from 'filters' (field-value pairs).
+// Struct fields in 'filters' argument are sorted alphabetically. Hence, when used with database connection, their values (or pointers to it) must be sorted as well.
 func (h *Struct2sql) GetQueryDelete(filters map[string]interface{}, filterFieldsToInclude map[string]bool) string {
 	s := h.queryDeletePrefix
 	qWhere := h.getQueryFilters(filters, filterFieldsToInclude, 1)
@@ -133,6 +139,8 @@ func (h *Struct2sql) GetQueryDelete(filters map[string]interface{}, filterFields
 	return s
 }
 
+// GetQueryUpdate returns an UPDATE query where specified struct fields (columns) are updated and rows match specific WHERE condition built from 'filters' (field-value pairs).
+// Struct fields in 'values' and 'filters' arguments, are sorted alphabetically. Hence, when used with database connection, their values (or pointers to it) must be sorted as well.
 func (h *Struct2sql) GetQueryUpdate(values map[string]interface{}, filters map[string]interface{}, valueFieldsToInclude map[string]bool, filterFieldsToInclude map[string]bool) string {
 	s := h.queryUpdatePrefix
 
@@ -147,6 +155,7 @@ func (h *Struct2sql) GetQueryUpdate(values map[string]interface{}, filters map[s
 	return s
 }
 
+// GetFieldNameFromDBCol returns field name from a database column.
 func (h *Struct2sql) GetFieldNameFromDBCol(n string) string {
 	return h.dbCols[n]
 }

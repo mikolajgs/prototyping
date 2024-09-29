@@ -2,6 +2,7 @@ package struct2sql
 
 import "reflect"
 
+// GetStructName returns struct name of a struct instance
 func GetStructName(u interface{}) string {
 	v := reflect.ValueOf(u)
 	i := reflect.Indirect(v)
@@ -9,6 +10,7 @@ func GetStructName(u interface{}) string {
 	return s.Name()
 }
 
+// GetStructFieldNames returns list of names of fields of a struct instance, which are supported in generating SQL query.
 func GetStructFieldNames(u interface{}) []string {
 	v := reflect.ValueOf(u)
 	i := reflect.Indirect(v)
@@ -17,17 +19,21 @@ func GetStructFieldNames(u interface{}) []string {
 	names := []string{}
 
 	for j := 0; j < s.NumField(); j++ {
-		field := s.Field(j)
-		if field.Type.Kind() != reflect.Int64 && field.Type.Kind() != reflect.String && field.Type.Kind() != reflect.Int {
+		f := s.Field(j)
+		k := f.Type.Kind()
+
+		if IsFieldKindSupported(k) {
 			continue
 		}
-		names = append(names, field.Name)
+
+		names = append(names, f.Name)
 	}
 
 	return names
 }
 
-func GetStructNamesFromContructors(objFuncs... func() interface{}) []string {
+// GetStructNamesFromConstructors returns a list of struct names from a list of constructors (functions that return struct instances)
+func GetStructNamesFromConstructors(objFuncs... func() interface{}) []string {
 	names := []string{}
 	for _, objFunc := range objFuncs {
 		o := objFunc()
@@ -37,4 +43,20 @@ func GetStructNamesFromContructors(objFuncs... func() interface{}) []string {
 		names = append(names, s.Name())
 	}
 	return names
+}
+
+// IsFieldKindSupported checks if a field kind is supported by this module
+func IsFieldKindSupported(k reflect.Kind) bool {
+	switch k {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return true
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return true
+	case reflect.String, reflect.Bool:
+		return true
+	case reflect.Float32, reflect.Float64:
+		return true
+	default:
+		return false
+	}
 }
