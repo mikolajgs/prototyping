@@ -198,6 +198,7 @@ func (h *Struct2sql) getDBCol(n string) string {
 	return dbCol
 }
 
+// Mapping database column type to struct field type
 func (h *Struct2sql) getDBColParams(n string, t string, uniq bool) string {
 	dbColParams := ""
 	if n == "ID" {
@@ -206,12 +207,32 @@ func (h *Struct2sql) getDBColParams(n string, t string, uniq bool) string {
 		dbColParams = "BIGINT DEFAULT 0"
 	} else {
 		switch t {
+		// TODO: Handle different string types and allow choosing length!
 		case "string":
 			dbColParams = "VARCHAR(255) DEFAULT ''"
+		case "bool":
+			dbColParams = "BOOLEAN DEFAULT false"
 		case "int64":
 			dbColParams = "BIGINT DEFAULT 0"
+		case "int32":
+			dbColParams = "INTEGER DEFAULT 0"
+		case "int16":
+			dbColParams = "SMALLINT DEFAULT 0"
+		case "int8":
+			dbColParams = "SMALLINT DEFAULT 0"
 		case "int":
 			dbColParams = "BIGINT DEFAULT 0"
+		case "uint64":
+			dbColParams = "BIGINT DEFAULT 0"
+		case "uint32":
+			dbColParams = "INTEGER DEFAULT 0"
+		case "uint16":
+			dbColParams = "SMALLINT DEFAULT 0"
+		case "uint8":
+			dbColParams = "SMALLINT DEFAULT 0"
+		case "uint":
+			dbColParams = "BIGINT DEFAULT 0"
+		// TODO: Consider something different
 		default:
 			dbColParams = "VARCHAR(255) DEFAULT ''"
 		}
