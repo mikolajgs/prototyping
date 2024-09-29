@@ -26,6 +26,7 @@ type Struct2sql struct {
 	fieldsDefaultValue map[string]string
 	fieldsUniq         map[string]bool
 	fieldsTags         map[string]map[string]string
+	fieldsOverwriteType map[string]string
 
 	flags int
 

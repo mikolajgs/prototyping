@@ -136,6 +136,7 @@ func (h *Struct2sql) reflectStructForValidation(u interface{}) {
 	h.fieldsDefaultValue = make(map[string]string)
 	h.fieldsUniq = make(map[string]bool)
 	h.fieldsTags = make(map[string]map[string]string)
+	h.fieldsOverwriteType = make(map[string]string)
 
 	for j := 0; j < s.NumField(); j++ {
 		f := s.Field(j)
@@ -183,6 +184,20 @@ func (h *Struct2sql) setFieldFromTag(tag string, fieldName string) {
 func (h *Struct2sql) setFieldFromTagOptWithoutVal(opt string, fieldName string) {
 	if opt == "uniq" {
 		h.fieldsUniq[fieldName] = true
+		return
+	}
+	if strings.HasPrefix(opt, "db_type:") {
+		dbTypeArr := strings.Split(opt, ":")
+		typeUpperCase := strings.ToUpper(dbTypeArr[1])
+		if typeUpperCase == "TEXT" || typeUpperCase == "BPCHAR" {
+			h.fieldsOverwriteType[fieldName] = typeUpperCase
+			return
+		}
+		m, _ := regexp.MatchString(`^(VARCHAR|CHARACTER VARYING|BPCHAR|CHAR|CHARACTER)\([0-9]+\)$`, typeUpperCase)
+		if m {
+			h.fieldsOverwriteType[fieldName] = typeUpperCase
+			return
+		}
 	}
 }
 
@@ -205,9 +220,11 @@ func (h *Struct2sql) getDBColParams(n string, t string, uniq bool) string {
 		dbColParams = "SERIAL PRIMARY KEY"
 	} else if n == "Flags" {
 		dbColParams = "BIGINT DEFAULT 0"
+		// String types can be overwritten by a tag
+	} else if h.fieldsOverwriteType[n] != "" {
+		dbColParams = h.fieldsOverwriteType[n]+" DEFAULT ''"
 	} else {
 		switch t {
-		// TODO: Handle different string types and allow choosing length!
 		case "string":
 			dbColParams = "VARCHAR(255) DEFAULT ''"
 		case "bool":

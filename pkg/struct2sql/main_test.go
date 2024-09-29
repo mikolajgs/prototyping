@@ -30,7 +30,7 @@ type TestStruct struct {
 	CreatedByUserID int64  `json:"created_by_user_id"`
 
 	// Test unique tag
-	Key string `json:"key" 2sql:"uniq"`
+	Key string `json:"key" 2sql:"uniq db_type:varchar(2000)"`
 }
 
 // Instance of the test object
@@ -46,7 +46,7 @@ func TestSQLQueries(t *testing.T) {
 	}
 
 	got = h.GetQueryCreateTable()
-	want = "CREATE TABLE test_structs (test_struct_id SERIAL PRIMARY KEY,test_struct_flags BIGINT DEFAULT 0,primary_email VARCHAR(255) DEFAULT '',email_secondary VARCHAR(255) DEFAULT '',first_name VARCHAR(255) DEFAULT '',last_name VARCHAR(255) DEFAULT '',age BIGINT DEFAULT 0,price BIGINT DEFAULT 0,post_code VARCHAR(255) DEFAULT '',post_code2 VARCHAR(255) DEFAULT '',password VARCHAR(255) DEFAULT '',created_by_user_id BIGINT DEFAULT 0,key VARCHAR(255) DEFAULT '' UNIQUE)"
+	want = "CREATE TABLE test_structs (test_struct_id SERIAL PRIMARY KEY,test_struct_flags BIGINT DEFAULT 0,primary_email VARCHAR(255) DEFAULT '',email_secondary VARCHAR(255) DEFAULT '',first_name VARCHAR(255) DEFAULT '',last_name VARCHAR(255) DEFAULT '',age BIGINT DEFAULT 0,price BIGINT DEFAULT 0,post_code VARCHAR(255) DEFAULT '',post_code2 VARCHAR(255) DEFAULT '',password VARCHAR(255) DEFAULT '',created_by_user_id BIGINT DEFAULT 0,key VARCHAR(2000) DEFAULT '' UNIQUE)"
 	if got != want {
 		t.Fatalf("Want %v, got %v", want, got)
 	}
