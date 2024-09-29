@@ -37,6 +37,12 @@ type DeleteMultipleOptions struct {
 	CascadeDeleteDepth int
 }
 
+type UpdateMultipleOptions struct {
+	Filters map[string]interface{}
+	CascadeDeleteDepth int
+	ConvertValuesFromString bool
+}
+
 type GetCountOptions struct {
 	Filters map[string]interface{}
 }
@@ -173,6 +179,7 @@ func (c Controller) Delete(obj interface{}, options DeleteOptions) *ErrControlle
 						tagsMap[mArr[0]] = mArr[1]
 					}
 				}
+
 				// Perform delete
 				if tagsMap["on_del"] == "del" {
 					parentIDField := structName + "ID"
@@ -190,6 +197,42 @@ func (c Controller) Delete(obj interface{}, options DeleteOptions) *ErrControlle
 						return &ErrController{
 							Op: "CascadeDelete",
 							Err: errors.New("Error from DeleteMultiple"),
+						}
+					}
+				}
+				
+				// Perform update
+				if tagsMap["on_del"] == "upd" {
+					updField := tagsMap["del_upd_field"]
+					updValue := tagsMap["del_upd_val"]
+					if updField == "" {
+						return &ErrController{
+							Op: "CascadeDelete",
+							Err: errors.New("Missing update field in tags"),
+						}
+					}
+
+					parentIDField := structName + "ID"
+					if tagsMap["del_field"] != "" {
+						parentIDField = tagsMap["del_field"]
+					}
+					// Update children table where parent ID = id of deleted object
+					errCtl := c.UpdateMultiple(options.Constructors[childStructName],
+						map[string]interface{}{
+							updField: updValue,
+						},
+						UpdateMultipleOptions{
+							Filters: map[string]interface{}{
+								parentIDField: id,
+							},
+							CascadeDeleteDepth: 1,
+							ConvertValuesFromString: true,
+						},
+					)
+					if errCtl != nil {
+						return &ErrController{
+							Op: "CascadeDelete",
+							Err: errors.New("Error from UpdateMultiple"),
 						}
 					}
 				}
@@ -230,6 +273,72 @@ func (c Controller) DeleteMultiple(newObjFunc func() interface{}, options Delete
 	}
 
 	_, err2 := c.dbConn.Exec(h.GetQueryDelete(options.Filters, nil), c.GetFiltersInterfaces(options.Filters)...)
+	if err2 != nil {
+		return &ErrController{
+			Op:  "DBQuery",
+			Err: fmt.Errorf("Error executing DB query: %w", err2),
+		}
+	}
+
+	return nil
+}
+
+// UpdateMultiple updates specific fields in objects from the database based on specified filters
+func (c Controller) UpdateMultiple(newObjFunc func() interface{}, values map[string]interface{}, options UpdateMultipleOptions) (*ErrController) {
+	obj := newObjFunc()
+	h, err := c.getSQLGenerator(obj)
+	if err != nil {
+		return err
+	}
+
+	if len(values) < 1 {
+		return &ErrController{
+			Op: "MissingValues",
+			Err: fmt.Errorf("Missing values for update"),
+		}
+	}
+
+	if options.ConvertValuesFromString {
+		values = c.StringToFieldValues(obj, values)
+	}
+
+	b, invalidFields, err1 := c.Validate(obj, values)
+	if err1 != nil {
+		return &ErrController{
+			Op:  "ValidateValues",
+			Err: fmt.Errorf("Error when trying to validate values: %w", err1),
+		}
+	}
+
+	if !b {
+		return &ErrController{
+			Op: "ValidateValues",
+			Err: &ErrValidation{
+				Fields: invalidFields,
+			},
+		}
+	}
+
+	if len(options.Filters) > 0 {
+		b, invalidFields, err1 := c.Validate(obj, options.Filters)
+		if err1 != nil {
+			return &ErrController{
+				Op:  "ValidateFilters",
+				Err: fmt.Errorf("Error when trying to validate filters: %w", err1),
+			}
+		}
+
+		if !b {
+			return &ErrController{
+				Op: "ValidateFilters",
+				Err: &ErrValidation{
+					Fields: invalidFields,
+				},
+			}
+		}
+	}
+
+	_, err2 := c.dbConn.Exec(h.GetQueryUpdate(values, options.Filters, nil, nil), append(c.GetFiltersInterfaces(values), c.GetFiltersInterfaces(options.Filters)...)...)
 	if err2 != nil {
 		return &ErrController{
 			Op:  "DBQuery",
@@ -386,4 +495,44 @@ func (c *Controller) GetFieldNameFromDBCol(obj interface{}, dbCol string) (strin
 	}
 	fieldName := h.GetFieldNameFromDBCol(dbCol)
 	return fieldName, nil
+}
+
+// StringToFieldValues converts map of field values which are in string to values of the same kind of fields are
+func (c *Controller) StringToFieldValues(obj interface{}, values map[string]interface{}) map[string]interface{} {
+	o := map[string]interface{}{}
+
+	v := reflect.ValueOf(obj)
+	i := reflect.Indirect(v)
+	s := i.Type()
+	for k, v := range values {
+		field, ok := s.FieldByName(k)
+		if !ok {
+			continue
+		}
+
+		if field.Type.Kind() == reflect.Int64 {
+			i, err := strconv.ParseInt(v.(string), 10, 64)
+			if err == nil {
+				o[k] = i
+			}
+		}
+		if field.Type.Kind() == reflect.Int {
+			i, err := strconv.Atoi(v.(string))
+			if err == nil {
+				o[k] = i
+			}
+		}
+		if field.Type.Kind() == reflect.String {
+			o[k] = v
+		}
+		if field.Type.Kind() == reflect.Bool {
+			if v.(string) == "true" {
+				o[k] = true
+			} else {
+				o[k] = false
+			}
+		}
+	}
+
+	return o
 }
