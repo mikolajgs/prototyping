@@ -45,7 +45,7 @@ func (c Controller) mapWithInterfacesToMapBool(m map[string]interface{}) map[str
 	return o
 }
 
-func (c Controller) runOnDelete(obj interface{}, constructors map[string]func() interface{}, tagName string, id int64) *ErrController {
+func (c Controller) runOnDelete(obj interface{}, constructors map[string]func() interface{}, tagName string, ids []int64, lastDepth int) *ErrController {
 	val := reflect.ValueOf(obj).Elem()
 	typ := val.Type()
 	structName := typ.Name()
@@ -90,9 +90,13 @@ func (c Controller) runOnDelete(obj interface{}, constructors map[string]func() 
 			// Delete from children table where parent ID = id of deleted object
 			errCtl := c.DeleteMultiple(constructors[childStructName], DeleteMultipleOptions{
 				Filters: map[string]interface{}{
-					parentIDField: id,
+					"_raw": []interface{}{
+						fmt.Sprintf(".%s IN (?)", parentIDField),
+						ids,
+					},
 				},
-				CascadeDeleteDepth: 1,
+				CascadeDeleteDepth: lastDepth + 1,
+				Constructors: constructors,
 			})
 			if errCtl != nil {
 				return &ErrController{
@@ -123,9 +127,11 @@ func (c Controller) runOnDelete(obj interface{}, constructors map[string]func() 
 				},
 				UpdateMultipleOptions{
 					Filters: map[string]interface{}{
-						parentIDField: id,
+						"_raw": []interface{}{
+							fmt.Sprintf(".%s IN (?)", parentIDField),
+							ids,
+						},
 					},
-					CascadeDeleteDepth: 1,
 					ConvertValuesFromString: true,
 				},
 			)

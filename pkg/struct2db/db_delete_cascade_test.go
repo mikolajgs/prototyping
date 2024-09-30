@@ -100,7 +100,7 @@ func TestDeleteCascade(t *testing.T) {
 		t.Fatalf("Failed to select count: %s", err2.Error())
 	}
 	if cnt > 0 {
-		t.Fatalf("Delete failed to remove object")
+		t.Fatalf("Delete failed to remove parent object")
 	}
 
 	// 1, 2 should exist in del_child_nones
@@ -115,11 +115,9 @@ func TestDeleteCascade(t *testing.T) {
 	}
 
 	// 1, 2 should not exist in del_child_deletes
-	// 111, 121, 211, 221 should not exist in del_child_deletes
-	// 112, 122, 212, 222 should not exist in del_child_deletes
-	// 1001 should not exist in del_child_deletes
-	// 1003 should not exist in del_child_deletes
-	err2 = dbConn.QueryRow("SELECT COUNT(*) FROM struct2db_del_child_deletes WHERE del_child_delete_id IN (1, 2, 111, 121, 211, 221, 112, 122, 212, 222, 1001, 1003)").Scan(&cnt)
+	// 111, 121 should not exist in del_child_deletes
+	// 112, 122 should not exist in del_child_deletes
+	err2 = dbConn.QueryRow("SELECT COUNT(*) FROM struct2db_del_child_deletes WHERE del_child_delete_id IN (1, 2, 111, 121, 112, 122)").Scan(&cnt)
 	if err2 != nil {
 		t.Fatalf("Failed to select count: %s", err2.Error())
 	}
@@ -127,17 +125,33 @@ func TestDeleteCascade(t *testing.T) {
 		t.Fatalf("Delete failed to remove children")
 	}
 
-	// 1, 2 should exist in del_child_updates and their del_parent_id should be updated to 0
-	// 111, 121, 211, 221 should exist in del_child_updates and have their del_parent_id updated to 0
-	// 112, 122, 212, 222 should exist in del_child_updates and have their del_parent_id updated to 0
-	// 1002 should exist in del_child_updates and have their del_parent_id updated to 0
-	// 1004 should exist in del_child_updates and have their del_parent_id updated to 0
-	err2 = dbConn.QueryRow("SELECT COUNT(*) FROM struct2db_del_child_updates WHERE del_child_update_id IN (1, 2, 111, 121, 211, 221, 112, 122, 212, 222, 1002, 1004) AND del_parent_id=0").Scan(&cnt)
+	// 211, 221, 212, 222, 1001, 1003 should exist in del_child_deletes
+	err2 = dbConn.QueryRow("SELECT COUNT(*) FROM struct2db_del_child_deletes WHERE del_child_delete_id IN (211, 221, 212, 222, 1001, 1003)").Scan(&cnt)
 	if err2 != nil {
 		t.Fatalf("Failed to select count: %s", err2.Error())
 	}
-	if cnt != 12 {
+	if cnt != 6 {
+		t.Fatalf("Delete failed to not remove children")
+	}
+
+	// 1, 2 should exist in del_child_updates and their del_parent_id should be updated to 0
+	// 111, 121 should exist in del_child_updates and have their del_parent_id updated to 0
+	// 112, 122 should exist in del_child_updates and have their del_parent_id updated to 0
+	err2 = dbConn.QueryRow("SELECT COUNT(*) FROM struct2db_del_child_updates WHERE del_child_update_id IN (1, 2, 111, 121, 112, 122) AND del_parent_id=0").Scan(&cnt)
+	if err2 != nil {
+		t.Fatalf("Failed to select count: %s", err2.Error())
+	}
+	if cnt != 6 {
 		t.Fatalf("Delete failed to update children")
+	}
+
+	// 211, 221, 212, 222, 1002, 1004 should exist in del_child_updates and have their del_parent_id not updated to 0
+	err2 = dbConn.QueryRow("SELECT COUNT(*) FROM struct2db_del_child_updates WHERE del_child_update_id IN (211, 221, 212, 222, 1002, 1004) AND del_parent_id!=0").Scan(&cnt)
+	if err2 != nil {
+		t.Fatalf("Failed to select count: %s", err2.Error())
+	}
+	if cnt != 6 {
+		t.Fatalf("Delete failed to not update children")
 	}
 }
 

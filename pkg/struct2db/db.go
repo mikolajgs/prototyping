@@ -31,6 +31,7 @@ type DeleteOptions struct {
 type DeleteMultipleOptions struct {
 	Filters map[string]interface{}
 	CascadeDeleteDepth int
+	Constructors map[string]func() interface{}
 }
 
 type UpdateMultipleOptions struct {
@@ -146,7 +147,7 @@ func (c Controller) Delete(obj interface{}, options DeleteOptions) *ErrControlle
 	c.ResetFields(obj)
 
 	// Loop through fields to delete cascade
-	err3 := c.runOnDelete(obj, options.Constructors, c.tagName, id)
+	err3 := c.runOnDelete(obj, options.Constructors, c.tagName, []int64{id}, 0)
 	if err3 != nil {
 		return err3
 	}
@@ -181,11 +182,36 @@ func (c Controller) DeleteMultiple(newObjFunc func() interface{}, options Delete
 		}
 	}
 
-	_, err2 := c.dbConn.Exec(h.GetQueryDelete(options.Filters, nil), c.GetFiltersInterfaces(options.Filters)...)
+	// Run DELETE query and get IDs of deleted rows
+	rows, err2 := c.dbConn.Query(h.GetQueryDeleteReturningID(options.Filters, nil), c.GetFiltersInterfaces(options.Filters)...)
 	if err2 != nil {
 		return &ErrController{
 			Op:  "DBQuery",
 			Err: fmt.Errorf("Error executing DB query: %w", err2),
+		}
+	}
+	defer rows.Close()
+
+	returnedIds := []int64{}
+
+	for rows.Next() {
+		var returnedId int64
+		err3 := rows.Scan(&returnedId)
+		if err3 != nil {
+			return &ErrController{
+				Op:  "DBQueryRowsScan",
+				Err: fmt.Errorf("Error scanning DB query row: %w", err3),
+			}
+		}
+
+		returnedIds = append(returnedIds, returnedId)
+	}
+
+	if options.CascadeDeleteDepth < 3 {
+		// Loop through fields to delete cascade
+		err3 := c.runOnDelete(obj, options.Constructors, c.tagName, returnedIds, options.CascadeDeleteDepth)
+		if err3 != nil {
+			return err3
 		}
 	}
 
