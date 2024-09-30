@@ -9,8 +9,8 @@ import (
 	"strings"
 	"text/template"
 
+	struct2sql "github.com/mikolajgs/crud/pkg/struct-sql-postgres"
 	"github.com/mikolajgs/crud/pkg/struct2db"
-	struct2sql "github.com/mikolajgs/struct-sql-postgres"
 )	
 
 type structItemsTplObj struct {

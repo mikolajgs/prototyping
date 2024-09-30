@@ -4,7 +4,6 @@ go 1.22.5
 
 require (
 	github.com/lib/pq v1.10.9
-	github.com/mikolajgs/struct-sql-postgres v0.4.0
 	github.com/mikolajgs/struct-validator v0.4.5
 	github.com/ory/dockertest/v3 v3.10.0
 )
