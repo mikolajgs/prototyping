@@ -7,7 +7,7 @@ import (
 	"text/template"
 
 	"github.com/mikolajgs/crud/pkg/struct2html"
-	"github.com/mikolajgs/crud/pkg/struct2sql"
+	struct2sql "github.com/mikolajgs/struct-sql-postgres"
 )	
 
 type structItemTplObj struct {

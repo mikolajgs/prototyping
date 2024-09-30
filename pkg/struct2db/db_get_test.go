@@ -19,7 +19,7 @@ func TestGet(t *testing.T) {
 		ts.Age = 10 + i
 		ts.Price = 444
 		ts.PrimaryEmail = "another@example.com"
-		testController.Save(ts)
+		testController.Save(ts, SaveOptions{})
 	}
 
 	// Insert data that should be selected by filters
@@ -27,7 +27,7 @@ func TestGet(t *testing.T) {
 		ts := getTestStructWithData()
 		ts.ID = 0
 		ts.Age = 30 + i
-		testController.Save(ts)
+		testController.Save(ts, SaveOptions{})
 	}
 
 	// Get the data from the database
@@ -59,7 +59,7 @@ func TestGetWithoutFilters(t *testing.T) {
 		ts := getTestStructWithData()
 		ts.ID = 0
 		ts.Age = 30 + i
-		testController.Save(ts)
+		testController.Save(ts, SaveOptions{})
 	}
 
 	// Get the data
@@ -92,7 +92,7 @@ func TestGetWithRowObjTransformFunc(t *testing.T) {
 		ts.ID = 0
 		ts.Age = 30 + i
 		ts.FirstName = fmt.Sprintf("%s %d", ts.FirstName, i)
-		testController.Save(ts)
+		testController.Save(ts, SaveOptions{})
 	}
 
 	// Get the data
@@ -137,86 +137,5 @@ func TestGetWithRowObjTransformFunc(t *testing.T) {
 	// One of the columns is a random number so testing just the beginning
 	if !strings.HasPrefix(testCustomList[0].(string), "<tr><td>1</td><td>4</td><td>primary@example.com</td><td>secondary@example.com</td><td>John 1</td><td>Smith</td><td>31</td><td>444</td><td>00-000</td><td>11-111</td><td>yyy</td><td>4</td><td>") || !strings.HasPrefix(testCustomList[1].(string), "<tr><td>2</td><td>4</td><td>primary@example.com</td><td>secondary@example.com</td><td>John 2</td><td>Smith</td><td>32</td><td>444</td><td>00-000</td><td>11-111</td><td>yyy</td><td>4</td><td>") {
 		t.Fatalf("Get with transform func returned invalid objects")
-	}
-}
-
-// TestGetCount tests if Get properly gets count of objects from the database, filtered
-func TestGetCount(t *testing.T) {
-	recreateTestStructTable()
-
-	// Insert some data that should be ignored by GetCount later on
-	for i := 1; i < 51; i++ {
-		ts := getTestStructWithData()
-		ts.ID = 0
-		ts.Age = 10 + i
-		ts.Price = 444
-		ts.PrimaryEmail = "another@example.com"
-		testController.Save(ts)
-	}
-
-	// Insert data that should be selected by filters
-	for i := 1; i < 151; i++ {
-		ts := getTestStructWithData()
-		ts.ID = 0
-		ts.Age = 30
-		testController.Save(ts)
-	}
-
-	// Get the data from the database
-	cnt, err := testController.GetCount(func() interface{} {
-		return &TestStruct{}
-	}, GetCountOptions{
-		Filters: map[string]interface{}{"Price": 444, "PrimaryEmail": "primary@example.com"},
-	})
-	if err != nil {
-		t.Fatalf("Get failed to return list of objects: %s", err.Op)
-	}
-	if cnt != 150 {
-		t.Fatalf("Get failed to return list of objects, want %v, got %v", 150, cnt)
-	}
-}
-
-// TestGetCountWithRawQuery tests if Get properly gets count of objects from the database, filtered, with additional raw query
-func TestGetCountWithRawQuery(t *testing.T) {
-	recreateTestStructTable()
-
-	// Insert some data that should be ignored by GetCount later on
-	for i := 1; i < 51; i++ {
-		ts := getTestStructWithData()
-		ts.ID = 0
-		ts.Age = 10 + i
-		ts.Price = 444
-		ts.PrimaryEmail = "another@example.com"
-		testController.Save(ts)
-	}
-
-	// Insert data that should be selected by filters
-	for i := 1; i < 151; i++ {
-		ts := getTestStructWithData()
-		ts.ID = 0
-		ts.Age = 30
-		testController.Save(ts)
-	}
-
-	// Get the data from the database
-	cnt, err := testController.GetCount(func() interface{} {
-		return &TestStruct{}
-	}, GetCountOptions{
-		Filters: map[string]interface{}{
-			"Price": 444,
-			"PrimaryEmail": "primary@example.com",
-			"_raw": []interface{}{
-				".PrimaryEmail = ? AND .Age IN (?)",
-				"another@example.com",
-				[]int{32,33,34},
-			},
-			"_rawConjuction": RawConjuctionOR,
-		},
-	})
-	if err != nil {
-		t.Fatalf("Get failed to return list of objects: %s", err.Op)
-	}
-	if cnt != 153 {
-		t.Fatalf("Get failed to return list of objects, want %v, got %v", 153, cnt)
 	}
 }

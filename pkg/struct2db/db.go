@@ -3,13 +3,18 @@ package struct2db
 import (
 	"database/sql"
 	"fmt"
+	"reflect"
 	"strconv"
 
-	"github.com/mikolajgs/crud/pkg/struct2sql"
+	stsql "github.com/mikolajgs/struct-sql-postgres"
 )
 
 const RawConjuctionOR = 1
 const RawConjuctionAND = 2
+
+type SaveOptions struct {
+	NoInsert bool
+}
 
 type GetOptions struct {
 	Order []string
@@ -19,8 +24,20 @@ type GetOptions struct {
 	RowObjTransformFunc func(interface{}) interface{}
 }
 
+type DeleteOptions struct {
+	Constructors map[string]func() interface{}
+}
+
 type DeleteMultipleOptions struct {
 	Filters map[string]interface{}
+	CascadeDeleteDepth int
+	Constructors map[string]func() interface{}
+}
+
+type UpdateMultipleOptions struct {
+	Filters map[string]interface{}
+	CascadeDeleteDepth int
+	ConvertValuesFromString bool
 }
 
 type GetCountOptions struct {
@@ -28,10 +45,9 @@ type GetCountOptions struct {
 }
 
 // Save takes object, validates its field values and saves it in the database.
-// If ID field is already set (it's greater than 0) then the function assumes that record with such ID already
-// exists in the database and the function with execute an "UPDATE" query. Otherwise it will be "INSERT". After
-// inserting, new record ID is set to struct's ID field
-func (c Controller) Save(obj interface{}) *ErrController {
+// If ID is not present then an INSERT will be performed
+// If ID is set then an "upsert" is performed
+func (c Controller) Save(obj interface{}, options SaveOptions) *ErrController {
 	h, err := c.getSQLGenerator(obj)
 	if err != nil {
 		return err
@@ -55,10 +71,17 @@ func (c Controller) Save(obj interface{}) *ErrController {
 	}
 
 	var err3 error
-	if c.GetModelIDValue(obj) != 0 {
-		_, err3 = c.dbConn.Exec(h.GetQueryUpdateById(), append(c.GetModelFieldInterfaces(obj), c.GetModelIDInterface(obj))...)
+	if c.GetObjIDValue(obj) != 0 {
+		// do no try to insert if NoInsert is set
+		// TODO: error handling, we should check if object exists - for now nothing happens, UPDATE gets executed and updates nothing
+		if options.NoInsert {
+			_, err3 = c.dbConn.Exec(h.GetQueryUpdateById(), append(c.GetObjFieldInterfaces(obj, false), c.GetObjIDInterface(obj))...)
+		} else {
+			// try to insert - if ID already exists then try to update it
+			_, err3 = c.dbConn.Exec(h.GetQueryInsertOnConflictUpdate(), append(c.GetObjFieldInterfaces(obj, true), c.GetObjFieldInterfaces(obj, false)...)...)
+		}
 	} else {
-		err3 = c.dbConn.QueryRow(h.GetQueryInsert(), c.GetModelFieldInterfaces(obj)...).Scan(c.GetModelIDInterface(obj))
+		err3 = c.dbConn.QueryRow(h.GetQueryInsert(), c.GetObjFieldInterfaces(obj, false)...).Scan(c.GetObjIDInterface(obj))
 	}
 	if err3 != nil {
 		return &ErrController{
@@ -71,6 +94,7 @@ func (c Controller) Save(obj interface{}) *ErrController {
 
 // Load sets object's fields with values from the database table with a specific id. If record does not exist
 // in the database, all field values in the struct are zeroed
+// TODO: Should it return an ErrNotExist?
 func (c Controller) Load(obj interface{}, id string) *ErrController {
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -84,7 +108,7 @@ func (c Controller) Load(obj interface{}, id string) *ErrController {
 	if err2 != nil {
 		return err2
 	}
-	err3 := c.dbConn.QueryRow(h.GetQuerySelectById(), int64(idInt)).Scan(append(append(make([]interface{}, 0), c.GetModelIDInterface(obj)), c.GetModelFieldInterfaces(obj)...)...)
+	err3 := c.dbConn.QueryRow(h.GetQuerySelectById(), int64(idInt)).Scan(c.GetObjFieldInterfaces(obj, true)...)
 	switch {
 	case err3 == sql.ErrNoRows:
 		c.ResetFields(obj)
@@ -101,15 +125,19 @@ func (c Controller) Load(obj interface{}, id string) *ErrController {
 
 // Delete removes object from the database table and it does that only when ID field is set (greater than 0).
 // Once deleted from the DB, all field values are zeroed
-func (c Controller) Delete(obj interface{}) *ErrController {
+// TODO: Error handling probably needs re-designing
+func (c Controller) Delete(obj interface{}, options DeleteOptions) *ErrController {
 	h, err := c.getSQLGenerator(obj)
 	if err != nil {
 		return err
 	}
-	if c.GetModelIDValue(obj) == 0 {
+
+	id := c.GetObjIDValue(obj)
+
+	if id == 0 {
 		return nil
 	}
-	_, err2 := c.dbConn.Exec(h.GetQueryDeleteById(), c.GetModelIDInterface(obj))
+	_, err2 := c.dbConn.Exec(h.GetQueryDeleteById(), c.GetObjIDInterface(obj))
 	if err2 != nil {
 		return &ErrController{
 			Op:  "DBQuery",
@@ -117,6 +145,13 @@ func (c Controller) Delete(obj interface{}) *ErrController {
 		}
 	}
 	c.ResetFields(obj)
+
+	// Loop through fields to delete cascade
+	err3 := c.runOnDelete(obj, options.Constructors, c.tagName, []int64{id}, 0)
+	if err3 != nil {
+		return err3
+	}
+
 	return nil
 }
 
@@ -147,7 +182,98 @@ func (c Controller) DeleteMultiple(newObjFunc func() interface{}, options Delete
 		}
 	}
 
-	_, err2 := c.dbConn.Exec(h.GetQueryDelete(options.Filters, nil), c.GetFiltersInterfaces(options.Filters)...)
+	// Run DELETE query and get IDs of deleted rows
+	rows, err2 := c.dbConn.Query(h.GetQueryDeleteReturningID(options.Filters, nil), c.GetFiltersInterfaces(options.Filters)...)
+	if err2 != nil {
+		return &ErrController{
+			Op:  "DBQuery",
+			Err: fmt.Errorf("Error executing DB query: %w", err2),
+		}
+	}
+	defer rows.Close()
+
+	returnedIds := []int64{}
+
+	for rows.Next() {
+		var returnedId int64
+		err3 := rows.Scan(&returnedId)
+		if err3 != nil {
+			return &ErrController{
+				Op:  "DBQueryRowsScan",
+				Err: fmt.Errorf("Error scanning DB query row: %w", err3),
+			}
+		}
+
+		returnedIds = append(returnedIds, returnedId)
+	}
+
+	if options.CascadeDeleteDepth < 3 {
+		// Loop through fields to delete cascade
+		err3 := c.runOnDelete(obj, options.Constructors, c.tagName, returnedIds, options.CascadeDeleteDepth)
+		if err3 != nil {
+			return err3
+		}
+	}
+
+	return nil
+}
+
+// UpdateMultiple updates specific fields in objects from the database based on specified filters
+func (c Controller) UpdateMultiple(newObjFunc func() interface{}, values map[string]interface{}, options UpdateMultipleOptions) (*ErrController) {
+	obj := newObjFunc()
+	h, err := c.getSQLGenerator(obj)
+	if err != nil {
+		return err
+	}
+
+	if len(values) < 1 {
+		return &ErrController{
+			Op: "MissingValues",
+			Err: fmt.Errorf("Missing values for update"),
+		}
+	}
+
+	if options.ConvertValuesFromString {
+		values = c.StringToFieldValues(obj, values)
+	}
+
+	b, invalidFields, err1 := c.Validate(obj, values)
+	if err1 != nil {
+		return &ErrController{
+			Op:  "ValidateValues",
+			Err: fmt.Errorf("Error when trying to validate values: %w", err1),
+		}
+	}
+
+	if !b {
+		return &ErrController{
+			Op: "ValidateValues",
+			Err: &ErrValidation{
+				Fields: invalidFields,
+			},
+		}
+	}
+
+	if len(options.Filters) > 0 {
+		b, invalidFields, err1 := c.Validate(obj, options.Filters)
+		if err1 != nil {
+			return &ErrController{
+				Op:  "ValidateFilters",
+				Err: fmt.Errorf("Error when trying to validate filters: %w", err1),
+			}
+		}
+
+		if !b {
+			return &ErrController{
+				Op: "ValidateFilters",
+				Err: &ErrValidation{
+					Fields: invalidFields,
+				},
+			}
+		}
+	}
+
+	_, err2 := c.dbConn.Exec(h.GetQueryUpdate(values, options.Filters, nil, nil), append(c.GetFiltersInterfaces(values), c.GetFiltersInterfaces(options.Filters)...)...)
 	if err2 != nil {
 		return &ErrController{
 			Op:  "DBQuery",
@@ -198,7 +324,7 @@ func (c Controller) Get(newObjFunc func() interface{}, options GetOptions) ([]in
 
 	for rows.Next() {
 		newObj := newObjFunc()
-		err3 := rows.Scan(append(append(make([]interface{}, 0), c.GetModelIDInterface(newObj)), c.GetModelFieldInterfaces(newObj)...)...)
+		err3 := rows.Scan(c.GetObjFieldInterfaces(newObj, true)...)
 		if err3 != nil {
 			return nil, &ErrController{
 				Op:  "DBQueryRowsScan",
@@ -259,7 +385,7 @@ func (c Controller) GetCount(newObjFunc func() interface{}, options GetCountOpti
 	return cnt, nil
 }
 
-// AddSQLGenerator adds Struct2sql object to sqlGenerators
+// AddSQLGenerator adds StructSQL object to sqlGenerators
 func (c *Controller) AddSQLGenerator(obj interface{}, parentObj interface{}, overwrite bool) *ErrController {
 	n := c.getSQLGeneratorName(obj)
 
@@ -271,25 +397,30 @@ func (c *Controller) AddSQLGenerator(obj interface{}, parentObj interface{}, ove
 		}
 	}
 
-	var sourceHelper *struct2sql.Struct2sql
+	var sourceHelper *stsql.StructSQL
 	var forceName string
 	if parentObj != nil {
 		h, err := c.getSQLGenerator(parentObj)
 		if err != nil {
 			return &ErrController{
 				Op:  "GetHelper",
-				Err: fmt.Errorf("Error getting Struct2sql: %w", h.Err()),
+				Err: fmt.Errorf("Error getting StructSQL: %w", h.Err()),
 			}
 		}
 		sourceHelper = h
 		forceName = c.getSQLGeneratorName(parentObj)
 	}
 
-	h := struct2sql.NewStruct2sql(obj, c.dbTblPrefix, forceName, sourceHelper)
+	h := stsql.NewStructSQL(obj, stsql.StructSQLOptions{
+		DatabaseTablePrefix: c.dbTblPrefix,
+		ForceName: forceName,
+		SourceStructSQL: sourceHelper,
+		TagName: c.tagName,
+	})
 	if h.Err() != nil {
 		return &ErrController{
 			Op:  "GetHelper",
-			Err: fmt.Errorf("Error getting Struct2sql: %w", h.Err()),
+			Err: fmt.Errorf("Error getting StructSQL: %w", h.Err()),
 		}
 	}
 	c.sqlGenerators[n] = h
@@ -306,8 +437,42 @@ func (c *Controller) GetFieldNameFromDBCol(obj interface{}, dbCol string) (strin
 	return fieldName, nil
 }
 
-// DeleteHorizontal deletes an object along with linked objects that would usually be selected with JOIN
-// TODO: Re-phrase it
-func (c Controller) DeleteHorizontal(obj interface{}, lnks ...interface{}) *ErrController {
-	return nil
+// StringToFieldValues converts map of field values which are in string to values of the same kind of fields are
+func (c *Controller) StringToFieldValues(obj interface{}, values map[string]interface{}) map[string]interface{} {
+	o := map[string]interface{}{}
+
+	v := reflect.ValueOf(obj)
+	i := reflect.Indirect(v)
+	s := i.Type()
+	for k, v := range values {
+		field, ok := s.FieldByName(k)
+		if !ok {
+			continue
+		}
+
+		if field.Type.Kind() == reflect.Int64 {
+			i, err := strconv.ParseInt(v.(string), 10, 64)
+			if err == nil {
+				o[k] = i
+			}
+		}
+		if field.Type.Kind() == reflect.Int {
+			i, err := strconv.Atoi(v.(string))
+			if err == nil {
+				o[k] = i
+			}
+		}
+		if field.Type.Kind() == reflect.String {
+			o[k] = v
+		}
+		if field.Type.Kind() == reflect.Bool {
+			if v.(string) == "true" {
+				o[k] = true
+			} else {
+				o[k] = false
+			}
+		}
+	}
+
+	return o
 }

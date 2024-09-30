@@ -3,14 +3,14 @@ package struct2db
 import (
 	"database/sql"
 
-	"github.com/mikolajgs/crud/pkg/struct2sql"
+	stsql "github.com/mikolajgs/struct-sql-postgres"
 )
 
 // Controller is the main component that gets and saves objects in the database.
 type Controller struct {
 	dbConn        *sql.DB
 	dbTblPrefix   string
-	sqlGenerators map[string]*struct2sql.Struct2sql
+	sqlGenerators map[string]*stsql.StructSQL
 	tagName       string
 }
 
@@ -33,6 +33,6 @@ func NewController(dbConn *sql.DB, tblPrefix string, cfg *ControllerConfig) *Con
 		c.tagName = "2db"
 	}
 
-	c.sqlGenerators = make(map[string]*struct2sql.Struct2sql)
+	c.sqlGenerators = make(map[string]*stsql.StructSQL)
 	return c
 }
