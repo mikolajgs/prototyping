@@ -450,27 +450,52 @@ func (c *Controller) StringToFieldValues(obj interface{}, values map[string]inte
 			continue
 		}
 
-		if field.Type.Kind() == reflect.Int64 {
+		switch field.Type.Kind() {
+		case reflect.Int64, reflect.Uint64:
 			i, err := strconv.ParseInt(v.(string), 10, 64)
 			if err == nil {
 				o[k] = i
 			}
-		}
-		if field.Type.Kind() == reflect.Int {
+		case reflect.Int32, reflect.Uint32:
+			i, err := strconv.ParseInt(v.(string), 10, 32)
+			if err == nil {
+				o[k] = i
+			}
+		case reflect.Int16, reflect.Uint16:
+			i, err := strconv.ParseInt(v.(string), 10, 16)
+			if err == nil {
+				o[k] = i
+			}
+		case reflect.Int8, reflect.Uint8:
+			i, err := strconv.ParseInt(v.(string), 10, 8)
+			if err == nil {
+				o[k] = i
+			}
+		case reflect.Int, reflect.Uint:
 			i, err := strconv.Atoi(v.(string))
 			if err == nil {
 				o[k] = i
 			}
-		}
-		if field.Type.Kind() == reflect.String {
+		case reflect.Float32:
+			i, err := strconv.ParseFloat(v.(string), 32)
+			if err == nil {
+				o[k] = i
+			}
+		case reflect.Float64:
+			i, err := strconv.ParseFloat(v.(string), 64)
+			if err == nil {
+				o[k] = i
+			}
+		case reflect.String:
 			o[k] = v
-		}
-		if field.Type.Kind() == reflect.Bool {
+		case reflect.Bool:
 			if v.(string) == "true" {
 				o[k] = true
 			} else {
 				o[k] = false
 			}
+		default:
+			continue
 		}
 	}
 
