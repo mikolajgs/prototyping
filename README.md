@@ -1,8 +1,7 @@
-# crud
+# prototyping
 
-Package CRUD is meant to create CRUD HTTP endpoint for simple data management.
+This repository contains various modules for prototyping a complete application.
 
-HTTP endpoint can be set to allow creating, updating, removing new object, along with returning its details,
-or list of objects. All requests and responses are in the JSON format.
+README is yet to come.
 
-Please see [README in pkg/restapi](pkg/restapi/README.md).
+Please see [README in pkg/rest-api](pkg/rest-api/README.md).
