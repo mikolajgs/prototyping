@@ -1,9 +1,9 @@
-package struct2db
+package structdbpostgres
 
 import (
 	"database/sql"
 
-	stsql "github.com/mikolajgs/crud/pkg/struct-sql-postgres"
+	stsql "github.com/mikolajgs/prototyping/pkg/struct-sql-postgres"
 )
 
 // Controller is the main component that gets and saves objects in the database.

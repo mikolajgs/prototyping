@@ -1,4 +1,4 @@
-package struct2db
+package structdbpostgres
 
 import (
 	"database/sql"
@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"strconv"
 
-	stsql "github.com/mikolajgs/crud/pkg/struct-sql-postgres"
+	stsql "github.com/mikolajgs/prototyping/pkg/struct-sql-postgres"
 )
 
 const RawConjuctionOR = 1

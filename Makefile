@@ -4,8 +4,8 @@
 
 test: ## Runs tests
 	cd pkg/struct-sql-postgres && go test
-	cd pkg/struct2db && go test
-	cd pkg/restapi && go test
+	cd pkg/struct-db-postgres && go test
+	cd pkg/rest-api && go test
 	cd pkg/ui && go test
 
 run-sample-app: ## Runs sample app

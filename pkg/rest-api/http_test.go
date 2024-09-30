@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mikolajgs/crud/pkg/struct2db"
+	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
 )
 
 var createdID int64
@@ -183,7 +183,7 @@ func TestHTTPHandlerGetMethodWithoutID(t *testing.T) {
 		// Key must be unique
 		ts.Key = fmt.Sprintf("%d%s", i, "123456789012345678901234567890")
 		ts.Age = ts.Age + 1
-		testController.struct2db.Save(ts, struct2db.SaveOptions{})
+		testController.struct2db.Save(ts, stdb.SaveOptions{})
 	}
 	b := makeGETListRequest(map[string]string{
 		"limit":                "10",

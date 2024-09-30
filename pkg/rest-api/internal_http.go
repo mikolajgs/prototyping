@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mikolajgs/crud/pkg/struct2db"
+	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
 )
 
 func (c Controller) handleHTTPPut(w http.ResponseWriter, r *http.Request, newObjFunc func() interface{}, id string) {
@@ -49,7 +49,7 @@ func (c Controller) handleHTTPPut(w http.ResponseWriter, r *http.Request, newObj
 		return
 	}
 
-	err2 := c.struct2db.Save(objClone, struct2db.SaveOptions{})
+	err2 := c.struct2db.Save(objClone, stdb.SaveOptions{})
 	if err2 != nil {
 		c.writeErrText(w, http.StatusInternalServerError, "cannot_save_to_db")
 		return
@@ -105,7 +105,7 @@ func (c Controller) handleHTTPGet(w http.ResponseWriter, r *http.Request, newObj
 			}
 		}
 
-		xobj, err1 := c.struct2db.Get(newObjFunc, struct2db.GetOptions{
+		xobj, err1 := c.struct2db.Get(newObjFunc, stdb.GetOptions{
 			Order: order,
 			Limit: limit,
 			Offset: offset,
@@ -164,7 +164,7 @@ func (c Controller) handleHTTPDelete(w http.ResponseWriter, r *http.Request, new
 		return
 	}
 
-	err = c.struct2db.Delete(objClone, struct2db.DeleteOptions{})
+	err = c.struct2db.Delete(objClone, stdb.DeleteOptions{})
 	if err != nil {
 		c.writeErrText(w, http.StatusInternalServerError, "cannot_delete_from_db")
 		return

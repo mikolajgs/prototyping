@@ -3,7 +3,7 @@ package restapi
 import (
 	"database/sql"
 
-	"github.com/mikolajgs/crud/pkg/struct2db"
+	struct2db "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
 )
 
 // Controller is the main component that gets and saves objects in the database and generates CRUD HTTP handler

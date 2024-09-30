@@ -1,10 +1,10 @@
-package struct2html
+package structhtml
 
 import (
 	"fmt"
 	"reflect"
 
-	structvalidator "github.com/mikolajgs/struct-validator"
+	validator "github.com/mikolajgs/struct-validator"
 )
 
 const TypeInt64 = 64
@@ -12,7 +12,7 @@ const TypeInt = 128
 const TypeString = 256
 
 func GetFields(u interface{}, values map[string]string, withFieldValues bool) string {
-	fieldHTMLs := structvalidator.GenerateHTML(u, &structvalidator.HTMLOptions{
+	fieldHTMLs := validator.GenerateHTML(u, &validator.HTMLOptions{
 		OverwriteTagName: "ui",
 		ExcludeFields: map[string]bool{
 			"ID": true,

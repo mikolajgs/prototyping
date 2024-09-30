@@ -1,4 +1,4 @@
-package struct2db
+package structdbpostgres
 
 import (
 	"log"

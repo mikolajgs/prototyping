@@ -1,4 +1,4 @@
-# restapi
+# rest-api
 
 Package `restapi` is meant to create REST API HTTP endpoint for simple data management.
 
@@ -73,6 +73,12 @@ Currently, `restapi` supports only PostgreSQL as a storage for objects.
 #### Controller
 To perform model database actions, a `Controller` object must be created. See below example that modify object(s) 
 in the database.
+
+```
+import (
+	restapi "github.com/mikolajgs/prototyping/pkg/rest-api"
+)
+```
 
 ```
 // Create connection with sql

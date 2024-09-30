@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mikolajgs/crud/pkg/struct2db"
+	struct2db "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
 	validator "github.com/mikolajgs/struct-validator"
 )
 

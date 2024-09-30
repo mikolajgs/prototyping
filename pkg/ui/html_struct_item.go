@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"text/template"
 
-	struct2sql "github.com/mikolajgs/crud/pkg/struct-sql-postgres"
-	"github.com/mikolajgs/crud/pkg/struct2html"
+	sthtml "github.com/mikolajgs/prototyping/pkg/struct-html"
+	stsql "github.com/mikolajgs/prototyping/pkg/struct-sql-postgres"
 )	
 
 type structItemTplObj struct {
@@ -41,8 +41,8 @@ func (c *Controller) getStructItemTplObj(uri string, objFunc func() interface{},
 
 	a := &structItemTplObj{
 		URI: uri,
-		Name: struct2sql.GetStructName(o),
-		FieldsHTML: struct2html.GetFields(o, postValues, useFieldValues),
+		Name: stsql.GetStructName(o),
+		FieldsHTML: sthtml.GetFields(o, postValues, useFieldValues),
 		MsgHTML: c.getMsgHTML(msgType, msg),
 		OnlyMsg: onlyMsg,
 		ID: id,

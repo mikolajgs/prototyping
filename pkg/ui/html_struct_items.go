@@ -9,8 +9,8 @@ import (
 	"strings"
 	"text/template"
 
-	struct2sql "github.com/mikolajgs/crud/pkg/struct-sql-postgres"
-	"github.com/mikolajgs/crud/pkg/struct2db"
+	struct2db "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
+	stsql "github.com/mikolajgs/prototyping/pkg/struct-sql-postgres"
 )	
 
 type structItemsTplObj struct {
@@ -60,8 +60,8 @@ func (c *Controller) getStructItemsTplObj(uri string, objFunc func() interface{}
 
 	its := &structItemsTplObj{
 		URI: uri,
-		Name: struct2sql.GetStructName(o),
-		Fields: struct2sql.GetStructFieldNames(o),
+		Name: stsql.GetStructName(o),
+		Fields: stsql.GetStructFieldNames(o),
 		ItemsHTML: itemsHTML,
 	}
 

@@ -16,4 +16,3 @@ The following queries can be generated:
 * `UPDATE ... WHERE ...`
 
 See `main_test.go` for a sample usage.
-

@@ -1,6 +1,6 @@
-# struct2db
+# struct-db-postgres
 
-Package `struct2db` is meant to map structs to PostgreSQL tables (like ORM).
+Package `structdbpostgres` is meant to map structs to PostgreSQL tables (like ORM).
 
 ## Example usage
 ### Structs (models)
@@ -39,7 +39,7 @@ type Something struct {
 
 
 #### Field tags
-Struct tags define ORM behaviour. `struct2sql` parses tags such as `2db` and various tags starting with 
+Struct tags define ORM behaviour. `structdbpostgres` parses tags such as `2db` and various tags starting with 
 `2db_`. Apart from the last one, a tag define many properties which are separated with space char, and if they
 contain a value other than bool (true, false), it is added after semicolon char.
 See below list of all the tags with examples.
@@ -62,11 +62,17 @@ Property | Explanation
 
 
 ### Database storage
-Currently, `struct2db` supports only PostgreSQL as a storage for objects. 
+Currently, `structdbpostgres` supports only PostgreSQL as a storage for objects. 
 
 #### Controller
 To perform model database actions, a `Controller` object must be created. See below example that modify object(s) 
 in the database.
+
+```
+import (
+	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
+)
+```
 
 ```
 // Create connection with sql
@@ -74,7 +80,7 @@ conn, _ := sql.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s
 defer conn.Close()
 
 // Create CRUD controller and an instance of a struct
-c := struct2db.NewController(conn, "app1_", nil)
+c := stdb.NewController(conn, "app1_", nil)
 user := &User{}
 
 err = c.CreateTable(user) // Run 'CREATE TABLE'
@@ -96,7 +102,7 @@ err = c.DropTable(user) // Run 'DROP TABLE'
 A different than `2db` tag can be used. See example below.
 
 ```
-c := struct2db.NewController(conn, "app1_", &struct2db.ControllerConfig{
+c := stdb.NewController(conn, "app1_", &stdb.ControllerConfig{
 	TagName: "mytag",
 })
 ```

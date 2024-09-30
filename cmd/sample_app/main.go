@@ -8,9 +8,9 @@ import (
 	_ "os"
 	_ "time"
 
-	"github.com/mikolajgs/crud/pkg/restapi"
-	"github.com/mikolajgs/crud/pkg/struct2db"
-	"github.com/mikolajgs/crud/pkg/ui"
+	restapi "github.com/mikolajgs/prototyping/pkg/rest-api"
+	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
+	"github.com/mikolajgs/prototyping/pkg/ui"
 
 	_ "github.com/lib/pq"
 )
@@ -28,7 +28,7 @@ func main() {
 
 	ctl := ui.NewController(db, "ui_")
 	apiCtl := restapi.NewController(db, "ui_")
-	s2db := struct2db.NewController(db, "ui_", nil)
+	s2db := stdb.NewController(db, "ui_", nil)
 
 	person := &Person{}
 	group := &Group{}

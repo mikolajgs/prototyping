@@ -1,4 +1,4 @@
-package struct2db
+package structdbpostgres
 
 import (
 	"errors"
@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	stsql "github.com/mikolajgs/crud/pkg/struct-sql-postgres"
+	stsql "github.com/mikolajgs/prototyping/pkg/struct-sql-postgres"
 )
 
 // getSQLGenerator returns a special StructSQL instance which reflects the struct type to get SQL queries etc.
