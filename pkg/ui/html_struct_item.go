@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"text/template"
 
+	struct2sql "github.com/mikolajgs/crud/pkg/struct-sql-postgres"
 	"github.com/mikolajgs/crud/pkg/struct2html"
-	struct2sql "github.com/mikolajgs/struct-sql-postgres"
 )	
 
 type structItemTplObj struct {
