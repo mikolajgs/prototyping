@@ -31,6 +31,9 @@ type StructSQL struct {
 	flags int
 
 	defaultFieldsTags map[string]map[string]string
+	dependenciesFieldsTags map[string]map[string]map[string]string
+	hasDependencies bool
+	dependencies map[string]*StructSQL
 
 	err *ErrStructSQL
 
@@ -45,6 +48,7 @@ type StructSQLOptions struct {
 	ForceName string
 	SourceStructSQL *StructSQL
 	TagName string
+	Dependencies map[string]*StructSQL
 }
 
 // NewStructSQL takes object and database table name prefix as arguments and returns StructSQL instance.
@@ -57,6 +61,8 @@ func NewStructSQL(obj interface{}, options StructSQLOptions) *StructSQL {
 	}
 
 	h.setDefaultTags(options.SourceStructSQL)
+	h.dependencies = options.Dependencies
+	h.setDependenciesTags()
 	h.reflectStruct(obj, options.DatabaseTablePrefix, options.ForceName)
 	return h
 }
@@ -183,7 +189,7 @@ func (h *StructSQL) GetQueryUpdate(values map[string]interface{}, filters map[st
 	return s
 }
 
-// GetFieldNameFromDBCol returns field name from a database column.
+// GetFieldNameFromDBCol returns field name from a table column.
 func (h *StructSQL) GetFieldNameFromDBCol(n string) string {
 	return h.dbCols[n]
 }

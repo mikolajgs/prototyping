@@ -24,7 +24,7 @@ func (c Controller) handleHTTPPut(w http.ResponseWriter, r *http.Request, newObj
 	objClone := newObjFunc()
 
 	if id != "" {
-		err2 := c.struct2db.Load(objClone, id)
+		err2 := c.struct2db.Load(objClone, id, stdb.LoadOptions{})
 		if err2 != nil {
 			c.writeErrText(w, http.StatusInternalServerError, "cannot_get_from_db")
 			return
@@ -130,7 +130,7 @@ func (c Controller) handleHTTPGet(w http.ResponseWriter, r *http.Request, newObj
 
 	objClone := newObjFunc()
 
-	err := c.struct2db.Load(objClone, id)
+	err := c.struct2db.Load(objClone, id, stdb.LoadOptions{})
 	if err != nil {
 		c.writeErrText(w, http.StatusInternalServerError, "cannot_get_from_db")
 		return
@@ -154,7 +154,7 @@ func (c Controller) handleHTTPDelete(w http.ResponseWriter, r *http.Request, new
 
 	objClone := newObjFunc()
 
-	err := c.struct2db.Load(objClone, id)
+	err := c.struct2db.Load(objClone, id, stdb.LoadOptions{})
 	if err != nil {
 		c.writeErrText(w, http.StatusInternalServerError, "cannot_get_from_db")
 		return

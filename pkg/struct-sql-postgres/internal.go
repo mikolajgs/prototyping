@@ -16,6 +16,13 @@ func (h *StructSQL) setDefaultTags(src *StructSQL) {
 	}
 }
 
+func (h *StructSQL) setDependenciesTags() {
+	h.dependenciesFieldsTags = make(map[string]map[string]map[string]string)
+	for k, v := range h.dependencies {
+		h.dependenciesFieldsTags[k] = v.getFieldsTags()
+	}
+}
+
 func (h *StructSQL) getFieldsTags() map[string]map[string]string {
 	return h.fieldsTags
 }
@@ -43,14 +50,15 @@ func (h *StructSQL) reflectStructForDBQueries(u interface{}, dbTablePrefix strin
 	h.dbFieldCols = make(map[string]string)
 	h.dbCols = make(map[string]string)
 
-	colsWithTypes := ""
-	cols := ""
-	vals := ""
-	valsWithoutID := ""
-	colsWithoutID := ""
-	colVals := ""
-	colValsAgain := ""
+	var colsWithTypes, cols, vals, valsWithoutID, colsWithoutID, colVals, colValsAgain string
 	idCol := h.dbColPrefix + "_id"
+	if h.hasDependencies {
+		idCol = fmt.Sprintf("t1.%s", idCol)
+	}
+
+	reDep := regexp.MustCompile(`^[a-zA-Z0-9]+_[a-zA-Z0-9]+`)
+	innerJoins := ""
+	joinedTables := map[string]string{}
 
 	valCnt := 0
 	valWithoutIDCnt := 0
@@ -64,6 +72,39 @@ func (h *StructSQL) reflectStructForDBQueries(u interface{}, dbTablePrefix strin
 			continue
 		}
 
+		// Process field named 'xx_yy' which could be a joined struct field
+		if h.hasDependencies && reDep.MatchString(f.Name) {
+			fieldNameArr := strings.Split(f.Name, "_")
+
+			_, ok := h.dependencies[fieldNameArr[0]]
+			if ok {
+				col := h.dependencies[fieldNameArr[0]].dbFieldCols[fieldNameArr[1]]
+				tbl := h.dependencies[fieldNameArr[0]].dbTbl
+
+				if _, ok2 := joinedTables[fieldNameArr[0]]; !ok2 {
+					alias := fmt.Sprintf("t%d", len(joinedTables)+2)
+					innerJoins += fmt.Sprintf(
+						" INNER JOIN %s %s ON t1.%s=%s.%s", 
+						tbl, alias,
+						h.dbFieldCols[fieldNameArr[0]+"ID"],
+						alias, h.dependencies[fieldNameArr[0]].dbFieldCols["ID"],
+					)
+					joinedTables[fieldNameArr[0]] = alias
+				}
+
+				dbCol := fmt.Sprintf("%s.%s", joinedTables[fieldNameArr[0]], col)
+				cols = h.addWithComma(cols, dbCol)
+				colsWithoutID = h.addWithComma(colsWithoutID, dbCol) // not used for now
+				valWithoutIDCnt++
+				valCnt++
+
+				h.fields = append(h.fields, f.Name)
+
+				continue
+			}
+		}
+
+		// Continue when field does not come from joined struct
 		dbCol := h.getDBCol(f.Name)
 		h.dbFieldCols[f.Name] = dbCol
 		h.dbCols[dbCol] = f.Name
@@ -74,11 +115,20 @@ func (h *StructSQL) reflectStructForDBQueries(u interface{}, dbTablePrefix strin
 		dbColParams := h.getDBColParams(f.Name, f.Type.String(), uniq)
 
 		colsWithTypes = h.addWithComma(colsWithTypes, dbCol+" "+dbColParams)
-		cols = h.addWithComma(cols, dbCol)
+
+		if h.hasDependencies {
+			cols = h.addWithComma(cols, fmt.Sprintf("t1.%s", dbCol))
+		} else {
+			cols = h.addWithComma(cols, dbCol)
+		}
 
 		// Assuming that primary field is named ID
 		if f.Name != "ID" {
-			colsWithoutID = h.addWithComma(colsWithoutID, dbCol)
+			if h.hasDependencies {
+				colsWithoutID = h.addWithComma(colsWithoutID, fmt.Sprintf("t1.%s", dbCol))
+			} else {
+				colsWithoutID = h.addWithComma(colsWithoutID, dbCol)
+			}
 			colVals = h.addWithComma(colVals, dbCol+"=?")
 			valWithoutIDCnt++
 		}
@@ -118,14 +168,22 @@ func (h *StructSQL) reflectStructForDBQueries(u interface{}, dbTablePrefix strin
 	h.queryDropTable = fmt.Sprintf("DROP TABLE IF EXISTS %s", h.dbTbl)
 	h.queryCreateTable = fmt.Sprintf("CREATE TABLE %s (%s)", h.dbTbl, colsWithTypes)
 	h.queryDeleteById = fmt.Sprintf("DELETE FROM %s WHERE %s = $1", h.dbTbl, idCol)
-	h.querySelectById = fmt.Sprintf("SELECT %s FROM %s WHERE %s = $1", cols, h.dbTbl, idCol)
 	h.queryInsert = fmt.Sprintf("INSERT INTO %s(%s) VALUES (%s) RETURNING %s", h.dbTbl, colsWithoutID, valsWithoutID, idCol)
 	h.queryUpdateById = fmt.Sprintf("UPDATE %s SET %s WHERE %s = $%d", h.dbTbl, colVals, idCol, valCnt)
 	h.queryInsertOnConflictUpdate = fmt.Sprintf("INSERT INTO %s(%s) VALUES (%s) ON CONFLICT (%s) DO UPDATE SET %s RETURNING %s", h.dbTbl, cols, vals, idCol, colValsAgain, idCol)
-	h.querySelectPrefix = fmt.Sprintf("SELECT %s FROM %s", cols, h.dbTbl)
-	h.querySelectCountPrefix = fmt.Sprintf("SELECT COUNT(*) AS cnt FROM %s", h.dbTbl)
 	h.queryDeletePrefix = fmt.Sprintf("DELETE FROM %s", h.dbTbl)
 	h.queryUpdatePrefix = fmt.Sprintf("UPDATE %s SET", h.dbTbl)
+
+	if h.hasDependencies {
+		h.querySelectById = fmt.Sprintf("SELECT %s FROM %s t1%s WHERE %s = $1", cols, h.dbTbl, innerJoins, idCol)
+		h.querySelectPrefix = fmt.Sprintf("SELECT %s FROM %s t1%s", cols, h.dbTbl, innerJoins)
+		h.querySelectCountPrefix = fmt.Sprintf("SELECT COUNT(*) AS cnt FROM %s t1%s", h.dbTbl, innerJoins)
+	} else {
+		h.querySelectById = fmt.Sprintf("SELECT %s FROM %s%s WHERE %s = $1", cols, h.dbTbl, innerJoins, idCol)
+		h.querySelectPrefix = fmt.Sprintf("SELECT %s FROM %s%s", cols, h.dbTbl, innerJoins)
+		h.querySelectCountPrefix = fmt.Sprintf("SELECT COUNT(*) AS cnt FROM %s%s", h.dbTbl, innerJoins)
+	}
+
 }
 
 func (h *StructSQL) reflectStructForValidation(u interface{}) {
@@ -137,6 +195,8 @@ func (h *StructSQL) reflectStructForValidation(u interface{}) {
 	h.fieldsUniq = make(map[string]bool)
 	h.fieldsTags = make(map[string]map[string]string)
 	h.fieldsOverwriteType = make(map[string]string)
+
+	reDep := regexp.MustCompile(`^[a-zA-Z0-9]+_[a-zA-Z0-9]+`)
 
 	for j := 0; j < s.NumField(); j++ {
 		f := s.Field(j)
@@ -159,6 +219,31 @@ func (h *StructSQL) reflectStructForValidation(u interface{}) {
 			}
 		}
 
+		// If field is like 'xxx_yyy', try to set tags from dependencies for 'xxx'
+		if h.dependenciesFieldsTags != nil && reDep.MatchString(f.Name) {
+			fieldNameArr := strings.Split(f.Name, "_")
+
+			// Mark hasDependencies
+			_, ok := h.dependenciesFieldsTags[fieldNameArr[0]]
+			if !ok {
+				continue
+			}
+			h.hasDependencies = true
+
+			_, ok = h.dependenciesFieldsTags[fieldNameArr[0]][fieldNameArr[1]]
+			if !ok {
+				continue
+			}
+
+			if crudTag == "" && h.dependenciesFieldsTags[fieldNameArr[0]][fieldNameArr[1]][h.tagName] != "" {
+				crudTag = h.dependenciesFieldsTags[fieldNameArr[0]][fieldNameArr[1]][h.tagName]
+			}
+			if crudValTag == "" && h.dependenciesFieldsTags[fieldNameArr[0]][fieldNameArr[1]][h.tagName+"_val"] != "" {
+				crudValTag = h.dependenciesFieldsTags[fieldNameArr[0]][fieldNameArr[1]][h.tagName+"_val"]
+			}
+		}
+
+		// Go through tag values and parse out the ones we're interested in
 		h.setFieldFromTag(crudTag, f.Name)
 		if h.err != nil {
 			return
@@ -168,6 +253,8 @@ func (h *StructSQL) reflectStructForValidation(u interface{}) {
 			h.fieldsDefaultValue[f.Name] = crudValTag
 		}
 
+		// Store original field tags (non-overwritten one) so they can be easily returned and used as
+		// defaultFieldsTags in another struct
 		h.fieldsTags[f.Name] = make(map[string]string)
 		h.fieldsTags[f.Name][h.tagName] = f.Tag.Get(h.tagName)
 		h.fieldsTags[f.Name][h.tagName+"_val"] = f.Tag.Get(h.tagName+"_val")
@@ -219,39 +306,39 @@ func (h *StructSQL) getDBColParams(n string, t string, uniq bool) string {
 	if n == "ID" {
 		dbColParams = "SERIAL PRIMARY KEY"
 	} else if n == "Flags" {
-		dbColParams = "BIGINT DEFAULT 0"
+		dbColParams = "BIGINT NOT NULL DEFAULT 0"
 		// String types can be overwritten by a tag
 	} else if h.fieldsOverwriteType[n] != "" {
-		dbColParams = h.fieldsOverwriteType[n]+" DEFAULT ''"
+		dbColParams = h.fieldsOverwriteType[n]+" NOT NULL DEFAULT ''"
 	} else {
 		switch t {
 		case "string":
-			dbColParams = "VARCHAR(255) DEFAULT ''"
+			dbColParams = "VARCHAR(255) NOT NULL DEFAULT ''"
 		case "bool":
-			dbColParams = "BOOLEAN DEFAULT false"
+			dbColParams = "BOOLEAN NOT NULL DEFAULT false"
 		case "int64":
-			dbColParams = "BIGINT DEFAULT 0"
+			dbColParams = "BIGINT NOT NULL DEFAULT 0"
 		case "int32":
-			dbColParams = "INTEGER DEFAULT 0"
+			dbColParams = "INTEGER NOT NULL DEFAULT 0"
 		case "int16":
-			dbColParams = "SMALLINT DEFAULT 0"
+			dbColParams = "SMALLINT NOT NULL DEFAULT 0"
 		case "int8":
-			dbColParams = "SMALLINT DEFAULT 0"
+			dbColParams = "SMALLINT NOT NULL DEFAULT 0"
 		case "int":
-			dbColParams = "BIGINT DEFAULT 0"
+			dbColParams = "BIGINT NOT NULL DEFAULT 0"
 		case "uint64":
-			dbColParams = "BIGINT DEFAULT 0"
+			dbColParams = "BIGINT NOT NULL DEFAULT 0"
 		case "uint32":
-			dbColParams = "INTEGER DEFAULT 0"
+			dbColParams = "INTEGER NOT NULL DEFAULT 0"
 		case "uint16":
-			dbColParams = "SMALLINT DEFAULT 0"
+			dbColParams = "SMALLINT NOT NULL DEFAULT 0"
 		case "uint8":
-			dbColParams = "SMALLINT DEFAULT 0"
+			dbColParams = "SMALLINT NOT NULL DEFAULT 0"
 		case "uint":
-			dbColParams = "BIGINT DEFAULT 0"
+			dbColParams = "BIGINT NOT NULL DEFAULT 0"
 		// TODO: Consider something different
 		default:
-			dbColParams = "VARCHAR(255) DEFAULT ''"
+			dbColParams = "VARCHAR(255) NOT NULL DEFAULT ''"
 		}
 	}
 	if uniq {

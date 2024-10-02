@@ -11,12 +11,13 @@ import (
 )
 
 // getSQLGenerator returns a special StructSQL instance which reflects the struct type to get SQL queries etc.
-func (c *Controller) getSQLGenerator(obj interface{}) (*stsql.StructSQL, *ErrController) {
+func (c *Controller) getSQLGenerator(obj interface{}, generators map[string]*stsql.StructSQL) (*stsql.StructSQL, *ErrController) {
 	n := c.getSQLGeneratorName(obj)
 	if c.sqlGenerators[n] == nil {
 		h := stsql.NewStructSQL(obj, stsql.StructSQLOptions{
 			DatabaseTablePrefix: c.dbTblPrefix,
 			TagName: c.tagName,
+			Dependencies: generators,
 		})
 		if h.Err() != nil {
 			return nil, &ErrController{
