@@ -84,7 +84,7 @@ func (h *StructSQL) reflectStructForDBQueries(u interface{}, dbTablePrefix strin
 				if _, ok2 := joinedTables[fieldNameArr[0]]; !ok2 {
 					alias := fmt.Sprintf("t%d", len(joinedTables)+2)
 					innerJoins += fmt.Sprintf(
-						" INNER JOIN %s %s ON t1.%s=%s.%s", 
+						" INNER JOIN %s %s ON %s=%s.%s", 
 						tbl, alias,
 						h.dbFieldCols[fieldNameArr[0]+"ID"],
 						alias, h.dependencies[fieldNameArr[0]].dbFieldCols["ID"],
@@ -93,6 +93,10 @@ func (h *StructSQL) reflectStructForDBQueries(u interface{}, dbTablePrefix strin
 				}
 
 				dbCol := fmt.Sprintf("%s.%s", joinedTables[fieldNameArr[0]], col)
+
+				h.dbFieldCols[f.Name] = dbCol
+				h.dbCols[dbCol] = f.Name
+				
 				cols = h.addWithComma(cols, dbCol)
 				colsWithoutID = h.addWithComma(colsWithoutID, dbCol) // not used for now
 				valWithoutIDCnt++
@@ -106,6 +110,9 @@ func (h *StructSQL) reflectStructForDBQueries(u interface{}, dbTablePrefix strin
 
 		// Continue when field does not come from joined struct
 		dbCol := h.getDBCol(f.Name)
+		if h.hasDependencies {
+			dbCol = "t1."+dbCol
+		}
 		h.dbFieldCols[f.Name] = dbCol
 		h.dbCols[dbCol] = f.Name
 		uniq := false
@@ -115,20 +122,11 @@ func (h *StructSQL) reflectStructForDBQueries(u interface{}, dbTablePrefix strin
 		dbColParams := h.getDBColParams(f.Name, f.Type.String(), uniq)
 
 		colsWithTypes = h.addWithComma(colsWithTypes, dbCol+" "+dbColParams)
-
-		if h.hasDependencies {
-			cols = h.addWithComma(cols, fmt.Sprintf("t1.%s", dbCol))
-		} else {
-			cols = h.addWithComma(cols, dbCol)
-		}
+		cols = h.addWithComma(cols, dbCol)
 
 		// Assuming that primary field is named ID
 		if f.Name != "ID" {
-			if h.hasDependencies {
-				colsWithoutID = h.addWithComma(colsWithoutID, fmt.Sprintf("t1.%s", dbCol))
-			} else {
-				colsWithoutID = h.addWithComma(colsWithoutID, dbCol)
-			}
+			colsWithoutID = h.addWithComma(colsWithoutID, dbCol)
 			colVals = h.addWithComma(colVals, dbCol+"=?")
 			valWithoutIDCnt++
 		}
@@ -526,7 +524,7 @@ func (h *StructSQL) getQueryFilters(filters map[string]interface{}, filterFields
 		}
 		qWhere += "("
 
-		reField := regexp.MustCompile(`\.[a-zA-Z0-9]+`)
+		reField := regexp.MustCompile(`\.[a-zA-Z0-9_]+`)
 		foundFields := reField.FindAllString(rawQuery, -1)
 		alreadyReplaced := map[string]bool{}
 		for _, f := range foundFields {
