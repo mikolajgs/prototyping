@@ -54,7 +54,7 @@ type GetCountOptions struct {
 // If ID is not present then an INSERT will be performed
 // If ID is set then an "upsert" is performed
 func (c Controller) Save(obj interface{}, options SaveOptions) *ErrController {
-	h, err := c.getSQLGenerator(obj, nil)
+	h, err := c.getSQLGenerator(obj, nil, "")
 	if err != nil {
 		return err
 	}
@@ -120,11 +120,12 @@ func (c Controller) Load(obj interface{}, id string, options LoadOptions) *ErrCo
 
 	for i := 0; i < val.NumField(); i++ {
 		valueField := val.Field(i)
-		// Only field which are slices of pointers to struct instances
-		if valueField.Kind() != reflect.Slice || valueField.Type().Elem().Kind() != reflect.Ptr || valueField.Type().Elem().Elem().Kind() != reflect.Struct {
+		// Only field which are pointers to struct instances
+		if valueField.Kind() != reflect.Ptr || valueField.Type().Elem().Kind() != reflect.Struct {
 			continue
 		}
-		childStructName := valueField.Type().Elem().Elem().Name()
+
+		childStructName := valueField.Type().Elem().Name()
 
 		// Get 2db tag, search for 'join'
 		tag := typ.Field(i).Tag.Get(c.tagName)
@@ -157,17 +158,18 @@ func (c Controller) Load(obj interface{}, id string, options LoadOptions) *ErrCo
 	// If any joined structs are present, their SQL generators must be created
 	genDeps := map[string]*stsql.StructSQL{}
 	for k, v := range options.Constructors {
-		g, err := c.getSQLGenerator(v(), nil)
+		g, err := c.getSQLGenerator(v(), nil, "")
 		if err != nil {
 			return err
 		}
 		genDeps[constructorFields[k]] = g
 	}
 
-	h, err2 := c.getSQLGenerator(obj, genDeps)
+	h, err2 := c.getSQLGenerator(obj, genDeps, "")
 	if err2 != nil {
 		return err2
 	}
+
 	err3 := c.dbConn.QueryRow(h.GetQuerySelectById(), int64(idInt)).Scan(c.GetObjFieldInterfaces(obj, true)...)
 	switch {
 	case err3 == sql.ErrNoRows:
@@ -187,7 +189,7 @@ func (c Controller) Load(obj interface{}, id string, options LoadOptions) *ErrCo
 // Once deleted from the DB, all field values are zeroed
 // TODO: Error handling probably needs re-designing
 func (c Controller) Delete(obj interface{}, options DeleteOptions) *ErrController {
-	h, err := c.getSQLGenerator(obj, nil)
+	h, err := c.getSQLGenerator(obj, nil, "")
 	if err != nil {
 		return err
 	}
@@ -218,7 +220,7 @@ func (c Controller) Delete(obj interface{}, options DeleteOptions) *ErrControlle
 // DeleteMultiple removes objects from the database based on specified filters
 func (c Controller) DeleteMultiple(newObjFunc func() interface{}, options DeleteMultipleOptions) (*ErrController) {
 	obj := newObjFunc()
-	h, err := c.getSQLGenerator(obj, nil)
+	h, err := c.getSQLGenerator(obj, nil, "")
 	if err != nil {
 		return err
 	}
@@ -281,7 +283,7 @@ func (c Controller) DeleteMultiple(newObjFunc func() interface{}, options Delete
 // UpdateMultiple updates specific fields in objects from the database based on specified filters
 func (c Controller) UpdateMultiple(newObjFunc func() interface{}, values map[string]interface{}, options UpdateMultipleOptions) (*ErrController) {
 	obj := newObjFunc()
-	h, err := c.getSQLGenerator(obj, nil)
+	h, err := c.getSQLGenerator(obj, nil, "")
 	if err != nil {
 		return err
 	}
@@ -348,7 +350,7 @@ func (c Controller) UpdateMultiple(newObjFunc func() interface{}, values map[str
 // list of objects
 func (c Controller) Get(newObjFunc func() interface{}, options GetOptions) ([]interface{}, *ErrController) {
 	obj := newObjFunc()
-	h, err := c.getSQLGenerator(obj, nil)
+	h, err := c.getSQLGenerator(obj, nil, "")
 	if err != nil {
 		return nil, err
 	}
@@ -408,7 +410,7 @@ func (c Controller) Get(newObjFunc func() interface{}, options GetOptions) ([]in
 // GetCount runs a 'SELECT COUNT(*)' query on the database with specified filters, order, limit and offset and returns count of rows
 func (c Controller) GetCount(newObjFunc func() interface{}, options GetCountOptions) (int64, *ErrController) {
 	obj := newObjFunc()
-	h, err := c.getSQLGenerator(obj, nil)
+	h, err := c.getSQLGenerator(obj, nil, "")
 	if err != nil {
 		return 0, err
 	}
@@ -447,7 +449,7 @@ func (c Controller) GetCount(newObjFunc func() interface{}, options GetCountOpti
 
 // AddSQLGenerator adds StructSQL object to sqlGenerators
 func (c *Controller) AddSQLGenerator(obj interface{}, parentObj interface{}, overwrite bool) *ErrController {
-	n := c.getSQLGeneratorName(obj)
+	n := c.getSQLGeneratorName(obj, false)
 
 	// If sql generator already exists and it should not be overwritten then finish
 	if !overwrite {
@@ -460,7 +462,7 @@ func (c *Controller) AddSQLGenerator(obj interface{}, parentObj interface{}, ove
 	var sourceHelper *stsql.StructSQL
 	var forceName string
 	if parentObj != nil {
-		h, err := c.getSQLGenerator(parentObj, nil)
+		h, err := c.getSQLGenerator(parentObj, nil, "")
 		if err != nil {
 			return &ErrController{
 				Op:  "GetHelper",
@@ -468,7 +470,7 @@ func (c *Controller) AddSQLGenerator(obj interface{}, parentObj interface{}, ove
 			}
 		}
 		sourceHelper = h
-		forceName = c.getSQLGeneratorName(parentObj)
+		forceName = c.getSQLGeneratorName(parentObj, false)
 	}
 
 	h := stsql.NewStructSQL(obj, stsql.StructSQLOptions{
@@ -489,7 +491,7 @@ func (c *Controller) AddSQLGenerator(obj interface{}, parentObj interface{}, ove
 
 // GetDBCol returns column name used in the database
 func (c *Controller) GetFieldNameFromDBCol(obj interface{}, dbCol string) (string, *ErrController) {
-	h, err := c.getSQLGenerator(obj, nil)
+	h, err := c.getSQLGenerator(obj, nil, "")
 	if err != nil {
 		return "", err
 	}

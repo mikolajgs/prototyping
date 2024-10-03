@@ -49,6 +49,7 @@ type StructSQLOptions struct {
 	SourceStructSQL *StructSQL
 	TagName string
 	Dependencies map[string]*StructSQL
+	UseOnlyRootNameWhenDeps bool
 }
 
 // NewStructSQL takes object and database table name prefix as arguments and returns StructSQL instance.
@@ -63,7 +64,7 @@ func NewStructSQL(obj interface{}, options StructSQLOptions) *StructSQL {
 	h.setDefaultTags(options.SourceStructSQL)
 	h.dependencies = options.Dependencies
 	h.setDependenciesTags()
-	h.reflectStruct(obj, options.DatabaseTablePrefix, options.ForceName)
+	h.reflectStruct(obj, options.DatabaseTablePrefix, options.ForceName, options.UseOnlyRootNameWhenDeps)
 	return h
 }
 

@@ -349,7 +349,7 @@ func TestSQLSelectQueriesWithJoin(t *testing.T) {
 		"_rawConjuction": RawConjuctionOR,
 	}, nil, nil)
 	want = selectPrefix + " WHERE"
-	want += " (t1.name=$1 AND t1.price=$2 AND t2.name=$3 AND t3.code=$4) OR (t1.price=$5 OR (t3.code IN ($6,$7,$8,$9)) OR t2.name=$10)"
+	want += " (t1.name=$1 AND t1.price=$2 AND t3.code=$3 AND t2.name=$4) OR (t1.price=$5 OR (t3.code IN ($6,$7,$8,$9)) OR t2.name=$10)"
 	want += " ORDER BY t2.name ASC,t1.name DESC LIMIT 1 OFFSET 3"
 	if got != want {
 		t.Fatalf("want %v, got %v", want, got)
@@ -375,7 +375,7 @@ func TestSQLSelectQueriesWithJoin(t *testing.T) {
 	want += " FROM products t1 INNER JOIN product_kinds t2 ON t1.product_kind_id=t2.product_kind_id"
 	want += " INNER JOIN product_groups t3 ON t1.product_grp_id=t3.product_group_id"
 	want += " WHERE"
-	want += " (t1.name=$1 AND t1.price=$2 AND t2.name=$3 AND t3.code=$4) OR (t1.price=$5 OR (t3.code IN ($6,$7,$8,$9)) OR t2.name=$10)"
+	want += " (t1.name=$1 AND t1.price=$2 AND t3.code=$3 AND t2.name=$4) OR (t1.price=$5 OR (t3.code IN ($6,$7,$8,$9)) OR t2.name=$10)"
 	if got != want {
 		t.Fatalf("want %v, got %v", want, got)
 	}

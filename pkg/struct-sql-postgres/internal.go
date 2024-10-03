@@ -27,8 +27,18 @@ func (h *StructSQL) getFieldsTags() map[string]map[string]string {
 	return h.fieldsTags
 }
 
-func (h *StructSQL) reflectStruct(u interface{}, dbTablePrefix string, forceName string) {
+func (h *StructSQL) reflectStruct(u interface{}, dbTablePrefix string, forceName string, useRootNameWhenHasDeps bool) {
 	h.reflectStructForValidation(u)
+	if h.hasDependencies && useRootNameWhenHasDeps {
+		
+		v := reflect.ValueOf(u)
+		i := reflect.Indirect(v)
+		s := i.Type()
+		if strings.Contains(s.Name(), "_") {
+			nArr := strings.Split(s.Name(), "_")
+			forceName = nArr[0]
+		}
+	}
 	h.reflectStructForDBQueries(u, dbTablePrefix, forceName)
 }
 
@@ -478,8 +488,15 @@ func (h *StructSQL) getQueryFilters(filters map[string]interface{}, filterFields
 		return ""
 	}
 
-	sorted := []string{}
+	// Sort filter by their names
+	filterNames := []string{}
 	for k := range filters {
+		filterNames = append(filterNames, k)
+	}
+	sort.Strings(filterNames)
+
+	sorted := []string{}
+	for _, k := range filterNames {
 		if h.dbFieldCols[k] == "" {
 			continue
 		}
@@ -494,8 +511,6 @@ func (h *StructSQL) getQueryFilters(filters map[string]interface{}, filterFields
 	}
 
 	if len(sorted) > 0 {
-		sort.Strings(sorted)
-
 		for _, col := range sorted {
 			qWhere = h.addWithAnd(qWhere, fmt.Sprintf(col+"=$%d", i))
 			i++
