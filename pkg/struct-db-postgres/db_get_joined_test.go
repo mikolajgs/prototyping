@@ -92,6 +92,38 @@ func TestJoinedGet(t *testing.T) {
 	if ps[0].(*Product_WithDetails).ProductKind_Name != "Kind 1" || ps[0].(*Product_WithDetails).ProductGrp_Code != "GRP1" {
 		t.Fatalf("Get failed to return correct list of joined objects")
 	}
+
+	ps, err = testController.Get(func() interface{} {
+		return &Product_WithDetails{}
+	}, GetOptions{
+		Order: []string{"ID", "asc"},
+		Limit: 22,
+		Offset: 0,
+		Filters: map[string]interface{}{
+			"Name": "Product Name 1",
+			"ProductKind_Name": "Kind 12",
+			"ProductGrp_Code": "GRP12",
+			"_raw": []interface{}{
+				"(.Name=? OR .ProductGrp_Code=? OR .ProductKind_Name IN (?))",
+				"Product Name",
+				"GRP1",
+				[]string{"Kind 1", "Kind 2"},
+			},
+			"_rawConjuction": RawConjuctionOR,
+		},
+	})
+	if err != nil {
+		t.Fatalf("Get failed to return list of joined structs using raw filter: %s", err.Op)
+	}
+	if len(ps) != 1 {
+		t.Fatalf("Get failed to return list of joined structs using raw filter, want %v, got %v", 1, len(ps))
+	}
+	if ps[0].(*Product_WithDetails).Name != "Product Name" || ps[0].(*Product_WithDetails).Price != 1234 || ps[0].(*Product_WithDetails).ProductKindID != 33 || ps[0].(*Product_WithDetails).ProductGrpID != 113 {
+		t.Fatalf("Get failed to set fields on returned list of joined structs using raw filter")
+	}
+	if ps[0].(*Product_WithDetails).ProductKind_Name != "Kind 1" || ps[0].(*Product_WithDetails).ProductGrp_Code != "GRP1" {
+		t.Fatalf("Get failed to set fields on returned list of joined structs using raw filter")
+	}
 }
 
 func createTestJoinedStructs() {
