@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"text/template"
 
+	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
 	sthtml "github.com/mikolajgs/prototyping/pkg/struct-html"
 	stsql "github.com/mikolajgs/prototyping/pkg/struct-sql-postgres"
 )	
@@ -23,7 +24,7 @@ func (c *Controller) getStructItemTplObj(uri string, objFunc func() interface{},
 	o := objFunc()
 
 	if id != "" {
-		err := c.struct2db.Load(o, id)
+		err := c.struct2db.Load(o, id, stdb.LoadOptions{})
 		if err != nil {
 			return nil, err
 		}

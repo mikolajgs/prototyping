@@ -11,12 +11,15 @@ import (
 )
 
 // getSQLGenerator returns a special StructSQL instance which reflects the struct type to get SQL queries etc.
-func (c *Controller) getSQLGenerator(obj interface{}) (*stsql.StructSQL, *ErrController) {
-	n := c.getSQLGeneratorName(obj)
+func (c *Controller) getSQLGenerator(obj interface{}, generators map[string]*stsql.StructSQL, forceName string) (*stsql.StructSQL, *ErrController) {
+	n := c.getSQLGeneratorName(obj, false)
 	if c.sqlGenerators[n] == nil {
 		h := stsql.NewStructSQL(obj, stsql.StructSQLOptions{
 			DatabaseTablePrefix: c.dbTblPrefix,
 			TagName: c.tagName,
+			Dependencies: generators,
+			ForceName: forceName,
+			UseOnlyRootNameWhenDeps: true,
 		})
 		if h.Err() != nil {
 			return nil, &ErrController{
@@ -29,11 +32,17 @@ func (c *Controller) getSQLGenerator(obj interface{}) (*stsql.StructSQL, *ErrCon
 	return c.sqlGenerators[n], nil
 }
 
-func (c *Controller) getSQLGeneratorName(obj interface{}) string {
+func (c *Controller) getSQLGeneratorName(obj interface{}, onlyRoot bool) string {
 	v := reflect.ValueOf(obj)
 	i := reflect.Indirect(v)
 	s := i.Type()
 	n := s.Name()
+
+	if onlyRoot && strings.Contains(n, "_") {
+		nArr := strings.SplitN(n, "_", 1)
+		return nArr[0]
+	}
+
 	return n
 }
 

@@ -31,6 +31,9 @@ type StructSQL struct {
 	flags int
 
 	defaultFieldsTags map[string]map[string]string
+	dependenciesFieldsTags map[string]map[string]map[string]string
+	hasDependencies bool
+	dependencies map[string]*StructSQL
 
 	err *ErrStructSQL
 
@@ -45,6 +48,8 @@ type StructSQLOptions struct {
 	ForceName string
 	SourceStructSQL *StructSQL
 	TagName string
+	Dependencies map[string]*StructSQL
+	UseOnlyRootNameWhenDeps bool
 }
 
 // NewStructSQL takes object and database table name prefix as arguments and returns StructSQL instance.
@@ -57,7 +62,9 @@ func NewStructSQL(obj interface{}, options StructSQLOptions) *StructSQL {
 	}
 
 	h.setDefaultTags(options.SourceStructSQL)
-	h.reflectStruct(obj, options.DatabaseTablePrefix, options.ForceName)
+	h.dependencies = options.Dependencies
+	h.setDependenciesTags()
+	h.reflectStruct(obj, options.DatabaseTablePrefix, options.ForceName, options.UseOnlyRootNameWhenDeps)
 	return h
 }
 
@@ -73,30 +80,50 @@ func (h *StructSQL) GetFlags() int {
 
 // GetQueryDropTable returns a DROP TABLE query.
 func (h StructSQL) GetQueryDropTable() string {
+	// When a struct contains fields that are pointers to other structs and these are meant to be joined, only SELECT can be generated
+	if h.hasDependencies {
+		return ""
+	}
 	return h.queryDropTable
 }
 
 // GetQueryCreateTable return a CREATE TABLE query.
 // Columns in the query are ordered the same way as they are defined in the struct, eg. SELECT field1_column, field2_column, ... etc.
 func (h StructSQL) GetQueryCreateTable() string {
+	if h.hasDependencies {
+		return ""
+	}
+
 	return h.queryCreateTable
 }
 
 // GetQueryInsert returns an INSERT query.
 // Columns in the INSERT query are ordered the same way as they are defined in the struct, eg. SELECT field1_column, field2_column, ... etc.
 func (h *StructSQL) GetQueryInsert() string {
+	if h.hasDependencies {
+		return ""
+	}
+
 	return h.queryInsert
 }
 
 // GetQueryUpdateById returns an UPDATE query with WHERE condition on ID field.
 // Columns in the UPDATE query are ordered the same way as they are defined in the struct, eg. SELECT field1_column, field2_column, ... etc.
 func (h *StructSQL) GetQueryUpdateById() string {
+	if h.hasDependencies {
+		return ""
+	}
+
 	return h.queryUpdateById
 }
 
 // GetQueryInsertOnConflictUpdate returns an "upsert" query, which will INSERT data when it does not exist or UPDATE it otherwise.
 // Columns in the query are ordered the same way as they are defined in the struct, eg. SELECT field1_column, field2_column, ... etc.
 func (h *StructSQL) GetQueryInsertOnConflictUpdate() string {
+	if h.hasDependencies {
+		return ""
+	}
+
 	return h.queryInsertOnConflictUpdate
 }
 
@@ -108,6 +135,9 @@ func (h *StructSQL) GetQuerySelectById() string {
 
 // GetQueryDeleteById returns a DELETE query with WHERE condition on ID field.
 func (h *StructSQL) GetQueryDeleteById() string {
+	if h.hasDependencies {
+		return ""
+	}
 	return h.queryDeleteById
 }
 
@@ -147,6 +177,10 @@ func (h *StructSQL) GetQuerySelectCount(filters map[string]interface{}, filterFi
 // GetQueryDelete return a DELETE query with WHERE condition built from 'filters' (field-value pairs).
 // Struct fields in 'filters' argument are sorted alphabetically. Hence, when used with database connection, their values (or pointers to it) must be sorted as well.
 func (h *StructSQL) GetQueryDelete(filters map[string]interface{}, filterFieldsToInclude map[string]bool) string {
+	if h.hasDependencies {
+		return ""
+	}
+
 	s := h.queryDeletePrefix
 	qWhere := h.getQueryFilters(filters, filterFieldsToInclude, 1)
 	if qWhere != "" {
@@ -158,6 +192,10 @@ func (h *StructSQL) GetQueryDelete(filters map[string]interface{}, filterFieldsT
 // GetQueryDelete return a DELETE query with WHERE condition built from 'filters' (field-value pairs) with RETURNING id.
 // Struct fields in 'filters' argument are sorted alphabetically. Hence, when used with database connection, their values (or pointers to it) must be sorted as well.
 func (h *StructSQL) GetQueryDeleteReturningID(filters map[string]interface{}, filterFieldsToInclude map[string]bool) string {
+	if h.hasDependencies {
+		return ""
+	}
+
 	s := h.queryDeletePrefix
 	qWhere := h.getQueryFilters(filters, filterFieldsToInclude, 1)
 	if qWhere != "" {
@@ -170,6 +208,10 @@ func (h *StructSQL) GetQueryDeleteReturningID(filters map[string]interface{}, fi
 // GetQueryUpdate returns an UPDATE query where specified struct fields (columns) are updated and rows match specific WHERE condition built from 'filters' (field-value pairs).
 // Struct fields in 'values' and 'filters' arguments, are sorted alphabetically. Hence, when used with database connection, their values (or pointers to it) must be sorted as well.
 func (h *StructSQL) GetQueryUpdate(values map[string]interface{}, filters map[string]interface{}, valueFieldsToInclude map[string]bool, filterFieldsToInclude map[string]bool) string {
+	if h.hasDependencies {
+		return ""
+	}
+
 	s := h.queryUpdatePrefix
 
 	qSet, lastVarNumber := h.getQuerySet(values, valueFieldsToInclude)
@@ -183,7 +225,7 @@ func (h *StructSQL) GetQueryUpdate(values map[string]interface{}, filters map[st
 	return s
 }
 
-// GetFieldNameFromDBCol returns field name from a database column.
+// GetFieldNameFromDBCol returns field name from a table column.
 func (h *StructSQL) GetFieldNameFromDBCol(n string) string {
 	return h.dbCols[n]
 }

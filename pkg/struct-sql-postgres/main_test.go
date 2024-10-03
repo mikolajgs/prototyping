@@ -33,6 +33,39 @@ type TestStruct struct {
 	Key string `json:"key" 2sql:"uniq db_type:varchar(2000)"`
 }
 
+// Test structs for INNER JOIN
+type ProductKind struct {
+	ID int64
+	Name string
+}
+
+type ProductGroup struct {
+	ID int64
+	Name string
+	Description string
+	Code string
+}
+
+type Product struct {
+	ID int64
+	Name string
+	Price int
+	ProductKindID int64
+	ProductGrpID int64
+}
+
+type Product_WithDetails struct {
+	ID int64
+	Name string
+	Price int
+	ProductKindID int64
+	ProductGrpID int64
+	ProductKind *ProductKind `2db:"join"`
+	ProductKind_Name string
+	ProductGrp *ProductGroup `2db:"join"`
+	ProductGrp_Code string
+}
+
 // Instance of the test object
 var testStructObj = &TestStruct{}
 
@@ -46,7 +79,7 @@ func TestSQLQueries(t *testing.T) {
 	}
 
 	got = h.GetQueryCreateTable()
-	want = "CREATE TABLE test_structs (test_struct_id SERIAL PRIMARY KEY,test_struct_flags BIGINT DEFAULT 0,primary_email VARCHAR(255) DEFAULT '',email_secondary VARCHAR(255) DEFAULT '',first_name VARCHAR(255) DEFAULT '',last_name VARCHAR(255) DEFAULT '',age BIGINT DEFAULT 0,price BIGINT DEFAULT 0,post_code VARCHAR(255) DEFAULT '',post_code2 VARCHAR(255) DEFAULT '',password VARCHAR(255) DEFAULT '',created_by_user_id BIGINT DEFAULT 0,key VARCHAR(2000) DEFAULT '' UNIQUE)"
+	want = "CREATE TABLE test_structs (test_struct_id SERIAL PRIMARY KEY,test_struct_flags BIGINT NOT NULL DEFAULT 0,primary_email VARCHAR(255) NOT NULL DEFAULT '',email_secondary VARCHAR(255) NOT NULL DEFAULT '',first_name VARCHAR(255) NOT NULL DEFAULT '',last_name VARCHAR(255) NOT NULL DEFAULT '',age BIGINT NOT NULL DEFAULT 0,price BIGINT NOT NULL DEFAULT 0,post_code VARCHAR(255) NOT NULL DEFAULT '',post_code2 VARCHAR(255) NOT NULL DEFAULT '',password VARCHAR(255) NOT NULL DEFAULT '',created_by_user_id BIGINT NOT NULL DEFAULT 0,key VARCHAR(2000) NOT NULL DEFAULT '' UNIQUE)"
 	if got != want {
 		t.Fatalf("Want %v, got %v", want, got)
 	}
@@ -98,32 +131,34 @@ func TestSQLDeleteQueries(t *testing.T) {
 func TestSQLSelectQueries(t *testing.T) {
 	h := NewStructSQL(testStructObj, StructSQLOptions{})
 
+	selectPrefix := "SELECT test_struct_id,test_struct_flags,primary_email,email_secondary,first_name,last_name,age,price,post_code,post_code2,password,created_by_user_id,key FROM test_structs"
+
 	got := h.GetQuerySelectById()
-	want := "SELECT test_struct_id,test_struct_flags,primary_email,email_secondary,first_name,last_name,age,price,post_code,post_code2,password,created_by_user_id,key FROM test_structs WHERE test_struct_id = $1"
+	want := selectPrefix + " WHERE test_struct_id = $1"
 	if got != want {
 		t.Fatalf("Want %v, got %v", want, got)
 	}
 
 	got = h.GetQuerySelect(nil, 67, 13, nil, nil, nil)
-	want = "SELECT test_struct_id,test_struct_flags,primary_email,email_secondary,first_name,last_name,age,price,post_code,post_code2,password,created_by_user_id,key FROM test_structs LIMIT 67 OFFSET 13"
+	want = selectPrefix + " LIMIT 67 OFFSET 13"
 	if got != want {
 		t.Fatalf("want %v, got %v", want, got)
 	}
 
 	got = h.GetQuerySelect([]string{"EmailSecondary", "desc", "Age", "asc"}, 67, 13, map[string]interface{}{"Price": 4444, "PostCode2": "11-111"}, nil, nil)
-	want = "SELECT test_struct_id,test_struct_flags,primary_email,email_secondary,first_name,last_name,age,price,post_code,post_code2,password,created_by_user_id,key FROM test_structs WHERE post_code2=$1 AND price=$2 ORDER BY email_secondary DESC,age ASC LIMIT 67 OFFSET 13"
+	want = selectPrefix + " WHERE post_code2=$1 AND price=$2 ORDER BY email_secondary DESC,age ASC LIMIT 67 OFFSET 13"
 	if got != want {
 		t.Fatalf("want %v, got %v", want, got)
 	}
 
 	got = h.GetQuerySelect([]string{"EmailSecondary", "desc", "Age", "asc"}, 67, 13, map[string]interface{}{"Price": 4444, "PostCode2": "11-111"}, map[string]bool{"EmailSecondary": true}, nil)
-	want = "SELECT test_struct_id,test_struct_flags,primary_email,email_secondary,first_name,last_name,age,price,post_code,post_code2,password,created_by_user_id,key FROM test_structs WHERE post_code2=$1 AND price=$2 ORDER BY email_secondary DESC LIMIT 67 OFFSET 13"
+	want = selectPrefix + " WHERE post_code2=$1 AND price=$2 ORDER BY email_secondary DESC LIMIT 67 OFFSET 13"
 	if got != want {
 		t.Fatalf("want %v, got %v", want, got)
 	}
 
 	got = h.GetQuerySelect([]string{"EmailSecondary", "desc", "Age", "asc"}, 67, 13, map[string]interface{}{"Price": 4444, "PostCode2": "11-111"}, map[string]bool{"EmailSecondary": true}, map[string]bool{"Price": true})
-	want = "SELECT test_struct_id,test_struct_flags,primary_email,email_secondary,first_name,last_name,age,price,post_code,post_code2,password,created_by_user_id,key FROM test_structs WHERE price=$1 ORDER BY email_secondary DESC LIMIT 67 OFFSET 13"
+	want = selectPrefix + " WHERE price=$1 ORDER BY email_secondary DESC LIMIT 67 OFFSET 13"
 	if got != want {
 		t.Fatalf("want %v, got %v", want, got)
 	}
@@ -147,8 +182,7 @@ func TestSQLSelectQueries(t *testing.T) {
 	}, map[string]bool{
 		"Price": true,
 	})
-	want = "SELECT test_struct_id,test_struct_flags,primary_email,email_secondary,first_name,last_name,age,price,post_code,post_code2,password,created_by_user_id,key"
-	want += " FROM test_structs WHERE"
+	want = selectPrefix + " WHERE"
 	want += " (price=$1) OR (price=$2 OR (email_secondary=$3 AND age IN ($4,$5,$6,$7)) OR (age IN ($8,$9,$10)) OR (email_secondary IN ($11,$12)))"
 	want += " ORDER BY email_secondary ASC LIMIT 1 OFFSET 3"
 	if got != want {
@@ -278,4 +312,72 @@ func TestPluralName(t *testing.T) {
 	if got != want {
 		t.Fatalf("Want %v, got %v", want, got)
 	}
+}
+
+func TestSQLSelectQueriesWithJoin(t *testing.T) {
+	h := NewStructSQL(&Product_WithDetails{}, StructSQLOptions{
+		Dependencies: map[string]*StructSQL{
+			"ProductGrp": NewStructSQL(&ProductGroup{}, StructSQLOptions{}),
+			"ProductKind": NewStructSQL(&ProductKind{}, StructSQLOptions{}),
+		},
+		ForceName: "Product",
+	})
+
+	selectPrefix := "SELECT t1.product_id,t1.name,t1.price,t1.product_kind_id,t1.product_grp_id,t2.name,t3.code"
+	selectPrefix += " FROM products t1 INNER JOIN product_kinds t2 ON t1.product_kind_id=t2.product_kind_id"
+	selectPrefix += " INNER JOIN product_groups t3 ON t1.product_grp_id=t3.product_group_id"
+
+	got := h.GetQuerySelectById()
+	want := selectPrefix + " WHERE t1.product_id = $1"
+	if got != want {
+		t.Fatalf("Want %v, got %v", want, got)
+	}
+
+	got = h.GetQuerySelect([]string{"ProductKind_Name", "asc", "Name", "desc"}, 1, 3, map[string]interface{}{
+		"Name": "Product Name",
+		"ProductGrp_Code": "CODE1",
+		"Price": 4400,
+		"ProductKind_Name": "Kind 1",
+		"_raw": []interface{}{
+			".Price=? OR (.ProductGrp_Code IN (?)) OR .ProductKind_Name=?",
+			// We do not really care about the values, the query contains $x only symbols
+			// However, we need to pass either value or an array so that an array can be extracted into multiple $x's
+			0,
+			[]int{0,0,0,0},
+			0,
+		},
+		"_rawConjuction": RawConjuctionOR,
+	}, nil, nil)
+	want = selectPrefix + " WHERE"
+	want += " (t1.name=$1 AND t1.price=$2 AND t3.code=$3 AND t2.name=$4) OR (t1.price=$5 OR (t3.code IN ($6,$7,$8,$9)) OR t2.name=$10)"
+	want += " ORDER BY t2.name ASC,t1.name DESC LIMIT 1 OFFSET 3"
+	if got != want {
+		t.Fatalf("want %v, got %v", want, got)
+	}
+
+	got = h.GetQuerySelectCount(map[string]interface{}{
+		"Name": "Product Name",
+		"ProductGrp_Code": "CODE1",
+		"Price": 4400,
+		"ProductKind_Name": "Kind 1",
+		"_raw": []interface{}{
+			".Price=? OR (.ProductGrp_Code IN (?)) OR .ProductKind_Name=?",
+			// We do not really care about the values, the query contains $x only symbols
+			// However, we need to pass either value or an array so that an array can be extracted into multiple $x's
+			0,
+			[]int{0,0,0,0},
+			0,
+		},
+		"_rawConjuction": RawConjuctionOR,
+	}, nil)
+
+	want = "SELECT COUNT(*) AS cnt"
+	want += " FROM products t1 INNER JOIN product_kinds t2 ON t1.product_kind_id=t2.product_kind_id"
+	want += " INNER JOIN product_groups t3 ON t1.product_grp_id=t3.product_group_id"
+	want += " WHERE"
+	want += " (t1.name=$1 AND t1.price=$2 AND t3.code=$3 AND t2.name=$4) OR (t1.price=$5 OR (t3.code IN ($6,$7,$8,$9)) OR t2.name=$10)"
+	if got != want {
+		t.Fatalf("want %v, got %v", want, got)
+	}
+
 }

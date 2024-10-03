@@ -30,7 +30,7 @@ func (c Controller) CreateTables(xobj ...interface{}) *ErrController {
 // converts them into table and columns names (all lowercase with underscore), assigns column type based on the
 // field type, and then executes "CREATE TABLE" query on attached DB connection
 func (c Controller) CreateTable(obj interface{}) *ErrController {
-	h, err := c.getSQLGenerator(obj)
+	h, err := c.getSQLGenerator(obj, nil, "")
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func (c Controller) CreateTable(obj interface{}) *ErrController {
 // DropTable drops database table used to store specified type of objects. It just takes struct name, converts
 // it to lowercase-with-underscore table name and executes "DROP TABLE" query using attached DB connection
 func (c Controller) DropTable(obj interface{}) *ErrController {
-	h, err := c.getSQLGenerator(obj)
+	h, err := c.getSQLGenerator(obj, nil, "")
 	if err != nil {
 		return err
 	}
