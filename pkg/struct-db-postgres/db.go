@@ -13,7 +13,7 @@ const RawConjuctionOR = 1
 const RawConjuctionAND = 2
 
 type LoadOptions struct {
-	Constructors map[string]func() interface{}
+	Unused bool
 }
 
 type SaveOptions struct {
@@ -26,7 +26,6 @@ type GetOptions struct {
 	Offset int
 	Filters map[string]interface{}
 	RowObjTransformFunc func(interface{}) interface{}
-	Constructors map[string]func() interface{}
 }
 
 type DeleteOptions struct {
