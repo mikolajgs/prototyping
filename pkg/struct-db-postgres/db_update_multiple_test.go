@@ -25,9 +25,7 @@ func TestUpdateMultiple(t *testing.T) {
 	}
 
 	// Update multiple rows from the database
-	err := testController.UpdateMultiple(func() interface{} {
-		return &TestStruct{}
-	}, map[string]interface{}{
+	err := testController.UpdateMultiple(&TestStruct{}, map[string]interface{}{
 		"PrimaryEmail": "newemail@example.com",
 		"Age": 98,
 	},

@@ -152,7 +152,7 @@ func (c Controller) Delete(obj interface{}, options DeleteOptions) *ErrControlle
 	c.ResetFields(obj)
 
 	// Loop through fields to delete cascade
-	err3 := c.runOnDelete(obj, options.Constructors, c.tagName, []int64{id}, 0)
+	err3 := c.runOnDelete(obj, c.tagName, []int64{id}, 0)
 	if err3 != nil {
 		return err3
 	}
@@ -161,14 +161,13 @@ func (c Controller) Delete(obj interface{}, options DeleteOptions) *ErrControlle
 }
 
 // DeleteMultiple removes objects from the database based on specified filters
-func (c Controller) DeleteMultiple(newObjFunc func() interface{}, options DeleteMultipleOptions) (*ErrController) {
-	obj := newObjFunc()
+func (c Controller) DeleteMultiple(obj interface{}, options DeleteMultipleOptions) (*ErrController) {
 	h, err := c.getSQLGenerator(obj, nil, "")
 	if err != nil {
 		return err
 	}
 
-	if len(options.Filters) > 0 {
+	/*if len(options.Filters) > 0 {
 		b, invalidFields, err1 := c.Validate(obj, options.Filters)
 		if err1 != nil {
 			return &ErrController{
@@ -185,7 +184,7 @@ func (c Controller) DeleteMultiple(newObjFunc func() interface{}, options Delete
 				},
 			}
 		}
-	}
+	}*/
 
 	// Run DELETE query and get IDs of deleted rows
 	rows, err2 := c.dbConn.Query(h.GetQueryDeleteReturningID(options.Filters, nil), c.GetFiltersInterfaces(options.Filters)...)
@@ -214,7 +213,7 @@ func (c Controller) DeleteMultiple(newObjFunc func() interface{}, options Delete
 
 	if options.CascadeDeleteDepth < 3 {
 		// Loop through fields to delete cascade
-		err3 := c.runOnDelete(obj, options.Constructors, c.tagName, returnedIds, options.CascadeDeleteDepth)
+		err3 := c.runOnDelete(obj, c.tagName, returnedIds, options.CascadeDeleteDepth)
 		if err3 != nil {
 			return err3
 		}
@@ -224,14 +223,13 @@ func (c Controller) DeleteMultiple(newObjFunc func() interface{}, options Delete
 }
 
 // UpdateMultiple updates specific fields in objects from the database based on specified filters
-func (c Controller) UpdateMultiple(newObjFunc func() interface{}, values map[string]interface{}, options UpdateMultipleOptions) (*ErrController) {
-	obj := newObjFunc()
+func (c Controller) UpdateMultiple(obj interface{}, values map[string]interface{}, options UpdateMultipleOptions) (*ErrController) {
 	h, err := c.getSQLGenerator(obj, nil, "")
 	if err != nil {
 		return err
 	}
 
-	if len(values) < 1 {
+	/*if len(values) < 1 {
 		return &ErrController{
 			Op: "MissingValues",
 			Err: fmt.Errorf("Missing values for update"),
@@ -276,7 +274,7 @@ func (c Controller) UpdateMultiple(newObjFunc func() interface{}, values map[str
 				},
 			}
 		}
-	}
+	}*/
 
 	_, err2 := c.dbConn.Exec(h.GetQueryUpdate(values, options.Filters, nil, nil), append(c.GetFiltersInterfaces(values), c.GetFiltersInterfaces(options.Filters)...)...)
 	if err2 != nil {

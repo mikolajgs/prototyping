@@ -36,7 +36,19 @@ func (c *Controller) getSQLGeneratorName(obj interface{}, onlyRoot bool) string 
 	v := reflect.ValueOf(obj)
 	i := reflect.Indirect(v)
 	s := i.Type()
-	n := s.Name()
+
+	var n string
+
+	if s.String() == "reflect.Value" {
+		s = reflect.ValueOf(obj.(reflect.Value).Interface()).Type().Elem().Elem()
+		n = s.Name()
+		if strings.Contains(s.Name(), ".") {
+			sArr := strings.Split(s.Name(), ".")
+			n = sArr[1]
+		}
+	} else {
+		n = s.Name()
+	}
 
 	if onlyRoot && strings.Contains(n, "_") {
 		nArr := strings.SplitN(n, "_", 1)
@@ -54,30 +66,41 @@ func (c Controller) mapWithInterfacesToMapBool(m map[string]interface{}) map[str
 	return o
 }
 
-func (c Controller) runOnDelete(obj interface{}, constructors map[string]func() interface{}, tagName string, ids []int64, lastDepth int) *ErrController {
-	val := reflect.ValueOf(obj).Elem()
-	typ := val.Type()
-	structName := typ.Name()
+func (c Controller) runOnDelete(obj interface{}, tagName string, ids []int64, lastDepth int) *ErrController {
+	v := reflect.ValueOf(obj)
+	i := reflect.Indirect(v)
+	s := i.Type()
+
+	var isReflectValue bool
+	if s.String() == "reflect.Value" {
+		isReflectValue = true
+		s = reflect.ValueOf(obj.(reflect.Value).Interface()).Type().Elem().Elem()
+	}
+
+	var structName string
+	if !isReflectValue {
+		structName = s.Name()
+	} else {
+		if strings.Contains(s.Name(), ".") {
+			sArr := strings.Split(s.Name(), ".")
+			structName = sArr[1]
+		}
+	}
 	parentIDField := structName + "ID"
 
 	tagRegexp := regexp.MustCompile(`[a-zA-Z0-9_]+\:[a-zA-Z0-9_-]+`)
 
-	for i := 0; i < val.NumField(); i++ {
-		valueField := val.Field(i)
-		// Only field which are slices of pointers to struct instances
-		if valueField.Kind() != reflect.Slice || valueField.Type().Elem().Kind() != reflect.Ptr || valueField.Type().Elem().Elem().Kind() != reflect.Struct {
-			continue
-		}
-		childStructName := valueField.Type().Elem().Elem().Name()
+	for i := 0; i < s.NumField(); i++ {
+		f := s.Field(i)
+		k := f.Type.Kind()
 
-		// Check if constructor is passed in the options - if not then then ignore the child
-		_, ok := constructors[childStructName]
-		if !ok {
+		// Only field which are slices of pointers to struct instances
+		if k != reflect.Slice || f.Type.Elem().Kind() != reflect.Ptr || f.Type.Elem().Elem().Kind() != reflect.Struct {
 			continue
 		}
 
 		// Get 2db tag, loop through its value on determine action based on it
-		tag := typ.Field(i).Tag.Get(tagName)
+		tag := s.Field(i).Tag.Get(tagName)
 		if tag == "" {
 			continue
 		}
@@ -95,9 +118,10 @@ func (c Controller) runOnDelete(obj interface{}, constructors map[string]func() 
 		if tagsMap["on_del"] == "del" {
 			if tagsMap["del_field"] != "" {
 				parentIDField = tagsMap["del_field"]
-			}
+			} 
+
 			// Delete from children table where parent ID = id of deleted object
-			errCtl := c.DeleteMultiple(constructors[childStructName], DeleteMultipleOptions{
+			errCtl := c.DeleteMultiple(reflect.New(f.Type.Elem()), DeleteMultipleOptions{
 				Filters: map[string]interface{}{
 					"_raw": []interface{}{
 						fmt.Sprintf(".%s IN (?)", parentIDField),
@@ -105,7 +129,6 @@ func (c Controller) runOnDelete(obj interface{}, constructors map[string]func() 
 					},
 				},
 				CascadeDeleteDepth: lastDepth + 1,
-				Constructors: constructors,
 			})
 			if errCtl != nil {
 				return &ErrController{
@@ -122,7 +145,7 @@ func (c Controller) runOnDelete(obj interface{}, constructors map[string]func() 
 			if updField == "" {
 				return &ErrController{
 					Op: "CascadeDelete",
-					Err: errors.New("Missing update field in tags"),
+					Err: errors.New("missing update field in tags"),
 				}
 			}
 
@@ -130,7 +153,7 @@ func (c Controller) runOnDelete(obj interface{}, constructors map[string]func() 
 				parentIDField = tagsMap["del_field"]
 			}
 			// Update children table where parent ID = id of deleted object
-			errCtl := c.UpdateMultiple(constructors[childStructName],
+			errCtl := c.UpdateMultiple(reflect.New(f.Type.Elem()),
 				map[string]interface{}{
 					updField: updValue,
 				},

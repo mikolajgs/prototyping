@@ -85,13 +85,16 @@ func TestDeleteCascade(t *testing.T) {
 	}
 
 	// Delete the parent object
-	_ = testController.Delete(p, DeleteOptions{
+	err1 := testController.Delete(p, DeleteOptions{
 		Constructors: map[string]func() interface{}{
 			"DelChildNone": func() interface{} { return &DelChildNone{}; },
 			"DelChildDelete": func() interface{} { return &DelChildDelete{}; },
 			"DelChildUpdate": func() interface{} { return &DelChildUpdate{}; },
 		},
 	})
+	if err1 != nil {
+		t.Fatalf("Failed to run Delete successfully: %s", err1.Err.Error())
+	}
 
 	// Check things
 	// 1 should be removed

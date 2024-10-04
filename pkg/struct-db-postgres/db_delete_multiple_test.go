@@ -26,9 +26,7 @@ func TestDeleteMultiple(t *testing.T) {
 	}
 
 	// Delete multiple rows from the database
-	err := testController.DeleteMultiple(func() interface{} {
-		return &TestStruct{}
-	}, DeleteMultipleOptions{
+	err := testController.DeleteMultiple(&TestStruct{}, DeleteMultipleOptions{
 		Filters: map[string]interface{}{"Price": 444, "PrimaryEmail": "primary@example.com"},
 	})
 	if err != nil {
@@ -64,9 +62,7 @@ func TestDeleteMultipleWithRawQuery(t *testing.T) {
 	}
 
 	// Delete multiple rows from the database
-	err := testController.DeleteMultiple(func() interface{} {
-		return &TestStruct{}
-	}, DeleteMultipleOptions{
+	err := testController.DeleteMultiple(&TestStruct{}, DeleteMultipleOptions{
 		Filters: map[string]interface{}{
 			"Price": 444,
 			"PrimaryEmail": "primary@example.com",
@@ -112,9 +108,7 @@ func TestDeleteMultipleWithRawQueryOnly(t *testing.T) {
 	}
 
 	// Delete multiple rows from the database
-	err := testController.DeleteMultiple(func() interface{} {
-		return &TestStruct{}
-	}, DeleteMultipleOptions{
+	err := testController.DeleteMultiple(&TestStruct{}, DeleteMultipleOptions{
 		Filters: map[string]interface{}{
 			"_raw": []interface{}{
 				"(.Price = ? AND .PrimaryEmail = ?) OR (.Age = ? OR .Age IN (?) OR (.Age = ? AND .PrimaryEmail = ?))",
