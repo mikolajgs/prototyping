@@ -168,7 +168,7 @@ func (c Controller) DeleteMultiple(obj interface{}, options DeleteMultipleOption
 	}
 
 	// TODO: Enable validation once struct-validator support reflect.Value
-	if len(options.Filters) > 0 && options.CascadeDeleteDepth == 0 {
+	if len(options.Filters) > 0 {
 		b, invalidFields, err1 := c.Validate(obj, options.Filters)
 		if err1 != nil {
 			return &ErrController{
@@ -241,41 +241,38 @@ func (c Controller) UpdateMultiple(obj interface{}, values map[string]interface{
 		values = c.StringToFieldValues(obj, values)
 	}
 
-	// TODO: Enable validation once struct-validator supports reflect.Value
-	if options.CascadeDeleteDepth == 0 {
-		b, invalidFields, err1 := c.Validate(obj, values)
+	b, invalidFields, err1 := c.Validate(obj, values)
+	if err1 != nil {
+		return &ErrController{
+			Op:  "ValidateValues",
+			Err: fmt.Errorf("Error when trying to validate values: %w", err1),
+		}
+	}
+
+	if !b {
+		return &ErrController{
+			Op: "ValidateValues",
+			Err: &ErrValidation{
+				Fields: invalidFields,
+			},
+		}
+	}
+
+	if len(options.Filters) > 0 {
+		b, invalidFields, err1 := c.Validate(obj, options.Filters)
 		if err1 != nil {
 			return &ErrController{
-				Op:  "ValidateValues",
-				Err: fmt.Errorf("Error when trying to validate values: %w", err1),
+				Op:  "ValidateFilters",
+				Err: fmt.Errorf("Error when trying to validate filters: %w", err1),
 			}
 		}
 
 		if !b {
 			return &ErrController{
-				Op: "ValidateValues",
+				Op: "ValidateFilters",
 				Err: &ErrValidation{
 					Fields: invalidFields,
 				},
-			}
-		}
-
-		if len(options.Filters) > 0 {
-			b, invalidFields, err1 := c.Validate(obj, options.Filters)
-			if err1 != nil {
-				return &ErrController{
-					Op:  "ValidateFilters",
-					Err: fmt.Errorf("Error when trying to validate filters: %w", err1),
-				}
-			}
-
-			if !b {
-				return &ErrController{
-					Op: "ValidateFilters",
-					Err: &ErrValidation{
-						Fields: invalidFields,
-					},
-				}
 			}
 		}
 	}

@@ -6,8 +6,7 @@ toolchain go1.22.7
 
 require (
 	github.com/lib/pq v1.10.9
-	github.com/mikolajgs/crud v0.0.0-20240930161558-2430e5cc8532
-	github.com/mikolajgs/struct-validator v0.4.5
+	github.com/mikolajgs/struct-validator v0.4.6
 	github.com/ory/dockertest/v3 v3.11.0
 )
 
