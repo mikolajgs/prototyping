@@ -30,10 +30,11 @@ type StructSQL struct {
 
 	flags int
 
-	defaultFieldsTags map[string]map[string]string
-	dependenciesFieldsTags map[string]map[string]map[string]string
-	hasDependencies bool
-	dependencies map[string]*StructSQL
+	baseFieldsTags map[string]map[string]string
+	joinedFieldsTags map[string]map[string]map[string]string
+
+	hasJoined bool
+	joined map[string]*StructSQL
 
 	err *ErrStructSQL
 
@@ -46,10 +47,12 @@ const RawConjuctionAND = 2
 type StructSQLOptions struct {
 	DatabaseTablePrefix string
 	ForceName string
-	SourceStructSQL *StructSQL
 	TagName string
-	Dependencies map[string]*StructSQL
-	UseOnlyRootNameWhenDeps bool
+	Joined map[string]*StructSQL
+	// In some cases, we might want to copy over tags from already existing StructSQL instance. Such is called Base in here.
+	Base *StructSQL
+	// When struct has a name like 'xx_yy' and it has joined structs, use 'xx' as a name for table and column names
+	UseRootNameWhenJoinedPresent bool
 }
 
 // NewStructSQL takes object and database table name prefix as arguments and returns StructSQL instance.
@@ -61,10 +64,20 @@ func NewStructSQL(obj interface{}, options StructSQLOptions) *StructSQL {
 		h.tagName = options.TagName
 	}
 
-	h.setDefaultTags(options.SourceStructSQL)
-	h.dependencies = options.Dependencies
-	h.setDependenciesTags()
-	h.reflectStruct(obj, options.DatabaseTablePrefix, options.ForceName, options.UseOnlyRootNameWhenDeps)
+	// Get field tags from Base StructSQL to use them instead of the ones parsed out from obj
+	h.setBaseTags(options.Base)
+
+	// If there are any joined structs (fields that are pointers to another structs and have the 'join' tag),
+	// then each of them require an StructSQL instance as well. Instead of getting new one, they can be passed
+	// straight away within the 'Joined' option.
+	if options.Joined != nil {
+		h.joined = options.Joined
+	} else {
+		h.joined = make(map[string]*StructSQL)
+	}
+	h.setJoinedTags()
+
+	h.reflectStruct(obj, options.DatabaseTablePrefix, options.ForceName, options.UseRootNameWhenJoinedPresent)
 	return h
 }
 
@@ -81,7 +94,7 @@ func (h *StructSQL) GetFlags() int {
 // GetQueryDropTable returns a DROP TABLE query.
 func (h StructSQL) GetQueryDropTable() string {
 	// When a struct contains fields that are pointers to other structs and these are meant to be joined, only SELECT can be generated
-	if h.hasDependencies {
+	if h.hasJoined {
 		return ""
 	}
 	return h.queryDropTable
@@ -90,7 +103,7 @@ func (h StructSQL) GetQueryDropTable() string {
 // GetQueryCreateTable return a CREATE TABLE query.
 // Columns in the query are ordered the same way as they are defined in the struct, eg. SELECT field1_column, field2_column, ... etc.
 func (h StructSQL) GetQueryCreateTable() string {
-	if h.hasDependencies {
+	if h.hasJoined {
 		return ""
 	}
 
@@ -100,7 +113,7 @@ func (h StructSQL) GetQueryCreateTable() string {
 // GetQueryInsert returns an INSERT query.
 // Columns in the INSERT query are ordered the same way as they are defined in the struct, eg. SELECT field1_column, field2_column, ... etc.
 func (h *StructSQL) GetQueryInsert() string {
-	if h.hasDependencies {
+	if h.hasJoined {
 		return ""
 	}
 
@@ -110,7 +123,7 @@ func (h *StructSQL) GetQueryInsert() string {
 // GetQueryUpdateById returns an UPDATE query with WHERE condition on ID field.
 // Columns in the UPDATE query are ordered the same way as they are defined in the struct, eg. SELECT field1_column, field2_column, ... etc.
 func (h *StructSQL) GetQueryUpdateById() string {
-	if h.hasDependencies {
+	if h.hasJoined {
 		return ""
 	}
 
@@ -120,7 +133,7 @@ func (h *StructSQL) GetQueryUpdateById() string {
 // GetQueryInsertOnConflictUpdate returns an "upsert" query, which will INSERT data when it does not exist or UPDATE it otherwise.
 // Columns in the query are ordered the same way as they are defined in the struct, eg. SELECT field1_column, field2_column, ... etc.
 func (h *StructSQL) GetQueryInsertOnConflictUpdate() string {
-	if h.hasDependencies {
+	if h.hasJoined {
 		return ""
 	}
 
@@ -135,7 +148,7 @@ func (h *StructSQL) GetQuerySelectById() string {
 
 // GetQueryDeleteById returns a DELETE query with WHERE condition on ID field.
 func (h *StructSQL) GetQueryDeleteById() string {
-	if h.hasDependencies {
+	if h.hasJoined {
 		return ""
 	}
 	return h.queryDeleteById
@@ -177,7 +190,7 @@ func (h *StructSQL) GetQuerySelectCount(filters map[string]interface{}, filterFi
 // GetQueryDelete return a DELETE query with WHERE condition built from 'filters' (field-value pairs).
 // Struct fields in 'filters' argument are sorted alphabetically. Hence, when used with database connection, their values (or pointers to it) must be sorted as well.
 func (h *StructSQL) GetQueryDelete(filters map[string]interface{}, filterFieldsToInclude map[string]bool) string {
-	if h.hasDependencies {
+	if h.hasJoined {
 		return ""
 	}
 
@@ -192,7 +205,7 @@ func (h *StructSQL) GetQueryDelete(filters map[string]interface{}, filterFieldsT
 // GetQueryDelete return a DELETE query with WHERE condition built from 'filters' (field-value pairs) with RETURNING id.
 // Struct fields in 'filters' argument are sorted alphabetically. Hence, when used with database connection, their values (or pointers to it) must be sorted as well.
 func (h *StructSQL) GetQueryDeleteReturningID(filters map[string]interface{}, filterFieldsToInclude map[string]bool) string {
-	if h.hasDependencies {
+	if h.hasJoined {
 		return ""
 	}
 
@@ -208,7 +221,7 @@ func (h *StructSQL) GetQueryDeleteReturningID(filters map[string]interface{}, fi
 // GetQueryUpdate returns an UPDATE query where specified struct fields (columns) are updated and rows match specific WHERE condition built from 'filters' (field-value pairs).
 // Struct fields in 'values' and 'filters' arguments, are sorted alphabetically. Hence, when used with database connection, their values (or pointers to it) must be sorted as well.
 func (h *StructSQL) GetQueryUpdate(values map[string]interface{}, filters map[string]interface{}, valueFieldsToInclude map[string]bool, filterFieldsToInclude map[string]bool) string {
-	if h.hasDependencies {
+	if h.hasJoined {
 		return ""
 	}
 

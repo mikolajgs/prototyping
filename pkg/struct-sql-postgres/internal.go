@@ -9,28 +9,28 @@ import (
 	"unicode"
 )
 
-func (h *StructSQL) setDefaultTags(src *StructSQL) {
-	if src != nil {
-		h.defaultFieldsTags = make(map[string]map[string]string)
-		h.defaultFieldsTags = src.getFieldsTags()
-	}
-}
-
-func (h *StructSQL) setDependenciesTags() {
-	h.dependenciesFieldsTags = make(map[string]map[string]map[string]string)
-	for k, v := range h.dependencies {
-		h.dependenciesFieldsTags[k] = v.getFieldsTags()
-	}
-}
-
 func (h *StructSQL) getFieldsTags() map[string]map[string]string {
 	return h.fieldsTags
 }
 
+func (h *StructSQL) setBaseTags(src *StructSQL) {
+	if src != nil {
+		h.baseFieldsTags = make(map[string]map[string]string)
+		h.baseFieldsTags = src.getFieldsTags()
+	}
+}
+
+func (h *StructSQL) setJoinedTags() {
+	h.joinedFieldsTags = make(map[string]map[string]map[string]string)
+	for k, v := range h.joined {
+		h.joinedFieldsTags[k] = v.getFieldsTags()
+	}
+}
+
 func (h *StructSQL) reflectStruct(u interface{}, dbTablePrefix string, forceName string, useRootNameWhenHasDeps bool) {
-	h.reflectStructForValidation(u)
-	if h.hasDependencies && useRootNameWhenHasDeps {
-		
+	h.reflectStructTags(u)
+
+	if h.hasJoined && useRootNameWhenHasDeps {
 		v := reflect.ValueOf(u)
 		i := reflect.Indirect(v)
 		s := i.Type()
@@ -47,6 +47,10 @@ func (h *StructSQL) reflectStructForDBQueries(u interface{}, dbTablePrefix strin
 	i := reflect.Indirect(v)
 	s := i.Type()
 
+	if s.String() == "reflect.Value" {
+		s = reflect.ValueOf(u.(reflect.Value).Interface()).Type().Elem().Elem()
+	}
+
 	// Get table name
 	usName := h.getUnderscoredName(s.Name())
 	if forceName != "" {
@@ -62,7 +66,7 @@ func (h *StructSQL) reflectStructForDBQueries(u interface{}, dbTablePrefix strin
 
 	var colsWithTypes, cols, vals, valsWithoutID, colsWithoutID, colVals, colValsAgain string
 	idCol := h.dbColPrefix + "_id"
-	if h.hasDependencies {
+	if h.hasJoined {
 		idCol = fmt.Sprintf("t1.%s", idCol)
 	}
 
@@ -72,6 +76,7 @@ func (h *StructSQL) reflectStructForDBQueries(u interface{}, dbTablePrefix strin
 
 	valCnt := 0
 	valWithoutIDCnt := 0
+
 	for j := 0; j < s.NumField(); j++ {
 		f := s.Field(j)
 		k := f.Type.Kind()
@@ -83,44 +88,46 @@ func (h *StructSQL) reflectStructForDBQueries(u interface{}, dbTablePrefix strin
 		}
 
 		// Process field named 'xx_yy' which could be a joined struct field
-		if h.hasDependencies && reDep.MatchString(f.Name) {
+		if reDep.MatchString(f.Name) {
 			fieldNameArr := strings.Split(f.Name, "_")
 
-			_, ok := h.dependencies[fieldNameArr[0]]
-			if ok {
-				col := h.dependencies[fieldNameArr[0]].dbFieldCols[fieldNameArr[1]]
-				tbl := h.dependencies[fieldNameArr[0]].dbTbl
-
-				if _, ok2 := joinedTables[fieldNameArr[0]]; !ok2 {
-					alias := fmt.Sprintf("t%d", len(joinedTables)+2)
-					innerJoins += fmt.Sprintf(
-						" INNER JOIN %s %s ON %s=%s.%s", 
-						tbl, alias,
-						h.dbFieldCols[fieldNameArr[0]+"ID"],
-						alias, h.dependencies[fieldNameArr[0]].dbFieldCols["ID"],
-					)
-					joinedTables[fieldNameArr[0]] = alias
-				}
-
-				dbCol := fmt.Sprintf("%s.%s", joinedTables[fieldNameArr[0]], col)
-
-				h.dbFieldCols[f.Name] = dbCol
-				h.dbCols[dbCol] = f.Name
-				
-				cols = h.addWithComma(cols, dbCol)
-				colsWithoutID = h.addWithComma(colsWithoutID, dbCol) // not used for now
-				valWithoutIDCnt++
-				valCnt++
-
-				h.fields = append(h.fields, f.Name)
-
+			_, ok := h.joined[fieldNameArr[0]]
+			if !ok {
 				continue
 			}
+
+			col := h.joined[fieldNameArr[0]].dbFieldCols[fieldNameArr[1]]
+			tbl := h.joined[fieldNameArr[0]].dbTbl
+
+			if _, ok2 := joinedTables[fieldNameArr[0]]; !ok2 {
+				alias := fmt.Sprintf("t%d", len(joinedTables)+2)
+				innerJoins += fmt.Sprintf(
+					" INNER JOIN %s %s ON %s=%s.%s", 
+					tbl, alias,
+					h.dbFieldCols[fieldNameArr[0]+"ID"],
+					alias, h.joined[fieldNameArr[0]].dbFieldCols["ID"],
+				)
+				joinedTables[fieldNameArr[0]] = alias
+			}
+
+			dbCol := fmt.Sprintf("%s.%s", joinedTables[fieldNameArr[0]], col)
+
+			h.dbFieldCols[f.Name] = dbCol
+			h.dbCols[dbCol] = f.Name
+			
+			cols = h.addWithComma(cols, dbCol)
+			colsWithoutID = h.addWithComma(colsWithoutID, dbCol) // not used for now
+			valWithoutIDCnt++
+			valCnt++
+
+			h.fields = append(h.fields, f.Name)
+
+			continue
 		}
 
 		// Continue when field does not come from joined struct
 		dbCol := h.getDBCol(f.Name)
-		if h.hasDependencies {
+		if h.hasJoined {
 			dbCol = "t1."+dbCol
 		}
 		h.dbFieldCols[f.Name] = dbCol
@@ -182,7 +189,7 @@ func (h *StructSQL) reflectStructForDBQueries(u interface{}, dbTablePrefix strin
 	h.queryDeletePrefix = fmt.Sprintf("DELETE FROM %s", h.dbTbl)
 	h.queryUpdatePrefix = fmt.Sprintf("UPDATE %s SET", h.dbTbl)
 
-	if h.hasDependencies {
+	if h.hasJoined {
 		h.querySelectById = fmt.Sprintf("SELECT %s FROM %s t1%s WHERE %s = $1", cols, h.dbTbl, innerJoins, idCol)
 		h.querySelectPrefix = fmt.Sprintf("SELECT %s FROM %s t1%s", cols, h.dbTbl, innerJoins)
 		h.querySelectCountPrefix = fmt.Sprintf("SELECT COUNT(*) AS cnt FROM %s t1%s", h.dbTbl, innerJoins)
@@ -194,10 +201,20 @@ func (h *StructSQL) reflectStructForDBQueries(u interface{}, dbTablePrefix strin
 
 }
 
-func (h *StructSQL) reflectStructForValidation(u interface{}) {
+func (h *StructSQL) reflectStructTags(u interface{}) {
 	v := reflect.ValueOf(u)
 	i := reflect.Indirect(v)
 	s := i.Type()
+
+	var isReflectValue bool
+	if s.String() == "reflect.Value" {
+		isReflectValue = true
+	}
+
+	var ve reflect.Value
+	if !isReflectValue {
+		ve = v.Elem()
+	}
 
 	h.fieldsDefaultValue = make(map[string]string)
 	h.fieldsUniq = make(map[string]bool)
@@ -205,6 +222,43 @@ func (h *StructSQL) reflectStructForValidation(u interface{}) {
 	h.fieldsOverwriteType = make(map[string]string)
 
 	reDep := regexp.MustCompile(`^[a-zA-Z0-9]+_[a-zA-Z0-9]+`)
+
+	// Check if struct has any joined structs, only if object passed to this function is not a reflect.Value
+	// (that means that the constructor for this StructSQL was called from another StructSQL)
+	if !isReflectValue {
+		for j := 0; j < s.NumField(); j++ {
+			f := s.Field(j);
+			valueField := ve.Field(j);
+			// Only field which are pointers to struct instances
+			if valueField.Kind() != reflect.Ptr || valueField.Type().Elem().Kind() != reflect.Struct {
+				continue
+			}
+
+			t := f.Tag.Get(h.tagName)
+			if t == "" {
+				continue
+			}
+			tArr := strings.Split(t, " ")
+			for _, tt := range tArr {
+				if tt == "join" {
+					h.hasJoined = true
+
+					// If field name is like 'xx_yy', get the 'xx'
+					fieldNameArr := strings.Split(f.Name, "_")
+
+					childStructName := valueField.Type().Elem().Name()
+
+					// If StructSQL instance for struct has not be provided yet, then instantiate one
+					_, ok := h.joined[fieldNameArr[0]]
+					if !ok {
+						h.joined[fieldNameArr[0]] = NewStructSQL(reflect.New(valueField.Type()),StructSQLOptions{
+							ForceName: childStructName,
+						})
+					}
+				}
+			}
+		}
+	}
 
 	for j := 0; j < s.NumField(); j++ {
 		f := s.Field(j)
@@ -216,49 +270,51 @@ func (h *StructSQL) reflectStructForValidation(u interface{}) {
 			continue
 		}
 
-		crudTag := f.Tag.Get(h.tagName)
-		crudValTag := f.Tag.Get(h.tagName+"_val")
-		if h.defaultFieldsTags != nil {
-			if crudTag == "" && h.defaultFieldsTags[f.Name][h.tagName] != "" {
-				crudTag = h.defaultFieldsTags[f.Name][h.tagName]
+		// Get value of field's 2sql and 2sql_val tags ('2sql' or different when TagName provided in options)
+		tagValue := f.Tag.Get(h.tagName)
+		valTagValue := f.Tag.Get(h.tagName+"_val")
+
+		// If Base was provided, copy over 2sql and 2sql_val tag values from the base StructSQL instance
+		if h.baseFieldsTags != nil {
+			if tagValue == "" && h.baseFieldsTags[f.Name][h.tagName] != "" {
+				tagValue = h.baseFieldsTags[f.Name][h.tagName]
 			}
-			if crudValTag == "" && h.defaultFieldsTags[f.Name][h.tagName+"_val"] != "" {
-				crudValTag = h.defaultFieldsTags[f.Name][h.tagName+"_val"]
+			if valTagValue == "" && h.baseFieldsTags[f.Name][h.tagName+"_val"] != "" {
+				valTagValue = h.baseFieldsTags[f.Name][h.tagName+"_val"]
 			}
 		}
 
-		// If field is like 'xxx_yyy', try to set tags from dependencies for 'xxx'
-		if h.dependenciesFieldsTags != nil && reDep.MatchString(f.Name) {
+		// If field is like 'xxx_yyy', try to set tags from joined structs for 'xxx'
+		if h.joinedFieldsTags != nil && reDep.MatchString(f.Name) {
 			fieldNameArr := strings.Split(f.Name, "_")
 
 			// Mark hasDependencies
-			_, ok := h.dependenciesFieldsTags[fieldNameArr[0]]
-			if !ok {
-				continue
-			}
-			h.hasDependencies = true
-
-			_, ok = h.dependenciesFieldsTags[fieldNameArr[0]][fieldNameArr[1]]
+			_, ok := h.joinedFieldsTags[fieldNameArr[0]]
 			if !ok {
 				continue
 			}
 
-			if crudTag == "" && h.dependenciesFieldsTags[fieldNameArr[0]][fieldNameArr[1]][h.tagName] != "" {
-				crudTag = h.dependenciesFieldsTags[fieldNameArr[0]][fieldNameArr[1]][h.tagName]
+			_, ok = h.joinedFieldsTags[fieldNameArr[0]][fieldNameArr[1]]
+			if !ok {
+				continue
 			}
-			if crudValTag == "" && h.dependenciesFieldsTags[fieldNameArr[0]][fieldNameArr[1]][h.tagName+"_val"] != "" {
-				crudValTag = h.dependenciesFieldsTags[fieldNameArr[0]][fieldNameArr[1]][h.tagName+"_val"]
+
+			if tagValue == "" && h.joinedFieldsTags[fieldNameArr[0]][fieldNameArr[1]][h.tagName] != "" {
+				tagValue = h.joinedFieldsTags[fieldNameArr[0]][fieldNameArr[1]][h.tagName]
+			}
+			if valTagValue == "" && h.joinedFieldsTags[fieldNameArr[0]][fieldNameArr[1]][h.tagName+"_val"] != "" {
+				valTagValue = h.joinedFieldsTags[fieldNameArr[0]][fieldNameArr[1]][h.tagName+"_val"]
 			}
 		}
 
 		// Go through tag values and parse out the ones we're interested in
-		h.setFieldFromTag(crudTag, f.Name)
+		h.setFieldFromTag(tagValue, f.Name)
 		if h.err != nil {
 			return
 		}
 
-		if crudValTag != "" {
-			h.fieldsDefaultValue[f.Name] = crudValTag
+		if valTagValue != "" {
+			h.fieldsDefaultValue[f.Name] = valTagValue
 		}
 
 		// Store original field tags (non-overwritten one) so they can be easily returned and used as

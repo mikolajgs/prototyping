@@ -60,9 +60,9 @@ type Product_WithDetails struct {
 	Price int
 	ProductKindID int64
 	ProductGrpID int64
-	ProductKind *ProductKind `2db:"join"`
+	ProductKind *ProductKind `2sql:"join"`
 	ProductKind_Name string
-	ProductGrp *ProductGroup `2db:"join"`
+	ProductGrp *ProductGroup `2sql:"join"`
 	ProductGrp_Code string
 }
 
@@ -316,10 +316,6 @@ func TestPluralName(t *testing.T) {
 
 func TestSQLSelectQueriesWithJoin(t *testing.T) {
 	h := NewStructSQL(&Product_WithDetails{}, StructSQLOptions{
-		Dependencies: map[string]*StructSQL{
-			"ProductGrp": NewStructSQL(&ProductGroup{}, StructSQLOptions{}),
-			"ProductKind": NewStructSQL(&ProductKind{}, StructSQLOptions{}),
-		},
 		ForceName: "Product",
 	})
 
