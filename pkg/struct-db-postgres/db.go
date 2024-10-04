@@ -167,7 +167,8 @@ func (c Controller) DeleteMultiple(obj interface{}, options DeleteMultipleOption
 		return err
 	}
 
-	/*if len(options.Filters) > 0 {
+	// TODO: Enable validation once struct-validator support reflect.Value
+	if len(options.Filters) > 0 && options.CascadeDeleteDepth == 0 {
 		b, invalidFields, err1 := c.Validate(obj, options.Filters)
 		if err1 != nil {
 			return &ErrController{
@@ -184,7 +185,7 @@ func (c Controller) DeleteMultiple(obj interface{}, options DeleteMultipleOption
 				},
 			}
 		}
-	}*/
+	}
 
 	// Run DELETE query and get IDs of deleted rows
 	rows, err2 := c.dbConn.Query(h.GetQueryDeleteReturningID(options.Filters, nil), c.GetFiltersInterfaces(options.Filters)...)
@@ -229,10 +230,10 @@ func (c Controller) UpdateMultiple(obj interface{}, values map[string]interface{
 		return err
 	}
 
-	/*if len(values) < 1 {
+	if len(values) < 1 {
 		return &ErrController{
 			Op: "MissingValues",
-			Err: fmt.Errorf("Missing values for update"),
+			Err: fmt.Errorf("missing values for update"),
 		}
 	}
 
@@ -240,41 +241,44 @@ func (c Controller) UpdateMultiple(obj interface{}, values map[string]interface{
 		values = c.StringToFieldValues(obj, values)
 	}
 
-	b, invalidFields, err1 := c.Validate(obj, values)
-	if err1 != nil {
-		return &ErrController{
-			Op:  "ValidateValues",
-			Err: fmt.Errorf("Error when trying to validate values: %w", err1),
-		}
-	}
-
-	if !b {
-		return &ErrController{
-			Op: "ValidateValues",
-			Err: &ErrValidation{
-				Fields: invalidFields,
-			},
-		}
-	}
-
-	if len(options.Filters) > 0 {
-		b, invalidFields, err1 := c.Validate(obj, options.Filters)
+	// TODO: Enable validation once struct-validator supports reflect.Value
+	if options.CascadeDeleteDepth == 0 {
+		b, invalidFields, err1 := c.Validate(obj, values)
 		if err1 != nil {
 			return &ErrController{
-				Op:  "ValidateFilters",
-				Err: fmt.Errorf("Error when trying to validate filters: %w", err1),
+				Op:  "ValidateValues",
+				Err: fmt.Errorf("Error when trying to validate values: %w", err1),
 			}
 		}
 
 		if !b {
 			return &ErrController{
-				Op: "ValidateFilters",
+				Op: "ValidateValues",
 				Err: &ErrValidation{
 					Fields: invalidFields,
 				},
 			}
 		}
-	}*/
+
+		if len(options.Filters) > 0 {
+			b, invalidFields, err1 := c.Validate(obj, options.Filters)
+			if err1 != nil {
+				return &ErrController{
+					Op:  "ValidateFilters",
+					Err: fmt.Errorf("Error when trying to validate filters: %w", err1),
+				}
+			}
+
+			if !b {
+				return &ErrController{
+					Op: "ValidateFilters",
+					Err: &ErrValidation{
+						Fields: invalidFields,
+					},
+				}
+			}
+		}
+	}
 
 	_, err2 := c.dbConn.Exec(h.GetQueryUpdate(values, options.Filters, nil, nil), append(c.GetFiltersInterfaces(values), c.GetFiltersInterfaces(options.Filters)...)...)
 	if err2 != nil {
@@ -448,6 +452,11 @@ func (c *Controller) StringToFieldValues(obj interface{}, values map[string]inte
 	v := reflect.ValueOf(obj)
 	i := reflect.Indirect(v)
 	s := i.Type()
+
+	if s.String() == "reflect.Value" {
+		s = reflect.ValueOf(obj.(reflect.Value).Interface()).Type().Elem().Elem()
+	}
+
 	for k, v := range values {
 		field, ok := s.FieldByName(k)
 		if !ok {
