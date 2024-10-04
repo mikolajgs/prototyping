@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
-	"strings"
 
 	stsql "github.com/mikolajgs/prototyping/pkg/struct-sql-postgres"
 )
@@ -110,62 +109,7 @@ func (c Controller) Load(obj interface{}, id string, options LoadOptions) *ErrCo
 		}
 	}
 
-	// For all the fields that are pointers to structs with 'join' tag, a consuctor
-	// must be passed
-	val := reflect.ValueOf(obj).Elem()
-	typ := val.Type()
-
-	// Field might not necessarily be named (or prefixed) the same as structure it points to
-	constructorFields := map[string]string{}
-
-	for i := 0; i < val.NumField(); i++ {
-		valueField := val.Field(i)
-		// Only field which are pointers to struct instances
-		if valueField.Kind() != reflect.Ptr || valueField.Type().Elem().Kind() != reflect.Struct {
-			continue
-		}
-
-		childStructName := valueField.Type().Elem().Name()
-
-		// Get 2db tag, search for 'join'
-		tag := typ.Field(i).Tag.Get(c.tagName)
-		if tag == "" {
-			continue
-		}
-		tags := strings.Split(tag, " ")
-		foundJoin := false
-		for _, t := range tags {
-			if t == "join" {
-				foundJoin = true
-			}
-		}
-		if !foundJoin {
-			continue
-		}
-
-		// Check if constructor is passed in the options - if not then fail with error
-		_, ok := options.Constructors[childStructName]
-		if !ok {
-			return &ErrController{
-				Op: "ConstructorMissing",
-				Err: fmt.Errorf("constructor for %s is missing", childStructName),
-			}
-		}
-
-		constructorFields[childStructName] = typ.Field(i).Name
-	}
-
-	// If any joined structs are present, their SQL generators must be created
-	genDeps := map[string]*stsql.StructSQL{}
-	for k, v := range options.Constructors {
-		g, err := c.getSQLGenerator(v(), nil, "")
-		if err != nil {
-			return err
-		}
-		genDeps[constructorFields[k]] = g
-	}
-
-	h, err2 := c.getSQLGenerator(obj, genDeps, "")
+	h, err2 := c.getSQLGenerator(obj, nil, "")
 	if err2 != nil {
 		return err2
 	}
@@ -178,7 +122,7 @@ func (c Controller) Load(obj interface{}, id string, options LoadOptions) *ErrCo
 	case err3 != nil:
 		return &ErrController{
 			Op:  "DBQuery",
-			Err: fmt.Errorf("Error executing DB query: %w", err),
+			Err: fmt.Errorf("Error executing DB query: %w", err3),
 		}
 	default:
 		return nil
@@ -351,65 +295,7 @@ func (c Controller) UpdateMultiple(newObjFunc func() interface{}, values map[str
 func (c Controller) Get(newObjFunc func() interface{}, options GetOptions) ([]interface{}, *ErrController) {
 	obj := newObjFunc()
 
-	// Copied from Load
-	// TODO: Extract to function
-
-	// For all the fields that are pointers to structs with 'join' tag, a consuctor
-	// must be passed
-	val := reflect.ValueOf(obj).Elem()
-	typ := val.Type()
-
-	// Field might not necessarily be named (or prefixed) the same as structure it points to
-	constructorFields := map[string]string{}
-
-	for i := 0; i < val.NumField(); i++ {
-		valueField := val.Field(i)
-		// Only field which are pointers to struct instances
-		if valueField.Kind() != reflect.Ptr || valueField.Type().Elem().Kind() != reflect.Struct {
-			continue
-		}
-
-		childStructName := valueField.Type().Elem().Name()
-
-		// Get 2db tag, search for 'join'
-		tag := typ.Field(i).Tag.Get(c.tagName)
-		if tag == "" {
-			continue
-		}
-		tags := strings.Split(tag, " ")
-		foundJoin := false
-		for _, t := range tags {
-			if t == "join" {
-				foundJoin = true
-			}
-		}
-		if !foundJoin {
-			continue
-		}
-
-		// Check if constructor is passed in the options - if not then fail with error
-		_, ok := options.Constructors[childStructName]
-		if !ok {
-			return []interface{}{}, &ErrController{
-				Op: "ConstructorMissing",
-				Err: fmt.Errorf("constructor for %s is missing", childStructName),
-			}
-		}
-
-		constructorFields[childStructName] = typ.Field(i).Name
-	}
-
-	// If any joined structs are present, their SQL generators must be created
-	genDeps := map[string]*stsql.StructSQL{}
-	for k, v := range options.Constructors {
-		g, err := c.getSQLGenerator(v(), nil, "")
-		if err != nil {
-			return []interface{}{}, err
-		}
-		genDeps[constructorFields[k]] = g
-	}
-
-	h, err := c.getSQLGenerator(obj, genDeps, "")
+	h, err := c.getSQLGenerator(obj, nil, "")
 	if err != nil {
 		return nil, err
 	}
@@ -535,7 +421,7 @@ func (c *Controller) AddSQLGenerator(obj interface{}, parentObj interface{}, ove
 	h := stsql.NewStructSQL(obj, stsql.StructSQLOptions{
 		DatabaseTablePrefix: c.dbTblPrefix,
 		ForceName: forceName,
-		SourceStructSQL: sourceHelper,
+		Base: sourceHelper,
 		TagName: c.tagName,
 	})
 	if h.Err() != nil {

@@ -46,18 +46,13 @@ func TestJoinedLoad(t *testing.T) {
 	createTestJoinedStructs()
 
 	p := &Product_WithDetails{}
-	err := testController.Load(p, fmt.Sprintf("%d", 6), LoadOptions{
-		Constructors: map[string]func() interface{}{
-			"ProductKind": func() interface{}{ return &ProductKind{} },
-			"ProductGroup": func() interface{}{ return &ProductGroup{} },
-		},
-	})
+	err := testController.Load(p, fmt.Sprintf("%d", 6), LoadOptions{})
 	if err != nil {
-		t.Fatalf("Load failed to get data for struct with other joined structs: %s", err.Op)
+		t.Fatalf("Load failed to get data for struct with other joined structs: %s", err.Err.Error())
 	}
 
 	if p.Name != "Product Name" || p.Price != 1234 || p.ProductKindID != 33 || p.ProductGrpID != 113 {
-		t.Fatalf("Load failed to set struct fields: %s", err.Op)
+		t.Fatalf("Load failed to set struct fields: %s", err.Err.Error())
 	}
 
 	if p.ProductKind_Name != "Kind 1" || p.ProductGrp_Code != "GRP1" {
@@ -78,10 +73,6 @@ func TestJoinedGet(t *testing.T) {
 			"Name": "Product Name",
 			"ProductKind_Name": "Kind 1",
 			"ProductGrp_Code": "GRP1",
-		},
-		Constructors: map[string]func() interface{}{
-			"ProductKind": func() interface{}{ return &ProductKind{} },
-			"ProductGroup": func() interface{}{ return &ProductGroup{} },
 		},
 	})
 	if err != nil {
@@ -114,10 +105,6 @@ func TestJoinedGet(t *testing.T) {
 				[]string{"Kind 1", "Kind 2"},
 			},
 			"_rawConjuction": RawConjuctionOR,
-		},
-		Constructors: map[string]func() interface{}{
-			"ProductKind": func() interface{}{ return &ProductKind{} },
-			"ProductGroup": func() interface{}{ return &ProductGroup{} },
 		},
 	})
 	if err != nil {

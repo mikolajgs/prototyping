@@ -17,9 +17,9 @@ func (c *Controller) getSQLGenerator(obj interface{}, generators map[string]*sts
 		h := stsql.NewStructSQL(obj, stsql.StructSQLOptions{
 			DatabaseTablePrefix: c.dbTblPrefix,
 			TagName: c.tagName,
-			Dependencies: generators,
+			Joined: generators,
 			ForceName: forceName,
-			UseOnlyRootNameWhenDeps: true,
+			UseRootNameWhenJoinedPresent: true,
 		})
 		if h.Err() != nil {
 			return nil, &ErrController{

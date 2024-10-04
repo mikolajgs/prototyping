@@ -28,7 +28,7 @@ func (h *StructSQL) setJoinedTags() {
 }
 
 func (h *StructSQL) reflectStruct(u interface{}, dbTablePrefix string, forceName string, useRootNameWhenHasDeps bool) {
-	h.reflectStructTags(u)
+	h.reflectStructTags(u, dbTablePrefix)
 
 	if h.hasJoined && useRootNameWhenHasDeps {
 		v := reflect.ValueOf(u)
@@ -201,7 +201,7 @@ func (h *StructSQL) reflectStructForDBQueries(u interface{}, dbTablePrefix strin
 
 }
 
-func (h *StructSQL) reflectStructTags(u interface{}) {
+func (h *StructSQL) reflectStructTags(u interface{}, dbTablePrefix string) {
 	v := reflect.ValueOf(u)
 	i := reflect.Indirect(v)
 	s := i.Type()
@@ -253,6 +253,7 @@ func (h *StructSQL) reflectStructTags(u interface{}) {
 					if !ok {
 						h.joined[fieldNameArr[0]] = NewStructSQL(reflect.New(valueField.Type()),StructSQLOptions{
 							ForceName: childStructName,
+							DatabaseTablePrefix: dbTablePrefix,
 						})
 					}
 				}
