@@ -79,6 +79,10 @@ func TestJoinedGet(t *testing.T) {
 			"ProductKind_Name": "Kind 1",
 			"ProductGrp_Code": "GRP1",
 		},
+		Constructors: map[string]func() interface{}{
+			"ProductKind": func() interface{}{ return &ProductKind{} },
+			"ProductGroup": func() interface{}{ return &ProductGroup{} },
+		},
 	})
 	if err != nil {
 		t.Fatalf("Get failed to return list of joined structs: %s", err.Op)
@@ -110,6 +114,10 @@ func TestJoinedGet(t *testing.T) {
 				[]string{"Kind 1", "Kind 2"},
 			},
 			"_rawConjuction": RawConjuctionOR,
+		},
+		Constructors: map[string]func() interface{}{
+			"ProductKind": func() interface{}{ return &ProductKind{} },
+			"ProductGroup": func() interface{}{ return &ProductGroup{} },
 		},
 	})
 	if err != nil {

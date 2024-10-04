@@ -350,7 +350,66 @@ func (c Controller) UpdateMultiple(newObjFunc func() interface{}, values map[str
 // list of objects
 func (c Controller) Get(newObjFunc func() interface{}, options GetOptions) ([]interface{}, *ErrController) {
 	obj := newObjFunc()
-	h, err := c.getSQLGenerator(obj, nil, "")
+
+	// Copied from Load
+	// TODO: Extract to function
+
+	// For all the fields that are pointers to structs with 'join' tag, a consuctor
+	// must be passed
+	val := reflect.ValueOf(obj).Elem()
+	typ := val.Type()
+
+	// Field might not necessarily be named (or prefixed) the same as structure it points to
+	constructorFields := map[string]string{}
+
+	for i := 0; i < val.NumField(); i++ {
+		valueField := val.Field(i)
+		// Only field which are pointers to struct instances
+		if valueField.Kind() != reflect.Ptr || valueField.Type().Elem().Kind() != reflect.Struct {
+			continue
+		}
+
+		childStructName := valueField.Type().Elem().Name()
+
+		// Get 2db tag, search for 'join'
+		tag := typ.Field(i).Tag.Get(c.tagName)
+		if tag == "" {
+			continue
+		}
+		tags := strings.Split(tag, " ")
+		foundJoin := false
+		for _, t := range tags {
+			if t == "join" {
+				foundJoin = true
+			}
+		}
+		if !foundJoin {
+			continue
+		}
+
+		// Check if constructor is passed in the options - if not then fail with error
+		_, ok := options.Constructors[childStructName]
+		if !ok {
+			return []interface{}{}, &ErrController{
+				Op: "ConstructorMissing",
+				Err: fmt.Errorf("constructor for %s is missing", childStructName),
+			}
+		}
+
+		constructorFields[childStructName] = typ.Field(i).Name
+	}
+
+	// If any joined structs are present, their SQL generators must be created
+	genDeps := map[string]*stsql.StructSQL{}
+	for k, v := range options.Constructors {
+		g, err := c.getSQLGenerator(v(), nil, "")
+		if err != nil {
+			return []interface{}{}, err
+		}
+		genDeps[constructorFields[k]] = g
+	}
+
+	h, err := c.getSQLGenerator(obj, genDeps, "")
 	if err != nil {
 		return nil, err
 	}
