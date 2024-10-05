@@ -5,10 +5,15 @@ import (
 )
 
 // initHelpers creates all the Struct2sql objects. For HTTP endpoints, it is necessary to create these first
-func (c *Controller) initHelpersForHTTPHandler(newObjFunc func() interface{}, newObjCreateFunc func() interface{}, newObjReadFunc func() interface{}, newObjUpdateFunc func() interface{}, newObjDeleteFunc func() interface{}, newObjListFunc func() interface{}) *ErrController {
+func (c *Controller) initHelpers(newObjFunc func() interface{}, options HandlerOptions) *ErrController {
 	obj := newObjFunc()
 
-	cErr := c.struct2db.AddSQLGenerator(newObjFunc(), obj, false)
+	var forceName string
+	if options.ForceName != "" {
+		forceName = options.ForceName
+	}
+
+	cErr := c.struct2db.AddSQLGenerator(obj, nil, false, forceName, false)
 	if cErr != nil {
 		return &ErrController{
 			Op:  "AddSQLGenerator",
@@ -16,18 +21,38 @@ func (c *Controller) initHelpersForHTTPHandler(newObjFunc func() interface{}, ne
 		}
 	}
 
-	for _, f := range []func() interface{}{
-		newObjCreateFunc,
-		newObjReadFunc,
-		newObjUpdateFunc,
-		newObjDeleteFunc,
-		newObjListFunc,
-	} {
-		if f == nil {
-			continue
+	if options.CreateConstructor != nil {
+		cErr = c.struct2db.AddSQLGenerator(options.CreateConstructor(), obj, false, "", true)
+		if cErr != nil {
+			return &ErrController{
+				Op:  "AddSQLGenerator",
+				Err: fmt.Errorf("Error adding SQL generator: %w", cErr.Unwrap()),
+			}
 		}
+	}
 
-		cErr = c.struct2db.AddSQLGenerator(f(), obj, false)
+	if options.ReadConstructor != nil {
+		cErr = c.struct2db.AddSQLGenerator(options.ReadConstructor(), obj, false, "", true)
+		if cErr != nil {
+			return &ErrController{
+				Op:  "AddSQLGenerator",
+				Err: fmt.Errorf("Error adding SQL generator: %w", cErr.Unwrap()),
+			}
+		}
+	}
+
+	if options.UpdateConstructor != nil {
+		cErr = c.struct2db.AddSQLGenerator(options.UpdateConstructor(), obj, false, "", true)
+		if cErr != nil {
+			return &ErrController{
+				Op:  "AddSQLGenerator",
+				Err: fmt.Errorf("Error adding SQL generator: %w", cErr.Unwrap()),
+			}
+		}
+	}
+
+	if options.ListConstructor != nil {
+		cErr = c.struct2db.AddSQLGenerator(options.ListConstructor(), obj, false, "", true)
 		if cErr != nil {
 			return &ErrController{
 				Op:  "AddSQLGenerator",

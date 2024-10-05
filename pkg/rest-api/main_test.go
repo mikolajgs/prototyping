@@ -30,8 +30,9 @@ var httpPort = "32777"
 var httpCancelCtx context.CancelFunc
 var httpURI = "/v1/testobjects/"
 var httpURI2 = "/v1/testobjects/price/"
+var httpURIJoined = "/v1/joined/"
 
-var testController *Controller
+var ctl *Controller
 
 var testStructNewFunc func() interface{}
 var testStructCreateNewFunc func() interface{}
@@ -143,7 +144,9 @@ func createDocker() {
 }
 
 func createController() {
-	testController = NewController(dbConn, "crud_")
+	ctl = NewController(dbConn, "crud_", &ControllerConfig{
+		TagName: "crud",
+	})
 	testStructNewFunc = func() interface{} {
 		return &TestStruct{}
 	}
@@ -166,7 +169,7 @@ func createController() {
 }
 
 func createDBStructure() {
-	testController.struct2db.CreateTables(testStructObj)
+	ctl.struct2db.CreateTables(testStructObj)
 }
 
 func getWrappedHTTPHandler(next http.Handler) http.Handler {
@@ -182,8 +185,20 @@ func createHTTPServer() {
 	ctx, httpCancelCtx = context.WithCancel(context.Background())
 	go func(ctx context.Context) {
 		go func() {
-			http.Handle(httpURI, getWrappedHTTPHandler(testController.GetHTTPHandler(httpURI, testStructNewFunc, testStructCreateNewFunc, testStructReadNewFunc, testStructUpdateNewFunc, testStructNewFunc, testStructListNewFunc)))
-			http.Handle(httpURI2, testController.GetHTTPHandler(httpURI2, testStructNewFunc, nil, nil, testStructUpdatePriceNewFunc, nil, nil))
+			http.Handle(httpURI, getWrappedHTTPHandler(ctl.Handler(httpURI, testStructNewFunc, HandlerOptions{
+				CreateConstructor: testStructCreateNewFunc,
+				ReadConstructor: testStructReadNewFunc,
+				UpdateConstructor: testStructUpdateNewFunc,
+				ListConstructor: testStructListNewFunc,
+			})))
+			http.Handle(httpURI2, ctl.Handler(httpURI2, testStructNewFunc, HandlerOptions{
+				Operations: OpUpdate,
+				UpdateConstructor: testStructUpdatePriceNewFunc,
+			}))
+			http.Handle(httpURIJoined, ctl.Handler(httpURIJoined, func() interface{}{ return &Product_WithDetails{} }, HandlerOptions{
+				Operations: OpRead|OpList,
+				ForceName: "Product",
+			}))
 			http.ListenAndServe(":"+httpPort, nil)
 		}()
 	}(ctx)

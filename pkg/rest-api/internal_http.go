@@ -67,82 +67,85 @@ func (c Controller) handleHTTPPut(w http.ResponseWriter, r *http.Request, newObj
 }
 
 func (c Controller) handleHTTPGet(w http.ResponseWriter, r *http.Request, newObjFunc func() interface{}, id string) {
-	if id == "" {
-		obj := newObjFunc()
-		params := c.getParamsFromURI(r.RequestURI)
-		limit, _ := strconv.Atoi(params["limit"])
-		offset, _ := strconv.Atoi(params["offset"])
-		if limit < 1 {
-			limit = 10
-		}
-		if offset < 0 {
-			offset = 0
-		}
+	if id != "" {
+		objClone := newObjFunc()
 
-		order := []string{}
-		if params["order"] != "" {
-			order = append(order, params["order"])
-			order = append(order, params["order_direction"])
+		err := c.struct2db.Load(objClone, id, stdb.LoadOptions{})
+		if err != nil {
+			c.writeErrText(w, http.StatusInternalServerError, "cannot_get_from_db")
+			return
 		}
-
-		filters := make(map[string]interface{})
-		for k, v := range params {
-			if strings.HasPrefix(k, "filter_") {
-				k = k[7:]
-				fieldName, fieldValue, errF := c.uriFilterToFilter(obj, k, v)
-				if errF != nil {
-					if errF.Op == "GetHelper" {
-						c.writeErrText(w, http.StatusInternalServerError, "get_helper")
-						return
-					} else {
-						c.writeErrText(w, http.StatusBadRequest, "invalid_filter")
-						return
-					}
-				}
-				if fieldName != "" {
-					filters[fieldName] = fieldValue
-				}
-			}
+	
+		if c.struct2db.GetObjIDValue(objClone) == 0 {
+			c.writeErrText(w, http.StatusNotFound, "not_found_in_db")
+			return
 		}
-
-		xobj, err1 := c.struct2db.Get(newObjFunc, stdb.GetOptions{
-			Order: order,
-			Limit: limit,
-			Offset: offset,
-			Filters: filters,
-		})
-		if err1 != nil {
-			if err1.Op == "ValidateFilters" {
-				c.writeErrText(w, http.StatusBadRequest, "invalid_filter_value")
-				return
-			} else {
-				c.writeErrText(w, http.StatusInternalServerError, "cannot_get_from_db")
-				return
-			}
-		}
-
+	
 		c.writeOK(w, http.StatusOK, map[string]interface{}{
-			"items": xobj,
+			"item": objClone,
 		})
 
 		return
 	}
 
-	objClone := newObjFunc()
-
-	err := c.struct2db.Load(objClone, id, stdb.LoadOptions{})
-	if err != nil {
-		c.writeErrText(w, http.StatusInternalServerError, "cannot_get_from_db")
-		return
+	// No id, get more elements
+	obj := newObjFunc()
+	params := c.getParamsFromURI(r.RequestURI)
+	limit, _ := strconv.Atoi(params["limit"])
+	offset, _ := strconv.Atoi(params["offset"])
+	if limit < 1 {
+		limit = 10
+	}
+	if offset < 0 {
+		offset = 0
 	}
 
-	if c.struct2db.GetObjIDValue(objClone) == 0 {
-		c.writeErrText(w, http.StatusNotFound, "not_found_in_db")
-		return
+	order := []string{}
+	if params["order"] != "" {
+		order = append(order, params["order"])
+		order = append(order, params["order_direction"])
+	}
+
+	filters := make(map[string]interface{})
+	for k, v := range params {
+		if !strings.HasPrefix(k, "filter_") {
+			continue
+		}
+		k = k[7:]
+		fieldName, fieldValue, errF := c.uriFilterToFilter(obj, k, v)
+		if errF == nil {
+			if fieldName != "" {
+				filters[fieldName] = fieldValue
+			}
+			continue
+		}
+		if errF.Op == "GetHelper" {
+			c.writeErrText(w, http.StatusInternalServerError, "get_helper")
+			return
+		} else {
+			c.writeErrText(w, http.StatusBadRequest, "invalid_filter")
+			return
+		}
+	}
+
+	xobj, err1 := c.struct2db.Get(newObjFunc, stdb.GetOptions{
+		Order: order,
+		Limit: limit,
+		Offset: offset,
+		Filters: filters,
+	})
+	if err1 != nil {
+		if err1.Op == "ValidateFilters" {
+			c.writeErrText(w, http.StatusBadRequest, "invalid_filter_value")
+			return
+		} else {
+			c.writeErrText(w, http.StatusInternalServerError, "cannot_get_from_db")
+			return
+		}
 	}
 
 	c.writeOK(w, http.StatusOK, map[string]interface{}{
-		"item": objClone,
+		"items": xobj,
 	})
 }
 

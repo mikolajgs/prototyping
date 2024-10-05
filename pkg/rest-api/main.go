@@ -12,18 +12,22 @@ type Controller struct {
 	struct2db *struct2db.Controller
 }
 
-// Values for CRUD operations
-const OpRead = 2
-const OpUpdate = 4
-const OpCreate = 8
-const OpDelete = 16
-const OpList = 32
+type ControllerConfig struct {
+	TagName string
+}
 
 // NewController returns new Controller object
-func NewController(dbConn *sql.DB, tblPrefix string) *Controller {
+func NewController(dbConn *sql.DB, tblPrefix string, cfg *ControllerConfig) *Controller {
 	c := &Controller{}
+
+	tagName := "restapi"
+	if cfg != nil && cfg.TagName != "" {
+		tagName = cfg.TagName
+	}
+
 	c.struct2db = struct2db.NewController(dbConn, tblPrefix, &struct2db.ControllerConfig{
-		TagName: "crud",
+		TagName: tagName,
 	})
+
 	return c
 }

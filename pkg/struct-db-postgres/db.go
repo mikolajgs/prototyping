@@ -391,7 +391,7 @@ func (c Controller) GetCount(newObjFunc func() interface{}, options GetCountOpti
 }
 
 // AddSQLGenerator adds StructSQL object to sqlGenerators
-func (c *Controller) AddSQLGenerator(obj interface{}, parentObj interface{}, overwrite bool) *ErrController {
+func (c *Controller) AddSQLGenerator(obj interface{}, parentObj interface{}, overwrite bool, forceName string, parentOnlyRoot bool) *ErrController {
 	n := c.getSQLGeneratorName(obj, false)
 
 	// If sql generator already exists and it should not be overwritten then finish
@@ -403,7 +403,6 @@ func (c *Controller) AddSQLGenerator(obj interface{}, parentObj interface{}, ove
 	}
 
 	var sourceHelper *stsql.StructSQL
-	var forceName string
 	if parentObj != nil {
 		h, err := c.getSQLGenerator(parentObj, nil, "")
 		if err != nil {
@@ -413,7 +412,7 @@ func (c *Controller) AddSQLGenerator(obj interface{}, parentObj interface{}, ove
 			}
 		}
 		sourceHelper = h
-		forceName = c.getSQLGeneratorName(parentObj, false)
+		forceName = c.getSQLGeneratorName(parentObj, parentOnlyRoot)
 	}
 
 	h := stsql.NewStructSQL(obj, stsql.StructSQLOptions{
