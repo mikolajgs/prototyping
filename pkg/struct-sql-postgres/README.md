@@ -39,6 +39,7 @@ type Product struct {
   CreatedByUserID int64
   LastModifiedByUserID int64
 }
+````
 
 #### Field tags
 
@@ -50,8 +51,6 @@ In the above definition, a special tag `2sql` is used to add specific configurat
 | `db_type` | Overwrites default `VARCHAR(255)` column type for string field. Possible values are: `TEXT`, `BPCHAR(X)`, `CHAR(X)`, `VARCHAR(X)`, `CHARACTER VARYING(X)`, `CHARACTER(X)` where `X` is the size. See [PostgreSQL character types](https://www.postgresql.org/docs/current/datatype-character.html) for more information. |
 
 A different than `2sql` tag can be used by passing `TagName` in `StructSQLOptions{}` when calling `NewStructSQL` function (see below.)
-
-````
 
 ### Create a controller for the struct
 
