@@ -25,3 +25,7 @@ Check [README in pkg/struct-db-postgres](pkg/struct-db-postgres/README.md) for m
 This module enables the creation of CRUD HTTP endpoints based on structs for creating, reading, updating, deleting, and listing database objects, with all input and output handled in JSON format.
 
 Check [README in pkg/rest-api](pkg/rest-api/README.md) for more information.
+
+## ui
+
+This module is currently under development and will be renamed. Its goal is to automatically generate a simple administration panel for managing data defined by structs and stored in a PostgreSQL database.
