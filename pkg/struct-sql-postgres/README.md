@@ -20,6 +20,10 @@ See `main_test.go` for a sample usage.
 
 ## How to use
 
+### TL;DR
+
+Check the code in `main_test.go` file that contains tests for all use cases.
+
 ### Defining a struct
 
 Create a struct to define an object to be stored in a database table.  In the example below, let's create a `Product`.
@@ -214,15 +218,15 @@ ORDER BY t2.first_name ASC,t1.name DESC LIMIT 100 OFFSET 10
 can be generated with the following code:
 
 ````go
-	got = h.GetQuerySelect([]string{"CreatedByUser_FirstName", "asc", "Name", "desc"}, 100, 10, map[string]interface{}{
-		"ProductionYear": 1984,
-		"_raw": []interface{}{
-			".CreatedByUser_FirstName=? AND .LastModifiedByUser_FirstName=?",
-			// We do not really care about the values, the query contains $x only symbols
-			// However, we need to pass either value or an array so that an array can be extracted into multiple $x's
-			0,
-			0,
-		},
-		"_rawConjuction": RawConjuctionAND,
-	}, nil, nil)
+got = h.GetQuerySelect([]string{"CreatedByUser_FirstName", "asc", "Name", "desc"}, 100, 10, map[string]interface{}{
+  "ProductionYear": 1984,
+  "_raw": []interface{}{
+    ".CreatedByUser_FirstName=? AND .LastModifiedByUser_FirstName=?",
+    // We do not really care about the values, the query contains $x only symbols
+    // However, we need to pass either value or an array so that an array can be extracted into multiple $x's
+    0,
+    0,
+  },
+  "_rawConjuction": RawConjuctionAND,
+}, nil, nil)
 ````
