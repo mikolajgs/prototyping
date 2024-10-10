@@ -80,7 +80,7 @@ There are certain options that can be provided to the `NewStructSQL` function wh
 | Joined | `map[string]*StructSQL` | When struct is used to describe a `SELECT` query with `INNER JOIN` to another structs (tables), this map can be used to overwrite `StructSQL` objects for children structs.  If not passed, then children structs that are meant to be used with `INNER JOIN` will be created using `NewStructSQL`.  See one of below sections on joined select queries for more details. |
 | UseRootNameWhenJoinedPresent | bool | When struct is used to describe a `SELECT` query with `INNER JOIN` to another structs (tables) and the parent struct has a name like `Product_WithDetails` then it's so-called root name is `Product`, and that will be used as a base for the table name (so it'll be `products`). |
 
-#### Get SQL queries
+### Get SQL queries
 
 Use any of the following `GetQuery*` commands to get a desired SQL query.  See examples below.
 
@@ -92,11 +92,13 @@ create := s.GetQueryCreateTable() // returns 'CREATE TABLE products (...)'
 updateById := s.GetQueryUpdateById() // returns 'UPDATE products SET product_flags = $1, name = $2 ... WHERE product_id = $8
 ````
 
-#### Get SQL queries with conditions
+### Get SQL queries with conditions
 
 It is possible to generate queries such as `SELECT`, `DELETE` or `UPDATE` with conditions based on fields.  In the following examples below, all the condition (called "filters" in the code) are optional - there is no need to pass them.
 
 The `_raw` (and `_rawConjuction`) is a special filter that allows passing a raw query.
+
+#### SELECT
 
 ````go
 // SELECT * FROM products WHERE (created_by_user_id=$1 AND name=$2) OR (product_year > $3
@@ -118,9 +120,17 @@ sqlSelect := s.GetQuerySelect(
     },
     "_rawConjuction": stsql.RawConjuctionOR,
   }, nil, nil)
+````
 
+#### SELECT COUNT(*)
+
+````
 // Use GetQuerySelectCount without th first 3 arguments to get SELECT COUNT(*)
+````
 
+#### DELETE
+
+````go
 // DELETE FROM products WHERE (created_by_user_id=$1 AND name=$2) OR (product_year > $3
 // AND product_year > $4 AND last_modified_by_user_id IN ($5,$6,$7,$8))
 sqlDelete := s.GetQuerySelect(
@@ -136,7 +146,11 @@ sqlDelete := s.GetQuerySelect(
     },
     "_rawConjuction": stsql.RawConjuctionOR,
   }, nil, nil)
+````
 
+#### UPDATE
+
+````go
 // UPDATE products SET production_year=$1, last_modified_by_user_id=$2
 // WHERE name LIKE $3;
 sqlUpdate := s.GetQueryUpdate(
@@ -150,4 +164,4 @@ sqlUpdate := s.GetQueryUpdate(
   }, nil, nil)
 ````
 
-#### Get `SELECT` query with `INNER JOIN`
+### Get `SELECT` query with `INNER JOIN`
