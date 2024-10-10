@@ -8,13 +8,13 @@ As the modules are still under active development, breaking changes may occur be
 
 Libraries can be found in the `pkg` directory.
 
-### struct-sql-postgres
+## struct-sql-postgres
 
 This module allows you to generate PostgreSQL SQL queries from a struct, where its instances are intended to be stored in a database table. It can automatically create SELECT, UPDATE, DELETE, and other queries based on the struct's fields and their tags.
 
 Check [README in pkg/struct-sql-postgres](pkg/struct-sql-postgres/README.md) for more information.
 
-### struct-db-postgres
+## struct-db-postgres
 
 This module maps structs to PostgreSQL tables and simplify performing operations like saving, deleting, and selecting records in the database by using straightforward functions.
 
