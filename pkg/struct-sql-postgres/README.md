@@ -57,7 +57,14 @@ A different than `2sql` tag can be used by passing `TagName` in `StructSQLOption
 To generate an SQL query based on a struct, a `StructSQL` object is used.  One per struct.
 
 ````go
-s := NewStructSQL(Product{}, StructSQLOptions{})
+
+import (
+  stsql "github.com/mikolajgs/prototyping/pkg/struct-sql-postgres"
+)
+
+(...)
+
+s := stsql.NewStructSQL(Product{}, stsql.StructSQLOptions{})
 ````
 
 #### StructSQLOptions
@@ -87,3 +94,60 @@ updateById := s.GetQueryUpdateById() // returns 'UPDATE products SET product_fla
 
 #### Get SQL queries with conditions
 
+It is possible to generate queries such as `SELECT`, `DELETE` or `UPDATE` with conditions based on fields.  In the following examples below, all the condition (called "filters" in the code) are optional - there is no need to pass them.
+
+The `_raw` (and `_rawConjuction`) is a special filter that allows passing a raw query.
+
+````go
+// SELECT * FROM products WHERE (created_by_user_id=$1 AND name=$2) OR (product_year > $3
+// AND product_year > $4 AND last_modified_by_user_id IN ($5,$6,$7,$8))
+// ORDER BY production_year ASC, name ASC
+// LIMIT 100 OFFSET 10
+sqlSelect := s.GetQuerySelect(
+  []string{"ProductionYear", "asc", "Name", "asc"},
+  100, 10, 
+  map[string]interface{
+    "CreatedByUserID": 4,
+    "Name": "Magic Sock",
+    "_raw": []interface{}{
+      ".ProductYear > ? AND .ProductYear < ? AND .LastModifiedByUserID(?)",
+      // Below values are not important but the overall number of args match question marks
+      0,
+      0,
+      []int{0,0,0,0}, // this list must contain same number of items as values
+    },
+    "_rawConjuction": stsql.RawConjuctionOR,
+  }, nil, nil)
+
+// Use GetQuerySelectCount without th first 3 arguments to get SELECT COUNT(*)
+
+// DELETE FROM products WHERE (created_by_user_id=$1 AND name=$2) OR (product_year > $3
+// AND product_year > $4 AND last_modified_by_user_id IN ($5,$6,$7,$8))
+sqlDelete := s.GetQuerySelect(
+  map[string]interface{
+    "CreatedByUserID": 4,
+    "Name": "Magic Sock",
+    "_raw": []interface{}{
+      ".ProductYear > ? AND .ProductYear < ? AND .LastModifiedByUserID(?)",
+      // Below values are not important but the overall number of args match question marks
+      0,
+      0,
+      []int{0,0,0,0}, // this list must contain same number of items as values
+    },
+    "_rawConjuction": stsql.RawConjuctionOR,
+  }, nil, nil)
+
+// UPDATE products SET production_year=$1, last_modified_by_user_id=$2
+// WHERE name LIKE $3;
+sqlUpdate := s.GetQueryUpdate(
+  map[string]interface{
+    "ProductionYear": 1984,
+    "LastModifiedByUserID": 13
+  },
+  map[string]interface{}{
+    "_raw": ".Name LIKE ?",
+    0, // One question mark, hence one additional value
+  }, nil, nil)
+````
+
+#### Get `SELECT` query with `INNER JOIN`
