@@ -26,45 +26,37 @@ func main() {
 		log.Fatal("Error connecting to db")
 	}
 
-	ctl := ui.NewController(db, "ui_")
-	apiCtl := restapi.NewController(db, "ui_")
+	uiCtl := ui.NewController(db, "ui_")
+	apiCtl := restapi.NewController(db, "ui_", nil)
 	s2db := stdb.NewController(db, "ui_", nil)
 
-	person := &Person{}
-	group := &Group{}
+	item := &Item{}
+	itemGroup := &ItemGroup{}
 
-	err2 := s2db.DropTables(person, group)
+	err2 := s2db.DropTables(item, itemGroup)
 	if err2 != nil {
 		log.Printf("Error with dropping tables: %s", err2.Error())
 	}
 
-	err2 = s2db.CreateTables(person, group)
+	err2 = s2db.CreateTables(item, itemGroup)
 	if err2 != nil {
 		log.Fatalf("Error with creating tables: %s", err.Error())
 	}
 	
-	http.Handle("/ui/v1/", ctl.GetHTTPHandler(
+	http.Handle("/ui/v1/", uiCtl.GetHTTPHandler(
 		"/ui/v1/",
-		func() interface{}{ return &Person{} },
-		func() interface{}{ return &Group{} },
+		func() interface{}{ return &Item{} },
+		func() interface{}{ return &ItemGroup{} },
 	))
-	http.Handle("/api/v1/persons/", apiCtl.GetHTTPHandler(
-		"/api/v1/persons/",
-		func() interface{}{ return &Person{} },
-		func() interface{}{ return &Person{} },
-		func() interface{}{ return &Person{} },
-		func() interface{}{ return &Person{} },
-		func() interface{}{ return &Person{} },
-		func() interface{}{ return &Person{} },
+	http.Handle("/api/v1/items/", apiCtl.Handler(
+		"/api/v1/items/",
+		func() interface{}{ return &Item{} },
+		restapi.HandlerOptions{},
 	))
-	http.Handle("/api/v1/groups/", apiCtl.GetHTTPHandler(
-		"/api/v1/groups/",
-		func() interface{}{ return &Group{} },
-		func() interface{}{ return &Group{} },
-		func() interface{}{ return &Group{} },
-		func() interface{}{ return &Group{} },
-		func() interface{}{ return &Group{} },
-		func() interface{}{ return &Group{} },
+	http.Handle("/api/v1/item_groups/", apiCtl.Handler(
+		"/api/v1/item_groups/",
+		func() interface{}{ return &ItemGroup{} },
+		restapi.HandlerOptions{},
 	))
 	log.Fatal(http.ListenAndServe(":9001", nil))
 }
