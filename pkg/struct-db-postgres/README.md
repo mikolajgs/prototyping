@@ -3,7 +3,12 @@
 Package `structdbpostgres` is meant to map structs to PostgreSQL tables (like ORM).
 
 ## Example usage
-### Structs (models)
+
+### TL;DR
+
+Go through `*_test.go` files, starting with `main_test.go` to get working examples. The tests should be covering all the use cases.
+
+### Defining structs (models)
 Models are defined with structs as follows (take a closer look at the tags):
 
 ```
@@ -50,7 +55,10 @@ Tag | Example | Explanation
 `2db_regexp` | `validation_regexp:"^[0-9]{2}\\-[0-9]{3}$"` | Regular expression that struct field must match
 
 
-##### Field Properties
+##### Field properties
+
+Possible properties in the `2db` tag are as follows.
+
 Property | Explanation
 --- | ---
 `req` | Field is required
@@ -60,11 +68,12 @@ Property | Explanation
 `lenmin` | If field is string, this is a minimal length of the field value
 `lenmax` | If field is string, this is a maximal length of the field value
 
+##### Overwritting table column type
+Fields that are of string type are represented by `VARCHAR(255)` database column by default. This can be overwritten with a `data_type` field.
+Check [README of `structsqlpostgres` module](/pkg/struct-sql-postgres/README.md#field-tags) to view all supported values.
 
-### Database storage
-Currently, `structdbpostgres` supports only PostgreSQL as a storage for objects. 
 
-#### Controller
+#### Creating controller
 To perform model database actions, a `Controller` object must be created. See below example that modify object(s) 
 in the database.
 
@@ -79,7 +88,7 @@ import (
 conn, _ := sql.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", dbHost, dbPort, dbUser, dbPass, dbName))
 defer conn.Close()
 
-// Create CRUD controller and an instance of a struct
+// Create a database controller and an instance of a struct
 c := stdb.NewController(conn, "app1_", nil)
 user := &User{}
 
