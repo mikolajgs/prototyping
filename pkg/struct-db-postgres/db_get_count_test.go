@@ -67,12 +67,12 @@ func TestGetCountWithRawQuery(t *testing.T) {
 		return &TestStruct{}
 	}, GetCountOptions{
 		Filters: map[string]interface{}{
-			"Price": 444,
+			"Price":        444,
 			"PrimaryEmail": "primary@example.com",
 			"_raw": []interface{}{
 				".PrimaryEmail = ? AND .Age IN (?)",
 				"another@example.com",
-				[]int{32,33,34},
+				[]int{32, 33, 34},
 			},
 			"_rawConjuction": RawConjuctionOR,
 		},

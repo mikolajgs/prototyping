@@ -31,18 +31,18 @@ var testController *Controller
 
 // Test structs that should appear in the UI
 type Person struct {
-	ID int64
-	Flags int64
-	Name string `ui:"req lenmin:5 lenmax:200"`
-	Age int `ui:"req valmin:0 valmax:150"`
+	ID       int64
+	Flags    int64
+	Name     string `ui:"req lenmin:5 lenmax:200"`
+	Age      int    `ui:"req valmin:0 valmax:150"`
 	PostCode string `ui_regexp:"^[0-9][0-9]-[0-9][0-9][0-9]$"`
-	Email string `ui:"req email"`
+	Email    string `ui:"req email"`
 }
 
 type Group struct {
-	ID int64
-	Flags int64
-	Name string `ui:"req lenmin:3 lenmax:100"`
+	ID          int64
+	Flags       int64
+	Name        string `ui:"req lenmin:3 lenmax:100"`
 	Description string `ui:"lenmax:5000"`
 }
 
@@ -95,9 +95,9 @@ func createHTTPServer() {
 	go func(ctx context.Context) {
 		go func() {
 			http.Handle(httpURI, testController.GetHTTPHandler(
-				httpURI, 
-				func() interface{}{ return &Person{} },
-				func() interface{}{ return &Group{} },
+				httpURI,
+				func() interface{} { return &Person{} },
+				func() interface{} { return &Group{} },
 			))
 			http.ListenAndServe(":"+httpPort, nil)
 		}()

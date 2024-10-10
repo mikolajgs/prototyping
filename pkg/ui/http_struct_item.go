@@ -71,7 +71,7 @@ func (c *Controller) tryStructItem(w http.ResponseWriter, r *http.Request, uri s
 
 	postValues := map[string]string{}
 	for fk, fv := range r.Form {
-		postValues[fk] = fv[0];
+		postValues[fk] = fv[0]
 
 		if fv[0] == "" {
 			continue
@@ -100,14 +100,14 @@ func (c *Controller) tryStructItem(w http.ResponseWriter, r *http.Request, uri s
 	})
 
 	if len(invalidFormFields) > 0 {
-		for k, _ := range invalidFormFields {
+		for k := range invalidFormFields {
 			failedFields[k] = failedFields[k] | validator.FailRegexp
 		}
 	}
 
 	if !valid || len(failedFields) > 0 {
 		invVals := []string{}
-		for k, _ := range failedFields {
+		for k := range failedFields {
 			invVals = append(invVals, k)
 		}
 		c.renderStructItem(w, r, uri, c.uriStructNameFunc[uri][structName], id, postValues, MsgFailure, fmt.Sprintf("The following fields have invalid values: %s", strings.Join(invVals, ",")))

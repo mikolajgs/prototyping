@@ -75,12 +75,12 @@ func (c Controller) handleHTTPGet(w http.ResponseWriter, r *http.Request, newObj
 			c.writeErrText(w, http.StatusInternalServerError, "cannot_get_from_db")
 			return
 		}
-	
+
 		if c.struct2db.GetObjIDValue(objClone) == 0 {
 			c.writeErrText(w, http.StatusNotFound, "not_found_in_db")
 			return
 		}
-	
+
 		c.writeOK(w, http.StatusOK, map[string]interface{}{
 			"item": objClone,
 		})
@@ -129,9 +129,9 @@ func (c Controller) handleHTTPGet(w http.ResponseWriter, r *http.Request, newObj
 	}
 
 	xobj, err1 := c.struct2db.Get(newObjFunc, stdb.GetOptions{
-		Order: order,
-		Limit: limit,
-		Offset: offset,
+		Order:   order,
+		Limit:   limit,
+		Offset:  offset,
 		Filters: filters,
 	})
 	if err1 != nil {

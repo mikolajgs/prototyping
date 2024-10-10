@@ -9,15 +9,15 @@ import (
 	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
 	sthtml "github.com/mikolajgs/prototyping/pkg/struct-html"
 	stsql "github.com/mikolajgs/prototyping/pkg/struct-sql-postgres"
-)	
+)
 
 type structItemTplObj struct {
-	Name string
-	URI string
+	Name       string
+	URI        string
 	FieldsHTML string
-	MsgHTML string
-	OnlyMsg bool
-	ID string
+	MsgHTML    string
+	OnlyMsg    bool
+	ID         string
 }
 
 func (c *Controller) getStructItemTplObj(uri string, objFunc func() interface{}, id string, postValues map[string]string, msgType int, msg string) (*structItemTplObj, error) {
@@ -41,17 +41,16 @@ func (c *Controller) getStructItemTplObj(uri string, objFunc func() interface{},
 	}
 
 	a := &structItemTplObj{
-		URI: uri,
-		Name: stsql.GetStructName(o),
+		URI:        uri,
+		Name:       stsql.GetStructName(o),
 		FieldsHTML: sthtml.GetFields(o, postValues, useFieldValues),
-		MsgHTML: c.getMsgHTML(msgType, msg),
-		OnlyMsg: onlyMsg,
-		ID: id,
+		MsgHTML:    c.getMsgHTML(msgType, msg),
+		OnlyMsg:    onlyMsg,
+		ID:         id,
 	}
 
 	return a, nil
-} 
-
+}
 
 func (c *Controller) getStructItemHTML(uri string, objFunc func() interface{}, id string, postValues map[string]string, msgType int, msg string) (string, error) {
 	structItemTpl, err := embed.FS.ReadFile(htmlDir, "html/struct_item.html")

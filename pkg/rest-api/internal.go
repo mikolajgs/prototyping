@@ -66,7 +66,7 @@ func (c *Controller) initHelpers(newObjFunc func() interface{}, options HandlerO
 
 func (c Controller) mapWithInterfacesToMapBool(m map[string]interface{}) map[string]bool {
 	o := map[string]bool{}
-	for k, _ := range m {
+	for k := range m {
 		o[k] = true
 	}
 	return o

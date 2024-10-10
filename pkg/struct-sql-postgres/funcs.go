@@ -33,7 +33,7 @@ func GetStructFieldNames(u interface{}) []string {
 }
 
 // GetStructNamesFromConstructors returns a list of struct names from a list of constructors (functions that return struct instances)
-func GetStructNamesFromConstructors(objFuncs... func() interface{}) []string {
+func GetStructNamesFromConstructors(objFuncs ...func() interface{}) []string {
 	names := []string{}
 	for _, objFunc := range objFuncs {
 		o := objFunc()

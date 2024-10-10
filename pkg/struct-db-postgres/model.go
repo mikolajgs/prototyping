@@ -73,103 +73,103 @@ func (c Controller) GetFiltersInterfaces(mf map[string]interface{}) []interface{
 		return xi
 	}
 
-	for i:=1; i<reflect.ValueOf(mf["_raw"]).Len(); i++ {
+	for i := 1; i < reflect.ValueOf(mf["_raw"]).Len(); i++ {
 		rt2 := reflect.TypeOf(mf["_raw"].([]interface{})[i])
 		if rt2.Kind() == reflect.Slice || rt2.Kind() == reflect.Array {
 			valInt8s, ok := mf["_raw"].([]interface{})[i].([]int8)
 			if ok {
-				for j:=0; j<len(valInt8s); j++ {
+				for j := 0; j < len(valInt8s); j++ {
 					xi = append(xi, valInt8s[j])
 				}
 				continue
 			}
 			valInt16s, ok := mf["_raw"].([]interface{})[i].([]int16)
 			if ok {
-				for j:=0; j<len(valInt16s); j++ {
+				for j := 0; j < len(valInt16s); j++ {
 					xi = append(xi, valInt16s[j])
 				}
 				continue
 			}
 			valInt32s, ok := mf["_raw"].([]interface{})[i].([]int32)
 			if ok {
-				for j:=0; j<len(valInt32s); j++ {
+				for j := 0; j < len(valInt32s); j++ {
 					xi = append(xi, valInt32s[j])
 				}
 				continue
 			}
 			valInt64s, ok := mf["_raw"].([]interface{})[i].([]int64)
 			if ok {
-				for j:=0; j<len(valInt64s); j++ {
+				for j := 0; j < len(valInt64s); j++ {
 					xi = append(xi, valInt64s[j])
 				}
 				continue
 			}
 			valInts, ok := mf["_raw"].([]interface{})[i].([]int)
 			if ok {
-				for j:=0; j<len(valInts); j++ {
+				for j := 0; j < len(valInts); j++ {
 					xi = append(xi, valInts[j])
 				}
 				continue
 			}
 			valUint8s, ok := mf["_raw"].([]interface{})[i].([]uint8)
 			if ok {
-				for j:=0; j<len(valUint8s); j++ {
+				for j := 0; j < len(valUint8s); j++ {
 					xi = append(xi, valUint8s[j])
 				}
 				continue
 			}
 			valUint16s, ok := mf["_raw"].([]interface{})[i].([]uint16)
 			if ok {
-				for j:=0; j<len(valUint16s); j++ {
+				for j := 0; j < len(valUint16s); j++ {
 					xi = append(xi, valUint16s[j])
 				}
 				continue
 			}
 			valUint32s, ok := mf["_raw"].([]interface{})[i].([]uint32)
 			if ok {
-				for j:=0; j<len(valUint32s); j++ {
+				for j := 0; j < len(valUint32s); j++ {
 					xi = append(xi, valUint32s[j])
 				}
 				continue
 			}
 			valUint64s, ok := mf["_raw"].([]interface{})[i].([]uint64)
 			if ok {
-				for j:=0; j<len(valUint64s); j++ {
+				for j := 0; j < len(valUint64s); j++ {
 					xi = append(xi, valUint64s[j])
 				}
 				continue
 			}
 			valUints, ok := mf["_raw"].([]interface{})[i].([]uint)
 			if ok {
-				for j:=0; j<len(valUints); j++ {
+				for j := 0; j < len(valUints); j++ {
 					xi = append(xi, valUints[j])
 				}
 				continue
 			}
 			valFloat32s, ok := mf["_raw"].([]interface{})[i].([]float32)
 			if ok {
-				for j:=0; j<len(valFloat32s); j++ {
+				for j := 0; j < len(valFloat32s); j++ {
 					xi = append(xi, valFloat32s[j])
 				}
 				continue
 			}
 			valFloat64s, ok := mf["_raw"].([]interface{})[i].([]float64)
 			if ok {
-				for j:=0; j<len(valFloat64s); j++ {
+				for j := 0; j < len(valFloat64s); j++ {
 					xi = append(xi, valFloat64s[j])
 				}
 				continue
 			}
 			valBools, ok := mf["_raw"].([]interface{})[i].([]bool)
 			if ok {
-				for j:=0; j<len(valBools); j++ {
+				for j := 0; j < len(valBools); j++ {
 					xi = append(xi, valBools[j])
 				}
 				continue
 			}
 			valStrings, ok := mf["_raw"].([]interface{})[i].([]string)
 			if ok {
-				for j:=0; j<len(valStrings); j++ {
+				for j := 0; j < len(valStrings); j++ {
 					xi = append(xi, valStrings[j])
 				}
 			}

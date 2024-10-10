@@ -15,10 +15,10 @@ func (c *Controller) getSQLGenerator(obj interface{}, generators map[string]*sts
 	n := c.getSQLGeneratorName(obj, false)
 	if c.sqlGenerators[n] == nil {
 		h := stsql.NewStructSQL(obj, stsql.StructSQLOptions{
-			DatabaseTablePrefix: c.dbTblPrefix,
-			TagName: c.tagName,
-			Joined: generators,
-			ForceName: forceName,
+			DatabaseTablePrefix:          c.dbTblPrefix,
+			TagName:                      c.tagName,
+			Joined:                       generators,
+			ForceName:                    forceName,
 			UseRootNameWhenJoinedPresent: true,
 		})
 		if h.Err() != nil {
@@ -60,7 +60,7 @@ func (c *Controller) getSQLGeneratorName(obj interface{}, onlyRoot bool) string 
 
 func (c Controller) mapWithInterfacesToMapBool(m map[string]interface{}) map[string]bool {
 	o := map[string]bool{}
-	for k, _ := range m {
+	for k := range m {
 		o[k] = true
 	}
 	return o
@@ -112,13 +112,13 @@ func (c Controller) runOnDelete(obj interface{}, tagName string, ids []int64, la
 				mArr := strings.Split(t, ":")
 				tagsMap[mArr[0]] = mArr[1]
 			}
-		}	
+		}
 
 		// Perform delete
 		if tagsMap["on_del"] == "del" {
 			if tagsMap["del_field"] != "" {
 				parentIDField = tagsMap["del_field"]
-			} 
+			}
 
 			// Delete from children table where parent ID = id of deleted object
 			errCtl := c.DeleteMultiple(reflect.New(f.Type.Elem()), DeleteMultipleOptions{
@@ -132,7 +132,7 @@ func (c Controller) runOnDelete(obj interface{}, tagName string, ids []int64, la
 			})
 			if errCtl != nil {
 				return &ErrController{
-					Op: "CascadeDelete",
+					Op:  "CascadeDelete",
 					Err: errors.New("Error from DeleteMultiple"),
 				}
 			}
@@ -144,7 +144,7 @@ func (c Controller) runOnDelete(obj interface{}, tagName string, ids []int64, la
 			updValue := tagsMap["del_upd_val"]
 			if updField == "" {
 				return &ErrController{
-					Op: "CascadeDelete",
+					Op:  "CascadeDelete",
 					Err: errors.New("missing update field in tags"),
 				}
 			}
@@ -169,7 +169,7 @@ func (c Controller) runOnDelete(obj interface{}, tagName string, ids []int64, la
 			)
 			if errCtl != nil {
 				return &ErrController{
-					Op: "CascadeDelete",
+					Op:  "CascadeDelete",
 					Err: errors.New("Error from UpdateMultiple"),
 				}
 			}

@@ -34,9 +34,9 @@ func TestGet(t *testing.T) {
 	testStructs, err := testController.Get(func() interface{} {
 		return &TestStruct{}
 	}, GetOptions{
-		Order: []string{"Age", "asc", "Price", "asc"},
-		Limit: 10,
-		Offset: 20,
+		Order:   []string{"Age", "asc", "Price", "asc"},
+		Limit:   10,
+		Offset:  20,
 		Filters: map[string]interface{}{"Price": 444, "PrimaryEmail": "primary@example.com"},
 	})
 	if err != nil {
@@ -66,8 +66,8 @@ func TestGetWithoutFilters(t *testing.T) {
 	testStructs, err := testController.Get(func() interface{} {
 		return &TestStruct{}
 	}, GetOptions{
-		Order: []string{"Age", "asc", "Price", "asc"},
-		Limit: 13,
+		Order:  []string{"Age", "asc", "Price", "asc"},
+		Limit:  13,
 		Offset: 14,
 	})
 	if err != nil {
@@ -81,7 +81,7 @@ func TestGetWithoutFilters(t *testing.T) {
 	}
 }
 
-// TestGetWithRowObjTransformFunc tests if Get can properly return a list of custom elements (eg. string) 
+// TestGetWithRowObjTransformFunc tests if Get can properly return a list of custom elements (eg. string)
 // where each object (row from the database) is transform with a specific function
 func TestGetWithRowObjTransformFunc(t *testing.T) {
 	recreateTestStructTable()

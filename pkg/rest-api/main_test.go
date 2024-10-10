@@ -187,17 +187,17 @@ func createHTTPServer() {
 		go func() {
 			http.Handle(httpURI, getWrappedHTTPHandler(ctl.Handler(httpURI, testStructNewFunc, HandlerOptions{
 				CreateConstructor: testStructCreateNewFunc,
-				ReadConstructor: testStructReadNewFunc,
+				ReadConstructor:   testStructReadNewFunc,
 				UpdateConstructor: testStructUpdateNewFunc,
-				ListConstructor: testStructListNewFunc,
+				ListConstructor:   testStructListNewFunc,
 			})))
 			http.Handle(httpURI2, ctl.Handler(httpURI2, testStructNewFunc, HandlerOptions{
-				Operations: OpUpdate,
+				Operations:        OpUpdate,
 				UpdateConstructor: testStructUpdatePriceNewFunc,
 			}))
-			http.Handle(httpURIJoined, ctl.Handler(httpURIJoined, func() interface{}{ return &Product_WithDetails{} }, HandlerOptions{
-				Operations: OpRead|OpList,
-				ForceName: "Product",
+			http.Handle(httpURIJoined, ctl.Handler(httpURIJoined, func() interface{} { return &Product_WithDetails{} }, HandlerOptions{
+				Operations: OpRead | OpList,
+				ForceName:  "Product",
 			}))
 			http.ListenAndServe(":"+httpPort, nil)
 		}()
@@ -237,8 +237,8 @@ func getRowCntById(id int64) (int64, error) {
 	return cnt, err
 }
 
-func truncateTable() (error) {
-	_, err := dbConn.Exec("TRUNCATE TABLE crud_test_structs");
+func truncateTable() error {
+	_, err := dbConn.Exec("TRUNCATE TABLE crud_test_structs")
 	return err
 }
 

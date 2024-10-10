@@ -10,16 +10,16 @@ import (
 
 type structListTplObj struct {
 	Structs []*structListTplObjItem
-	URI string
+	URI     string
 }
 
 type structListTplObjItem struct {
 	Name string
 }
 
-func (c *Controller) getStructListTplObj(uri string, objFuncs... func() interface{}) (*structListTplObj, error) {
+func (c *Controller) getStructListTplObj(uri string, objFuncs ...func() interface{}) (*structListTplObj, error) {
 	l := &structListTplObj{
-		URI: uri,
+		URI:     uri,
 		Structs: []*structListTplObjItem{},
 	}
 
@@ -34,9 +34,9 @@ func (c *Controller) getStructListTplObj(uri string, objFuncs... func() interfac
 	}
 
 	return l, nil
-} 
-	
-func (c *Controller) getStructListHTML(uri string, objFuncs... func() interface{}) (string, error) {
+}
+
+func (c *Controller) getStructListHTML(uri string, objFuncs ...func() interface{}) (string, error) {
 	structListTpl, err := embed.FS.ReadFile(htmlDir, "html/struct_list.html")
 	if err != nil {
 		return "", fmt.Errorf("error reading struct list template from embed: %w", err)

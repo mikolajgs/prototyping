@@ -21,10 +21,10 @@ type SaveOptions struct {
 }
 
 type GetOptions struct {
-	Order []string
-	Limit int
-	Offset int
-	Filters map[string]interface{}
+	Order               []string
+	Limit               int
+	Offset              int
+	Filters             map[string]interface{}
 	RowObjTransformFunc func(interface{}) interface{}
 }
 
@@ -33,14 +33,14 @@ type DeleteOptions struct {
 }
 
 type DeleteMultipleOptions struct {
-	Filters map[string]interface{}
+	Filters            map[string]interface{}
 	CascadeDeleteDepth int
-	Constructors map[string]func() interface{}
+	Constructors       map[string]func() interface{}
 }
 
 type UpdateMultipleOptions struct {
-	Filters map[string]interface{}
-	CascadeDeleteDepth int
+	Filters                 map[string]interface{}
+	CascadeDeleteDepth      int
 	ConvertValuesFromString bool
 }
 
@@ -161,7 +161,7 @@ func (c Controller) Delete(obj interface{}, options DeleteOptions) *ErrControlle
 }
 
 // DeleteMultiple removes objects from the database based on specified filters
-func (c Controller) DeleteMultiple(obj interface{}, options DeleteMultipleOptions) (*ErrController) {
+func (c Controller) DeleteMultiple(obj interface{}, options DeleteMultipleOptions) *ErrController {
 	h, err := c.getSQLGenerator(obj, nil, "")
 	if err != nil {
 		return err
@@ -224,7 +224,7 @@ func (c Controller) DeleteMultiple(obj interface{}, options DeleteMultipleOption
 }
 
 // UpdateMultiple updates specific fields in objects from the database based on specified filters
-func (c Controller) UpdateMultiple(obj interface{}, values map[string]interface{}, options UpdateMultipleOptions) (*ErrController) {
+func (c Controller) UpdateMultiple(obj interface{}, values map[string]interface{}, options UpdateMultipleOptions) *ErrController {
 	h, err := c.getSQLGenerator(obj, nil, "")
 	if err != nil {
 		return err
@@ -232,7 +232,7 @@ func (c Controller) UpdateMultiple(obj interface{}, values map[string]interface{
 
 	if len(values) < 1 {
 		return &ErrController{
-			Op: "MissingValues",
+			Op:  "MissingValues",
 			Err: fmt.Errorf("missing values for update"),
 		}
 	}
@@ -417,9 +417,9 @@ func (c *Controller) AddSQLGenerator(obj interface{}, parentObj interface{}, ove
 
 	h := stsql.NewStructSQL(obj, stsql.StructSQLOptions{
 		DatabaseTablePrefix: c.dbTblPrefix,
-		ForceName: forceName,
-		Base: sourceHelper,
-		TagName: c.tagName,
+		ForceName:           forceName,
+		Base:                sourceHelper,
+		TagName:             c.tagName,
 	})
 	if h.Err() != nil {
 		return &ErrController{

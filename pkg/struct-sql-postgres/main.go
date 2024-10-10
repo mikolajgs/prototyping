@@ -4,17 +4,17 @@ package structsqlpostgres
 // Database table and column names are lowercase with underscore and they are generated from field names.
 // StructSQL is created within Controller and there is no need to instantiate it
 type StructSQL struct {
-	queryDropTable    string
-	queryCreateTable  string
-	queryInsert       string
-	queryUpdateById   string
+	queryDropTable              string
+	queryCreateTable            string
+	queryInsert                 string
+	queryUpdateById             string
 	queryInsertOnConflictUpdate string
-	querySelectById   string
-	queryDeleteById   string
-	querySelectPrefix string
-	querySelectCountPrefix string
-	queryDeletePrefix string
-	queryUpdatePrefix string
+	querySelectById             string
+	queryDeleteById             string
+	querySelectPrefix           string
+	querySelectCountPrefix      string
+	queryDeletePrefix           string
+	queryUpdatePrefix           string
 
 	dbTbl       string
 	dbColPrefix string
@@ -23,18 +23,18 @@ type StructSQL struct {
 	url         string
 	fields      []string
 
-	fieldsDefaultValue map[string]string
-	fieldsUniq         map[string]bool
-	fieldsTags         map[string]map[string]string
+	fieldsDefaultValue  map[string]string
+	fieldsUniq          map[string]bool
+	fieldsTags          map[string]map[string]string
 	fieldsOverwriteType map[string]string
 
 	flags int
 
-	baseFieldsTags map[string]map[string]string
+	baseFieldsTags   map[string]map[string]string
 	joinedFieldsTags map[string]map[string]map[string]string
 
 	hasJoined bool
-	joined map[string]*StructSQL
+	joined    map[string]*StructSQL
 
 	err *ErrStructSQL
 
@@ -46,9 +46,9 @@ const RawConjuctionAND = 2
 
 type StructSQLOptions struct {
 	DatabaseTablePrefix string
-	ForceName string
-	TagName string
-	Joined map[string]*StructSQL
+	ForceName           string
+	TagName             string
+	Joined              map[string]*StructSQL
 	// In some cases, we might want to copy over tags from already existing StructSQL instance. Such is called Base in here.
 	Base *StructSQL
 	// When struct has a name like 'xx_yy' and it has joined structs, use 'xx' as a name for table and column names

@@ -9,7 +9,7 @@ import (
 // Controller is the main component that gets and saves objects in the database and generates HTTP handler
 // that can be attached to an HTTP server.
 type Controller struct {
-	struct2db *struct2db.Controller
+	struct2db         *struct2db.Controller
 	uriStructNameFunc map[string]map[string]func() interface{}
 }
 

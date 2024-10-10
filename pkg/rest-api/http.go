@@ -4,11 +4,11 @@ import "net/http"
 
 type HandlerOptions struct {
 	CreateConstructor func() interface{}
-	ReadConstructor func() interface{}
+	ReadConstructor   func() interface{}
 	UpdateConstructor func() interface{}
-	ListConstructor func() interface{}
-	Operations int
-	ForceName string
+	ListConstructor   func() interface{}
+	Operations        int
+	ForceName         string
 }
 
 // Values for CRUD operations

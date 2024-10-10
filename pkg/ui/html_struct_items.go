@@ -11,12 +11,12 @@ import (
 
 	struct2db "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
 	stsql "github.com/mikolajgs/prototyping/pkg/struct-sql-postgres"
-)	
+)
 
 type structItemsTplObj struct {
-	Name string
-	URI string
-	Fields []string
+	Name      string
+	URI       string
+	Fields    []string
 	ItemsHTML []interface{}
 }
 
@@ -24,7 +24,7 @@ func (c *Controller) getStructItemsTplObj(uri string, objFunc func() interface{}
 	o := objFunc()
 
 	itemsHTML, err := c.struct2db.Get(objFunc, struct2db.GetOptions{
-		RowObjTransformFunc: func(obj interface{}) interface{}{
+		RowObjTransformFunc: func(obj interface{}) interface{} {
 			out := ""
 			id := ""
 
@@ -59,14 +59,14 @@ func (c *Controller) getStructItemsTplObj(uri string, objFunc func() interface{}
 	}
 
 	its := &structItemsTplObj{
-		URI: uri,
-		Name: stsql.GetStructName(o),
-		Fields: stsql.GetStructFieldNames(o),
+		URI:       uri,
+		Name:      stsql.GetStructName(o),
+		Fields:    stsql.GetStructFieldNames(o),
 		ItemsHTML: itemsHTML,
 	}
 
 	return its, nil
-} 
+}
 
 func (c *Controller) getStructItemsHTML(uri string, objFunc func() interface{}) (string, error) {
 	structItemsTpl, err := embed.FS.ReadFile(htmlDir, "html/struct_items.html")
@@ -81,7 +81,7 @@ func (c *Controller) getStructItemsHTML(uri string, objFunc func() interface{}) 
 
 	buf := &bytes.Buffer{}
 	t := template.Must(template.New("structItems").Funcs(template.FuncMap{
-		"SplitRow": func(s string) ([]string) {
+		"SplitRow": func(s string) []string {
 			sArr := strings.SplitN(s, ":", 2)
 			return sArr
 		},

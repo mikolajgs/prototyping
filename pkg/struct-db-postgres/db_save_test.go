@@ -62,8 +62,8 @@ func TestSaveInsertWithID(t *testing.T) {
 	recreateTestStructTable()
 
 	ts := getTestStructWithData()
-	ts.ID = 99999;
-	ts.FirstName = "ProvidedID";
+	ts.ID = 99999
+	ts.FirstName = "ProvidedID"
 	err := testController.Save(ts, SaveOptions{})
 	if err != nil {
 		t.Fatalf("Save failed to insert struct with provided ID to the table: %s", err.Op)
@@ -103,8 +103,8 @@ func TestSaveInsertWithIDAndNoInsert(t *testing.T) {
 	recreateTestStructTable()
 
 	ts := getTestStructWithData()
-	ts.ID = 99999;
-	ts.FirstName = "ProvidedID";
+	ts.ID = 99999
+	ts.FirstName = "ProvidedID"
 	err := testController.Save(ts, SaveOptions{
 		NoInsert: true,
 	})

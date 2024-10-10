@@ -14,14 +14,26 @@ func (c *Controller) GetHTTPHandler(uri string, objFuncs ...func() interface{}) 
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
-			if c.tryGetHome(w, r, uri, objFuncs...) { return }
-			if c.tryGetStructList(w, r, uri, objFuncs...) { return }
-			if c.tryGetStructItems(w, r, uri) { return }
-			if c.tryGetStructItem(w, r, uri) { return }
+			if c.tryGetHome(w, r, uri, objFuncs...) {
+				return
+			}
+			if c.tryGetStructList(w, r, uri, objFuncs...) {
+				return
+			}
+			if c.tryGetStructItems(w, r, uri) {
+				return
+			}
+			if c.tryGetStructItem(w, r, uri) {
+				return
+			}
 		}
 
-		if c.tryStructItem(w, r, uri) { return }
-		if c.tryStructItems(w, r, uri) { return }
+		if c.tryStructItem(w, r, uri) {
+			return
+		}
+		if c.tryStructItems(w, r, uri) {
+			return
+		}
 
 		w.WriteHeader(http.StatusBadRequest)
 	})

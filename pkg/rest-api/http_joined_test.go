@@ -10,35 +10,35 @@ import (
 )
 
 type ProductKind struct {
-	ID int64
+	ID   int64
 	Name string
 }
 
 type ProductGroup struct {
-	ID int64
-	Name string
+	ID          int64
+	Name        string
 	Description string
-	Code string
+	Code        string
 }
 
 type Product struct {
-	ID int64
-	Name string
-	Price int
+	ID            int64
+	Name          string
+	Price         int
 	ProductKindID int64
-	ProductGrpID int64
+	ProductGrpID  int64
 }
 
 type Product_WithDetails struct {
-	ID int64 `json:"product_id"`
-	Name string `json:"name"`
-	Price int `json:"price"`
-	ProductKindID int64 `json:"product_kind_id"`
-	ProductGrpID int64 `json:"product_grp_id"`
-	ProductKind *ProductKind `crud:"join" json:"omit"`
-	ProductKind_Name string `json:"product_kind_name"`
-	ProductGrp *ProductGroup `crud:"join" json:"omit"`
-	ProductGrp_Code string `json:"product_grp_code"`
+	ID               int64         `json:"product_id"`
+	Name             string        `json:"name"`
+	Price            int           `json:"price"`
+	ProductKindID    int64         `json:"product_kind_id"`
+	ProductGrpID     int64         `json:"product_grp_id"`
+	ProductKind      *ProductKind  `crud:"join" json:"omit"`
+	ProductKind_Name string        `json:"product_kind_name"`
+	ProductGrp       *ProductGroup `crud:"join" json:"omit"`
+	ProductGrp_Code  string        `json:"product_grp_code"`
 }
 
 func TestGetListOfJoinedStructs(t *testing.T) {
@@ -49,41 +49,40 @@ func TestGetListOfJoinedStructs(t *testing.T) {
 
 	// Add rows
 	pg := &ProductGroup{
-		ID: 113,
-		Name: "Group 1",
+		ID:          113,
+		Name:        "Group 1",
 		Description: "A group of products",
-		Code: "GRP1",
+		Code:        "GRP1",
 	}
 	ctl.struct2db.Save(pg, stdb.SaveOptions{})
 
 	pk := &ProductKind{
-		ID: 33,
+		ID:   33,
 		Name: "Kind 1",
 	}
 	ctl.struct2db.Save(pk, stdb.SaveOptions{})
 	pk2 := &ProductKind{
-		ID: 34,
+		ID:   34,
 		Name: "Kind 2",
 	}
 	ctl.struct2db.Save(pk2, stdb.SaveOptions{})
 
 	p := &Product{
-		ID: 6,
-		Name: "Product Name",
-		Price: 1234,
+		ID:            6,
+		Name:          "Product Name",
+		Price:         1234,
 		ProductKindID: 33,
-		ProductGrpID: 113,
+		ProductGrpID:  113,
 	}
 	ctl.struct2db.Save(p, stdb.SaveOptions{})
 	p2 := &Product{
-		ID: 7,
-		Name: "Product Name 2",
-		Price: 1234,
+		ID:            7,
+		Name:          "Product Name 2",
+		Price:         1234,
 		ProductKindID: 34,
-		ProductGrpID: 113,
+		ProductGrpID:  113,
 	}
 	ctl.struct2db.Save(p2, stdb.SaveOptions{})
-
 
 	uriParamString := ""
 	req, err := http.NewRequest("GET", "http://localhost:"+httpPort+httpURIJoined+"?"+uriParamString, bytes.NewReader([]byte{}))
@@ -108,4 +107,3 @@ func TestGetListOfJoinedStructs(t *testing.T) {
 		t.Fatalf("GET method failed to return valid JSON")
 	}
 }
-

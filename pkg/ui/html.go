@@ -16,5 +16,5 @@ func (c *Controller) getMsgHTML(msgType int, msg string) string {
 	if msgType == 0 {
 		return ""
 	}
-	return fmt.Sprintf("<div>%d: %s</div>", msgType, html.EscapeString(msg));
+	return fmt.Sprintf("<div>%d: %s</div>", msgType, html.EscapeString(msg))
 }

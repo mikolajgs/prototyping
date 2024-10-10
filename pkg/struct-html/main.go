@@ -18,7 +18,7 @@ func GetFields(u interface{}, values map[string]string, withFieldValues bool) st
 			"ID": true,
 		},
 		OverwriteValues: values,
-		FieldValues: true,
+		FieldValues:     true,
 	})
 
 	htm := ""

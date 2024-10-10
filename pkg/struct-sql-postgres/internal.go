@@ -102,7 +102,7 @@ func (h *StructSQL) reflectStructForDBQueries(u interface{}, dbTablePrefix strin
 			if _, ok2 := joinedTables[fieldNameArr[0]]; !ok2 {
 				alias := fmt.Sprintf("t%d", len(joinedTables)+2)
 				innerJoins += fmt.Sprintf(
-					" INNER JOIN %s %s ON %s=%s.%s", 
+					" INNER JOIN %s %s ON %s=%s.%s",
 					tbl, alias,
 					h.dbFieldCols[fieldNameArr[0]+"ID"],
 					alias, h.joined[fieldNameArr[0]].dbFieldCols["ID"],
@@ -114,7 +114,7 @@ func (h *StructSQL) reflectStructForDBQueries(u interface{}, dbTablePrefix strin
 
 			h.dbFieldCols[f.Name] = dbCol
 			h.dbCols[dbCol] = f.Name
-			
+
 			cols = h.addWithComma(cols, dbCol)
 			colsWithoutID = h.addWithComma(colsWithoutID, dbCol) // not used for now
 			valWithoutIDCnt++
@@ -128,7 +128,7 @@ func (h *StructSQL) reflectStructForDBQueries(u interface{}, dbTablePrefix strin
 		// Continue when field does not come from joined struct
 		dbCol := h.getDBCol(f.Name)
 		if h.hasJoined {
-			dbCol = "t1."+dbCol
+			dbCol = "t1." + dbCol
 		}
 		h.dbFieldCols[f.Name] = dbCol
 		h.dbCols[dbCol] = f.Name
@@ -168,13 +168,13 @@ func (h *StructSQL) reflectStructForDBQueries(u interface{}, dbTablePrefix strin
 		}
 	}
 	if valCnt > 0 {
-		for i:=1; i<=valCnt; i++ {
+		for i := 1; i <= valCnt; i++ {
 			vals = strings.Replace(vals, "?", fmt.Sprintf("$%d", i), 1)
 			valsWithoutID = strings.Replace(valsWithoutID, "?", fmt.Sprintf("$%d", i), 1)
 			colVals = strings.Replace(colVals, "?", fmt.Sprintf("$%d", i), 1)
 		}
 		dollarCnt := strings.Count(vals, "$")
-		for i:=dollarCnt+1; i<=dollarCnt+valCnt; i++ {
+		for i := dollarCnt + 1; i <= dollarCnt+valCnt; i++ {
 			colValsAgain = strings.Replace(colValsAgain, "?", fmt.Sprintf("$%d", i), 1)
 		}
 	}
@@ -227,8 +227,8 @@ func (h *StructSQL) reflectStructTags(u interface{}, dbTablePrefix string) {
 	// (that means that the constructor for this StructSQL was called from another StructSQL)
 	if !isReflectValue {
 		for j := 0; j < s.NumField(); j++ {
-			f := s.Field(j);
-			valueField := ve.Field(j);
+			f := s.Field(j)
+			valueField := ve.Field(j)
 			// Only field which are pointers to struct instances
 			if valueField.Kind() != reflect.Ptr || valueField.Type().Elem().Kind() != reflect.Struct {
 				continue
@@ -251,8 +251,8 @@ func (h *StructSQL) reflectStructTags(u interface{}, dbTablePrefix string) {
 					// If StructSQL instance for struct has not be provided yet, then instantiate one
 					_, ok := h.joined[fieldNameArr[0]]
 					if !ok {
-						h.joined[fieldNameArr[0]] = NewStructSQL(reflect.New(valueField.Type()),StructSQLOptions{
-							ForceName: childStructName,
+						h.joined[fieldNameArr[0]] = NewStructSQL(reflect.New(valueField.Type()), StructSQLOptions{
+							ForceName:           childStructName,
 							DatabaseTablePrefix: dbTablePrefix,
 						})
 					}
@@ -273,7 +273,7 @@ func (h *StructSQL) reflectStructTags(u interface{}, dbTablePrefix string) {
 
 		// Get value of field's 2sql and 2sql_val tags ('2sql' or different when TagName provided in options)
 		tagValue := f.Tag.Get(h.tagName)
-		valTagValue := f.Tag.Get(h.tagName+"_val")
+		valTagValue := f.Tag.Get(h.tagName + "_val")
 
 		// If Base was provided, copy over 2sql and 2sql_val tag values from the base StructSQL instance
 		if h.baseFieldsTags != nil {
@@ -322,7 +322,7 @@ func (h *StructSQL) reflectStructTags(u interface{}, dbTablePrefix string) {
 		// defaultFieldsTags in another struct
 		h.fieldsTags[f.Name] = make(map[string]string)
 		h.fieldsTags[f.Name][h.tagName] = f.Tag.Get(h.tagName)
-		h.fieldsTags[f.Name][h.tagName+"_val"] = f.Tag.Get(h.tagName+"_val")
+		h.fieldsTags[f.Name][h.tagName+"_val"] = f.Tag.Get(h.tagName + "_val")
 	}
 }
 
@@ -374,7 +374,7 @@ func (h *StructSQL) getDBColParams(n string, t string, uniq bool) string {
 		dbColParams = "BIGINT NOT NULL DEFAULT 0"
 		// String types can be overwritten by a tag
 	} else if h.fieldsOverwriteType[n] != "" {
-		dbColParams = h.fieldsOverwriteType[n]+" NOT NULL DEFAULT ''"
+		dbColParams = h.fieldsOverwriteType[n] + " NOT NULL DEFAULT ''"
 	} else {
 		switch t {
 		case "string":
@@ -531,9 +531,9 @@ func (h *StructSQL) getQuerySet(values map[string]interface{}, valueFieldsToIncl
 			qSet = h.addWithComma(qSet, fmt.Sprintf(col+"=$%d", i))
 			i++
 		}
-	}	
+	}
 
-	return qSet, i-1
+	return qSet, i - 1
 }
 
 func (h *StructSQL) getQueryFilters(filters map[string]interface{}, filterFieldsToInclude map[string]bool, firstNumber int) string {
@@ -629,7 +629,6 @@ func (h *StructSQL) getQueryFilters(filters map[string]interface{}, filterFields
 				rawQuery = strings.Replace(rawQuery, "?", queryVal, 1)
 				continue
 			}
-
 
 			// Value is a single value so just replace ? with $x, eg $2
 			rawQuery = strings.Replace(rawQuery, "?", fmt.Sprintf("$%d", i), 1)

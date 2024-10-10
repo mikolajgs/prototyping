@@ -6,35 +6,35 @@ import (
 )
 
 type ProductKind struct {
-	ID int64
+	ID   int64
 	Name string
 }
 
 type ProductGroup struct {
-	ID int64
-	Name string
+	ID          int64
+	Name        string
 	Description string
-	Code string
+	Code        string
 }
 
 type Product struct {
-	ID int64
-	Name string
-	Price int
+	ID            int64
+	Name          string
+	Price         int
 	ProductKindID int64
-	ProductGrpID int64
+	ProductGrpID  int64
 }
 
 type Product_WithDetails struct {
-	ID int64
-	Name string
-	Price int
-	ProductKindID int64
-	ProductGrpID int64
-	ProductKind *ProductKind `2db:"join"`
+	ID               int64
+	Name             string
+	Price            int
+	ProductKindID    int64
+	ProductGrpID     int64
+	ProductKind      *ProductKind `2db:"join"`
 	ProductKind_Name string
-	ProductGrp *ProductGroup `2db:"join"`
-	ProductGrp_Code string
+	ProductGrp       *ProductGroup `2db:"join"`
+	ProductGrp_Code  string
 }
 
 // Scenarios to test:
@@ -66,13 +66,13 @@ func TestJoinedGet(t *testing.T) {
 	ps, err := testController.Get(func() interface{} {
 		return &Product_WithDetails{}
 	}, GetOptions{
-		Order: []string{"ID", "asc"},
-		Limit: 22,
+		Order:  []string{"ID", "asc"},
+		Limit:  22,
 		Offset: 0,
 		Filters: map[string]interface{}{
-			"Name": "Product Name",
+			"Name":             "Product Name",
 			"ProductKind_Name": "Kind 1",
-			"ProductGrp_Code": "GRP1",
+			"ProductGrp_Code":  "GRP1",
 		},
 	})
 	if err != nil {
@@ -91,13 +91,13 @@ func TestJoinedGet(t *testing.T) {
 	ps, err = testController.Get(func() interface{} {
 		return &Product_WithDetails{}
 	}, GetOptions{
-		Order: []string{"ID", "asc"},
-		Limit: 22,
+		Order:  []string{"ID", "asc"},
+		Limit:  22,
 		Offset: 0,
 		Filters: map[string]interface{}{
-			"Name": "Product Name 1",
+			"Name":             "Product Name 1",
 			"ProductKind_Name": "Kind 12",
-			"ProductGrp_Code": "GRP12",
+			"ProductGrp_Code":  "GRP12",
 			"_raw": []interface{}{
 				"(.Name=? OR .ProductGrp_Code=? OR .ProductKind_Name IN (?))",
 				"Product Name",
@@ -122,28 +122,28 @@ func TestJoinedGet(t *testing.T) {
 }
 
 func createTestJoinedStructs() {
-	recreateTestJoinedStructTables();
+	recreateTestJoinedStructTables()
 
 	pg := &ProductGroup{
-		ID: 113,
-		Name: "Group 1",
+		ID:          113,
+		Name:        "Group 1",
 		Description: "A group of products",
-		Code: "GRP1",
+		Code:        "GRP1",
 	}
 	testController.Save(pg, SaveOptions{})
 
 	pk := &ProductKind{
-		ID: 33,
+		ID:   33,
 		Name: "Kind 1",
 	}
 	testController.Save(pk, SaveOptions{})
 
 	p := &Product{
-		ID: 6,
-		Name: "Product Name",
-		Price: 1234,
+		ID:            6,
+		Name:          "Product Name",
+		Price:         1234,
 		ProductKindID: 33,
-		ProductGrpID: 113,
+		ProductGrpID:  113,
 	}
 	testController.Save(p, SaveOptions{})
 }

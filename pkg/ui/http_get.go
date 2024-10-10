@@ -40,7 +40,7 @@ func (c *Controller) tryGetStructItems(w http.ResponseWriter, r *http.Request, u
 			w.WriteHeader(http.StatusBadRequest)
 			return true
 		}
-		
+
 		c.renderStructItems(w, r, uri, c.uriStructNameFunc[uri][structName])
 		return true
 	}

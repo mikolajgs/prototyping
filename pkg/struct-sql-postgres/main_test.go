@@ -35,35 +35,35 @@ type TestStruct struct {
 
 // Test structs for INNER JOIN
 type ProductKind struct {
-	ID int64
+	ID   int64
 	Name string
 }
 
 type ProductGroup struct {
-	ID int64
-	Name string
+	ID          int64
+	Name        string
 	Description string
-	Code string
+	Code        string
 }
 
 type Product struct {
-	ID int64
-	Name string
-	Price int
+	ID            int64
+	Name          string
+	Price         int
 	ProductKindID int64
-	ProductGrpID int64
+	ProductGrpID  int64
 }
 
 type Product_WithDetails struct {
-	ID int64
-	Name string
-	Price int
-	ProductKindID int64
-	ProductGrpID int64
-	ProductKind *ProductKind `2sql:"join"`
+	ID               int64
+	Name             string
+	Price            int
+	ProductKindID    int64
+	ProductGrpID     int64
+	ProductKind      *ProductKind `2sql:"join"`
 	ProductKind_Name string
-	ProductGrp *ProductGroup `2sql:"join"`
-	ProductGrp_Code string
+	ProductGrp       *ProductGroup `2sql:"join"`
+	ProductGrp_Code  string
 }
 
 // Instance of the test object
@@ -164,7 +164,7 @@ func TestSQLSelectQueries(t *testing.T) {
 	}
 
 	got = h.GetQuerySelect([]string{"EmailSecondary", "asc", "Age", "desc"}, 1, 3, map[string]interface{}{
-		"Price": 33,
+		"Price":     33,
 		"PostCode2": "11-111",
 		"_raw": []interface{}{
 			".Price=? OR (.EmailSecondary=? AND .Age IN (?)) OR (.Age IN (?)) OR (.EmailSecondary IN (?))",
@@ -172,9 +172,9 @@ func TestSQLSelectQueries(t *testing.T) {
 			// However, we need to pass either value or an array so that an array can be extracted into multiple $x's
 			0,
 			0,
-			[]int{0,0,0,0},
-			[]int{0,0,0},
-			[]int{0,0},
+			[]int{0, 0, 0, 0},
+			[]int{0, 0, 0},
+			[]int{0, 0},
 		},
 		"_rawConjuction": RawConjuctionOR,
 	}, map[string]bool{
@@ -210,14 +210,14 @@ func TestSQLDeleteWithFiltersQueries(t *testing.T) {
 	}
 
 	got = h.GetQueryDelete(map[string]interface{}{
-		"Price": 4444,
-		"PostCode2": "11-111",
+		"Price":          4444,
+		"PostCode2":      "11-111",
 		"_rawConjuction": RawConjuctionAND,
 		"_raw": []interface{}{
 			".Price=? OR .EmailSecondary=? OR .Age IN (?)",
 			0,
 			0,
-			[]int{0,0,0},
+			[]int{0, 0, 0},
 		},
 	}, map[string]bool{"Price": true})
 	want = "DELETE FROM test_structs WHERE (price=$1) AND (price=$2 OR email_secondary=$3 OR age IN ($4,$5,$6))"
@@ -230,7 +230,7 @@ func TestSQLDeleteWithFiltersQueries(t *testing.T) {
 			".Price=? OR .EmailSecondary=? OR .Age IN (?)",
 			0,
 			0,
-			[]int{0,0,0},
+			[]int{0, 0, 0},
 		},
 	}, map[string]bool{"Price": true})
 	want = "DELETE FROM test_structs WHERE (price=$1 OR email_secondary=$2 OR age IN ($3,$4,$5))"
@@ -243,7 +243,7 @@ func TestSQLDeleteWithFiltersQueries(t *testing.T) {
 			".Price=? OR .EmailSecondary=? OR .Age IN (?)",
 			0,
 			0,
-			[]int{0,0,0},
+			[]int{0, 0, 0},
 		},
 	}, map[string]bool{"Price": true})
 	want = "DELETE FROM test_structs WHERE (price=$1 OR email_secondary=$2 OR age IN ($3,$4,$5)) RETURNING test_struct_id"
@@ -330,16 +330,16 @@ func TestSQLSelectQueriesWithJoin(t *testing.T) {
 	}
 
 	got = h.GetQuerySelect([]string{"ProductKind_Name", "asc", "Name", "desc"}, 1, 3, map[string]interface{}{
-		"Name": "Product Name",
-		"ProductGrp_Code": "CODE1",
-		"Price": 4400,
+		"Name":             "Product Name",
+		"ProductGrp_Code":  "CODE1",
+		"Price":            4400,
 		"ProductKind_Name": "Kind 1",
 		"_raw": []interface{}{
 			".Price=? OR (.ProductGrp_Code IN (?)) OR .ProductKind_Name=?",
 			// We do not really care about the values, the query contains $x only symbols
 			// However, we need to pass either value or an array so that an array can be extracted into multiple $x's
 			0,
-			[]int{0,0,0,0},
+			[]int{0, 0, 0, 0},
 			0,
 		},
 		"_rawConjuction": RawConjuctionOR,
@@ -352,16 +352,16 @@ func TestSQLSelectQueriesWithJoin(t *testing.T) {
 	}
 
 	got = h.GetQuerySelectCount(map[string]interface{}{
-		"Name": "Product Name",
-		"ProductGrp_Code": "CODE1",
-		"Price": 4400,
+		"Name":             "Product Name",
+		"ProductGrp_Code":  "CODE1",
+		"Price":            4400,
 		"ProductKind_Name": "Kind 1",
 		"_raw": []interface{}{
 			".Price=? OR (.ProductGrp_Code IN (?)) OR .ProductKind_Name=?",
 			// We do not really care about the values, the query contains $x only symbols
 			// However, we need to pass either value or an array so that an array can be extracted into multiple $x's
 			0,
-			[]int{0,0,0,0},
+			[]int{0, 0, 0, 0},
 			0,
 		},
 		"_rawConjuction": RawConjuctionOR,

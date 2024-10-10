@@ -27,14 +27,14 @@ func TestUpdateMultiple(t *testing.T) {
 	// Update multiple rows from the database
 	err := testController.UpdateMultiple(&TestStruct{}, map[string]interface{}{
 		"PrimaryEmail": "newemail@example.com",
-		"Age": 98,
+		"Age":          98,
 	},
-	UpdateMultipleOptions{
-		Filters: map[string]interface{}{
-			"Price": 444,
-			"PrimaryEmail": "changeme@example.com",
-		},
-	})
+		UpdateMultipleOptions{
+			Filters: map[string]interface{}{
+				"Price":        444,
+				"PrimaryEmail": "changeme@example.com",
+			},
+		})
 	if err != nil {
 		t.Fatalf("UpdateMultiple failed to update objects: %s", err.Op)
 	}
@@ -42,7 +42,7 @@ func TestUpdateMultiple(t *testing.T) {
 	cnt, _ := testController.GetCount(func() interface{} { return &TestStruct{} }, GetCountOptions{
 		Filters: map[string]interface{}{
 			"PrimaryEmail": "newemail@example.com",
-			"Age": 98,
+			"Age":          98,
 		},
 	})
 	if cnt != 150 {

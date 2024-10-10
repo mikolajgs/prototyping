@@ -4,22 +4,25 @@ import (
 	"testing"
 )
 
-/*                 max DelParent.Delete*() depth -> |
-                                                    |
+/*
+	max DelParent.Delete*() depth -> |
+	                                   |
+
 DelParent --> []DelChildNone                        |
-          |-> []DelChildDelete --> []DelChildNone   |
-					|	                   |-> []DelChildDelete +--> []DelChildDelete
-					|									   |                    |`-> []DelChildUpdate
-					|									   `-> []DelChildUpdate |
-          `-> []DelChildUpdate --> []DelChildNone   |
-						                   |-> []DelChildDelete |
-														   `-> []DelChildUpdate +--> []DelChildDelete
-															                      |`-> []DelChildUpdate
+
+	          |-> []DelChildDelete --> []DelChildNone   |
+						|	                   |-> []DelChildDelete +--> []DelChildDelete
+						|									   |                    |`-> []DelChildUpdate
+						|									   `-> []DelChildUpdate |
+	          `-> []DelChildUpdate --> []DelChildNone   |
+							                   |-> []DelChildDelete |
+															   `-> []DelChildUpdate +--> []DelChildDelete
+																                      |`-> []DelChildUpdate
 */
 type DelParent struct {
-	ID int64
+	ID    int64
 	Flags int64
-	Name string
+	Name  string
 	// Expect all guys below to have a field DelParentID
 	// no action should be taken for the 'None' one
 	DelChildrenNone []*DelChildNone
@@ -31,11 +34,11 @@ type DelParent struct {
 }
 
 type DelChildNone struct {
-	ID int64
+	ID          int64
 	DelParentID int64
 }
 type DelChildDelete struct {
-	ID int64
+	ID          int64
 	DelParentID int64
 	// "cdel" stands for cascade delete (not "del")
 	// if this struct has children they are linked by the DelParentID column which is specified in "cdel_field"
@@ -43,8 +46,8 @@ type DelChildDelete struct {
 	DelChildrenUpdate []*DelChildUpdate `2db:"on_cdel:upd cdel_field:DelParentID cdel_upd_field:DelChildDeleteID cdel_upd_val:0"`
 }
 type DelChildUpdate struct {
-	ID int64
-	DelParentID int64
+	ID                int64
+	DelParentID       int64
 	DelChildrenDelete []*DelChildDelete `2db:"on_cdel:del cdel_field:DelParentID"`
 	DelChildrenUpdate []*DelChildUpdate `2db:"on_cdel:upd cdel_field:DelParentID cdel_upd_field:DelChildDeleteID cdel_upd_val:0"`
 }
@@ -87,9 +90,9 @@ func TestDeleteCascade(t *testing.T) {
 	// Delete the parent object
 	err1 := testController.Delete(p, DeleteOptions{
 		Constructors: map[string]func() interface{}{
-			"DelChildNone": func() interface{} { return &DelChildNone{}; },
-			"DelChildDelete": func() interface{} { return &DelChildDelete{}; },
-			"DelChildUpdate": func() interface{} { return &DelChildUpdate{}; },
+			"DelChildNone":   func() interface{} { return &DelChildNone{} },
+			"DelChildDelete": func() interface{} { return &DelChildDelete{} },
+			"DelChildUpdate": func() interface{} { return &DelChildUpdate{} },
 		},
 	})
 	if err1 != nil {
@@ -159,31 +162,31 @@ func TestDeleteCascade(t *testing.T) {
 }
 
 func createTestDelParentWithChildren() interface{} {
-	recreateTestDelTables();
+	recreateTestDelTables()
 
 	// create DelParent
-	p := &DelParent{ Name: "Parent1", ID: 1 }
+	p := &DelParent{Name: "Parent1", ID: 1}
 	testController.Save(p, SaveOptions{})
 
 	// create children
-	for i:=0; i<2; i++ {
-		cNone   := &DelChildNone{   DelParentID: p.ID, ID: int64(i+1) } // 1,2
-		cDelete := &DelChildDelete{ DelParentID: p.ID, ID: int64(i+1) } // 1,2
-		cUpdate := &DelChildUpdate{ DelParentID: p.ID, ID: int64(i+1) } // 1,2
+	for i := 0; i < 2; i++ {
+		cNone := &DelChildNone{DelParentID: p.ID, ID: int64(i + 1)}     // 1,2
+		cDelete := &DelChildDelete{DelParentID: p.ID, ID: int64(i + 1)} // 1,2
+		cUpdate := &DelChildUpdate{DelParentID: p.ID, ID: int64(i + 1)} // 1,2
 		testController.Save(cNone, SaveOptions{})
 		testController.Save(cDelete, SaveOptions{})
 		testController.Save(cUpdate, SaveOptions{})
 	}
 
 	// create grandchildren
-	for i:=0; i<2; i++ {
-		for j:=0; j<2; j++ {
-			cDeleteNone   := &DelChildNone{   DelParentID: int64(i+1), ID: int64(((i+1)*100)+(j+1)*10+1) } // 111, 121, 211, 221
-			cDeleteDelete := &DelChildDelete{ DelParentID: int64(i+1), ID: int64(((i+1)*100)+(j+1)*10+1) } // 111, 121, 211, 221
-			cDeleteUpdate := &DelChildUpdate{ DelParentID: int64(i+1), ID: int64(((i+1)*100)+(j+1)*10+1) } // 111, 121, 211, 221
-			cUpdateNone   := &DelChildNone{   DelParentID: int64(i+1), ID: int64(((i+1)*100)+(j+1)*10+2) } // 112, 122, 212, 222
-			cUpdateDelete := &DelChildDelete{ DelParentID: int64(i+1), ID: int64(((i+1)*100)+(j+1)*10+2) } // 112, 122, 212, 222
-			cUpdateUpdate := &DelChildUpdate{ DelParentID: int64(i+1), ID: int64(((i+1)*100)+(j+1)*10+2) } // 112, 122, 212, 222
+	for i := 0; i < 2; i++ {
+		for j := 0; j < 2; j++ {
+			cDeleteNone := &DelChildNone{DelParentID: int64(i + 1), ID: int64(((i + 1) * 100) + (j+1)*10 + 1)}     // 111, 121, 211, 221
+			cDeleteDelete := &DelChildDelete{DelParentID: int64(i + 1), ID: int64(((i + 1) * 100) + (j+1)*10 + 1)} // 111, 121, 211, 221
+			cDeleteUpdate := &DelChildUpdate{DelParentID: int64(i + 1), ID: int64(((i + 1) * 100) + (j+1)*10 + 1)} // 111, 121, 211, 221
+			cUpdateNone := &DelChildNone{DelParentID: int64(i + 1), ID: int64(((i + 1) * 100) + (j+1)*10 + 2)}     // 112, 122, 212, 222
+			cUpdateDelete := &DelChildDelete{DelParentID: int64(i + 1), ID: int64(((i + 1) * 100) + (j+1)*10 + 2)} // 112, 122, 212, 222
+			cUpdateUpdate := &DelChildUpdate{DelParentID: int64(i + 1), ID: int64(((i + 1) * 100) + (j+1)*10 + 2)} // 112, 122, 212, 222
 			testController.Save(cDeleteNone, SaveOptions{})
 			testController.Save(cDeleteDelete, SaveOptions{})
 			testController.Save(cDeleteUpdate, SaveOptions{})
@@ -194,10 +197,10 @@ func createTestDelParentWithChildren() interface{} {
 	}
 
 	// create grandgrandchildren
-	cDeleteDeleteDelete := &DelChildDelete{ DelParentID: int64(111), ID: 1001 }
-	cDeleteDeleteUpdate := &DelChildUpdate{ DelParentID: int64(111), ID: 1002 }
-	cUpdateUpdateDelete := &DelChildDelete{ DelParentID: int64(112), ID: 1003 }
-	cUpdateUpdateUpdate := &DelChildUpdate{ DelParentID: int64(112), ID: 1004 }
+	cDeleteDeleteDelete := &DelChildDelete{DelParentID: int64(111), ID: 1001}
+	cDeleteDeleteUpdate := &DelChildUpdate{DelParentID: int64(111), ID: 1002}
+	cUpdateUpdateDelete := &DelChildDelete{DelParentID: int64(112), ID: 1003}
+	cUpdateUpdateUpdate := &DelChildUpdate{DelParentID: int64(112), ID: 1004}
 	testController.Save(cDeleteDeleteDelete, SaveOptions{})
 	testController.Save(cDeleteDeleteUpdate, SaveOptions{})
 	testController.Save(cUpdateUpdateUpdate, SaveOptions{})
@@ -207,12 +210,12 @@ func createTestDelParentWithChildren() interface{} {
 }
 
 func recreateTestDelTables() {
-	testController.DropTable(&DelParent{});
-	testController.DropTable(&DelChildNone{});
-	testController.DropTable(&DelChildDelete{});
-	testController.DropTable(&DelChildUpdate{});
-	testController.CreateTable(&DelParent{});
-	testController.CreateTable(&DelChildNone{});
-	testController.CreateTable(&DelChildDelete{});
-	testController.CreateTable(&DelChildUpdate{});
+	testController.DropTable(&DelParent{})
+	testController.DropTable(&DelChildNone{})
+	testController.DropTable(&DelChildDelete{})
+	testController.DropTable(&DelChildUpdate{})
+	testController.CreateTable(&DelParent{})
+	testController.CreateTable(&DelChildNone{})
+	testController.CreateTable(&DelChildDelete{})
+	testController.CreateTable(&DelChildUpdate{})
 }

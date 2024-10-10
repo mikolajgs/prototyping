@@ -10,7 +10,6 @@ import (
 	struct2db "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
 )
 
-
 func (c *Controller) tryStructItems(w http.ResponseWriter, r *http.Request, uri string) bool {
 	structName, id := c.getStructAndIDFromURI("x/struct_items/", c.getRealURI(uri, r.RequestURI))
 
