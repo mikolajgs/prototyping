@@ -165,3 +165,64 @@ sqlUpdate := s.GetQueryUpdate(
 ````
 
 ### Get `SELECT` query with `INNER JOIN`
+
+With `struct-sql-postgres` it is possible to build a query that would select data from multiple tables joined with `INNER JOIN`.
+
+
+#### Creating a struct with joined struct
+
+Suppose we need a query to select products with information on users that recently created and modified them.
+
+````go
+type Users struct {
+  ID int64
+  FirstName string
+  LastName string
+}
+
+type Product_WithDetails struct {
+  ID int64
+  Flags int64
+  Name string
+  Description string `2sql:"db_type:varchar(2000)"` // "db_type" is used to force a specific string type for a column
+  Code string `2sql:"uniq"` // "uniq" tells the module to make this column uniq
+  ProductionYear int
+  CreatedByUserID int64
+  LastModifiedByUserID int64
+  CreatedByUser *User `2sql:"join"`
+  CreatedByUser_FirstName string
+  CreatedByUser_LastName string
+  LastModifiedByUser *User `2sql:"join"`
+  LastModifiedByUser_FirstName string
+  LastModifiedByUser_LastName string
+}
+````
+
+#### Getting SELECT query for joined structs
+
+An example query such as:
+
+````SQL
+SELECT t1.product_id,t1.product_flags,t1.name,t1.description,t1.code,t1.production_year,
+t1.created_by_user_id,t1.last_modified_by_user_id,t2.first_name,t2.last_name,t3.first_name,t3.last_name
+FROM products t1 INNER JOIN users t2 ON t1.created_by_user_id=t2.user_id
+INNER JOIN users t3 ON t1.last_modified_by_user_id=t3.user_id
+WHERE (t1.production_year=$1) AND (t2.first_name=$2 AND t3.first_name=$2)
+ORDER BY t2.first_name ASC,t1.name DESC LIMIT 100 OFFSET 10
+````
+
+can be generated with the following code:
+
+````go
+	got = h.GetQuerySelect([]string{"CreatedByUser_FirstName", "asc", "Name", "desc"}, 100, 10, map[string]interface{}{
+		"ProductionYear": 1984,
+		"_raw": []interface{}{
+			".CreatedByUser_FirstName=? AND .LastModifiedByUser_FirstName=?",
+			// We do not really care about the values, the query contains $x only symbols
+			// However, we need to pass either value or an array so that an array can be extracted into multiple $x's
+			0,
+			0,
+		},
+		"_rawConjuction": RawConjuctionAND,
+	}, nil, nil)
+````
