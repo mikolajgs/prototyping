@@ -15,8 +15,6 @@ The following queries can be generated:
 * `DELETE ... WHERE ...`
 * `UPDATE ... WHERE ...`
 
-See `main_test.go` for a sample usage.
-
 
 ## How to use
 
