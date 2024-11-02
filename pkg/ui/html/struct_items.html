@@ -1,5 +1,10 @@
 {{ $uri := .URI }}
 {{ $name := .Name }}
+<div class="header glow"><i class="fa-solid fa-table-list" alt="Struct items"></i>{{ $name }} items</div>
+
+
+
+
 <h3>List of {{ .Name }} items</h3>
 <p>
   <button hx-get="{{ $uri }}x/struct_item/{{ .Name }}/" hx-trigger="click" hx-target="#add_content" hx-swap="innerHTML">add</button>
