@@ -43,7 +43,7 @@ func main() {
 		log.Fatalf("Error with creating tables: %s", err.Error())
 	}
 	
-	http.Handle("/ui/v1/", uiCtl.GetHTTPHandler(
+	http.Handle("/ui/v1/", uiCtl.Handler(
 		"/ui/v1/",
 		func() interface{}{ return &Item{} },
 		func() interface{}{ return &ItemGroup{} },
