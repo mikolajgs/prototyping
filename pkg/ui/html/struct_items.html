@@ -2,12 +2,72 @@
 {{ $name := .Name }}
 <div class="header glow"><i class="fa-solid fa-table-list" alt="Struct items"></i>{{ $name }} items</div>
 
+<div class="selection">
+  <div class="left"><button hx-get="{{ $uri }}x/struct_item/{{ .Name }}/" hx-trigger="click" hx-target="#right_text" hx-swap="innerHTML"><i class="fa-solid fa-plus" alt="Add item"></i> Add item</button></div>
+</div>
+
+<div class="paging">
+  <div class="pages">Page: <button>1</button> <button>2</button> ... <button>50</button> <button class="selected">51</button> <button>52</button> ... <button>134</button> <button>135</button></div>
+  <div class="items">Items per page: <select><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+</div>
+<div class="filter">
+  <div class="label">Advanced filter:</div>
+  <div class="input"><input type="text"/></div>
+  <div><button>Clear</button> <button>Filter</button></div>
+</div>
+<div class="selection">
+  <div class="left">Selection: <button>Select all</button> <button>Select none</button> <button>Invert selection</button></div>
+  <div class="right">Selected: <button>Delete</button></div>
+</div>
 
 
+<div class="table">
+  <table>
+    <thead>
+      <th></th>
 
+      {{ range .Fields }}
+      <th>
+        <div>{{ . }}</div>
+        <div class="filter">
+          <div class="input"><input type="text"/></div>
+          <div class="icon"><i class="fa-solid fa-delete-left" alt="Filter"></i></div>
+        </div>
+      </th>
+      {{ end }}
+
+      <th>
+        <div>Actions</div>
+        <div class="filter">
+          <button>Filter</button>
+        </div>
+      </th>
+    </thead>
+    <tbody>
+      {{ range .ItemsHTML }}
+      {{ $split := SplitRow . }}
+      <tr struct-item-row="{{ $name }}" struct-item-id="{{ index $split 0 }}">
+        <td><input type="checkbox" struct-item-checkbox="{{ $name }}" struct-item-id="{{ index $split 0 }}"/></td>
+        {{ index $split 1 }}
+        <td>
+          <i hx-get="{{ $uri }}x/struct_item/{{ $name }}/{{ index $split 0 }}" hx-trigger="click" hx-target="closest div" hx-swap="innerHTML" class="fa-solid fa-pen"></i>
+          <i hx-delete="{{ $uri }}x/struct_item/{{ $name }}/{{ index $split 0 }}" hx-trigger="click" hx-target="closest tr" hx-swap="delete" class="fa-solid fa-trash"></i>
+        </td>
+      </tr>
+      {{ end }}
+    </tbody>
+  </table>
+</div>
+
+<div class="paging">
+  <div class="pages">Page: <button>1</button> <button>2</button> ... <button>50</button> <button class="selected">51</button> <button>52</button> ... <button>134</button> <button>135</button></div>
+  <div class="items">Items per page: <select><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+</div>
+
+<!--
 <h3>List of {{ .Name }} items</h3>
 <p>
-  <button hx-get="{{ $uri }}x/struct_item/{{ .Name }}/" hx-trigger="click" hx-target="#add_content" hx-swap="innerHTML">add</button>
+  <button>add</button>
   select:
   <button onclick="tickAllStructItems('{{ $name }}');">all</button>
   <button onclick="untickAllStructItems('{{ $name }}');">none</button>
@@ -18,28 +78,4 @@
           hx-vals="js:{ ids: getTickedStructItems('{{ $name }}') }"
           hx-trigger="click" hx-swap="none">delete</button>
 </p>
-
-<div id="add_content"></div>
-
-<table>
-  <thead>
-      <th></th>
-    {{ range .Fields }}
-      <th>{{ . }}</th>
-    {{ end }}
-    <th>Actions</th>
-  </thead>
-  <tbody>
-    {{ range .ItemsHTML }}
-    {{ $split := SplitRow . }}
-      <tr struct-item-row="{{ $name }}" struct-item-id="{{ index $split 0 }}">
-        <td><input type="checkbox" struct-item-checkbox="{{ $name }}" struct-item-id="{{ index $split 0 }}"/></td>
-        {{ index $split 1 }}
-        <td>
-          <button class="small_btn" hx-get="{{ $uri }}x/struct_item/{{ $name }}/{{ index $split 0 }}" hx-trigger="click" hx-target="closest div" hx-swap="innerHTML">edit</button>
-          <button class="small_btn" hx-delete="{{ $uri }}x/struct_item/{{ $name }}/{{ index $split 0 }}" hx-trigger="click" hx-target="closest tr" hx-swap="delete">delete</button>
-        </td>
-      </tr>
-    {{ end }}
-  </tbody>
-</table>
+-->
