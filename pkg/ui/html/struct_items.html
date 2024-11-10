@@ -1,20 +1,31 @@
 {{ $uri := .URI }}
 {{ $name := .Name }}
+{{ $count := .ItemsCount }}
 <div class="header glow"><i class="fa-solid fa-table-list" alt="Struct items"></i>{{ $name }} items</div>
 
 <div class="selection">
   <div class="left"><button hx-get="{{ $uri }}x/struct_item/{{ .Name }}/" hx-trigger="click" hx-target="#right_text" hx-swap="innerHTML"><i class="fa-solid fa-plus" alt="Add item"></i> Add item</button></div>
 </div>
 
-<div class="paging">
-  <div class="pages">Page: <button>1</button> <button>2</button> ... <button>50</button> <button class="selected">51</button> <button>52</button> ... <button>134</button> <button>135</button></div>
-  <div class="items">Items per page: <select><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
-</div>
 <div class="filter">
   <div class="label">Advanced filter:</div>
   <div class="input"><input type="text"/></div>
   <div><button>Clear</button> <button>Filter</button></div>
 </div>
+
+<div class="paging">
+  <div class="pages"><b>{{ $count }}</b> items found</div>
+</div>
+<div class="paging">
+  <div class="pages">Page: {{ range .PageNumbers }}{{ if eq . "" }} ... {{ else }} <button>{{ . }}</button>{{ end }} {{ end }}</div>
+  <div class="items">Items per page: <select>
+    <option value="10"{{ if eq .ParamLimit 10 }} selected{{ end }}>10</option>
+    <option value="25"{{ if eq .ParamLimit 25 }} selected{{ end }}>25</option>
+    <option value="50"{{ if eq .ParamLimit 50 }} selected{{ end }}>50</option>
+    <option value="100"{{ if eq .ParamLimit 100 }} selected{{ end }}>100</option>
+  </select></div>
+</div>
+
 <div class="selection">
   <div class="left">Selection: <button>Select all</button> <button>Select none</button> <button>Invert selection</button></div>
   <div class="right">Selected: <button>Delete</button></div>

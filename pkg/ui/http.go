@@ -4,7 +4,17 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"embed"
+	"fmt"
+	"html"
+	"reflect"
 )
+
+//go:embed html/*
+var htmlDir embed.FS
+
+const MsgSuccess = 1
+const MsgFailure = 2
 
 // Handler returns an HTTP handler that can be attached to HTTP server. It runs a simple UI that allows
 // managing the data.
@@ -66,4 +76,36 @@ func (c *Controller) getStructAndIDFromURI(prefix string, uri string) (string, s
 	}
 
 	return structName, id
+}
+
+func (c *Controller) getMsgHTML(msgType int, msg string) string {
+	if msgType == 0 {
+		return ""
+	}
+	return fmt.Sprintf("<div>%d: %s</div>", msgType, html.EscapeString(msg))
+}
+
+func (c *Controller) getRealURI(handlerURI string, requestURI string) string {
+	uri := requestURI[len(handlerURI):]
+	xs := strings.SplitN(uri, "?", 2)
+	return xs[0]
+}
+
+func (c *Controller) setStructNameFunc(uri string, objFuncs ...func() interface{}) {
+	// Loop through objFuncs and get their struct names
+	if c.uriStructNameFunc == nil {
+		c.uriStructNameFunc = make(map[string]map[string]func() interface{})
+	}
+	c.uriStructNameFunc[uri] = map[string]func() interface{}{}
+	for _, obj := range objFuncs {
+		o := obj()
+		v := reflect.ValueOf(o)
+		i := reflect.Indirect(v)
+		s := i.Type()
+		c.uriStructNameFunc[uri][s.Name()] = obj
+	}
+}
+
+func (c *Controller) renderMsg(w http.ResponseWriter, r *http.Request, msgType int, msg string) {
+	w.Write([]byte(c.getMsgHTML(msgType, msg)))
 }
