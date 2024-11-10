@@ -3,7 +3,6 @@
 {{ range .Structs }}
 <li><a
     hx-get="{{ $uri }}x/struct_items/{{ .Name }}/"
-    hx-push-url="{{ $uri }}struct_items/{{ .Name }}/"
     hx-trigger="click"
     hx-target="#center_text"
     hx-swap="innerHTML"><i class="fa-solid fa-table-list"></i> {{ .Name }}</a></li>

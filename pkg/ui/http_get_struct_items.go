@@ -25,15 +25,23 @@ type structItemsTplObj struct {
 	ItemsHTML   []interface{}
 	ItemsCount  int64
 	PageNumbers []string
-	ParamPage   int
-	ParamLimit  int
+	ParamPage   string
+	ParamLimit  string
+	ParamRawFilter string
+	ParamRawFilterEscaped string
+	ParamFilters map[string]string
+	ParamFiltersEscaped map[string]string
+	ParamOrder  string
+	ParamOrderDirection string
 }
 
 type structItemsParams struct {
 	Page     int
 	Limit    int
-	RawQuery string
+	RawFilter string
 	Filters  map[string]string
+	Order    string
+	OrderDirection string
 }
 
 func (c *Controller) tryGetStructItems(w http.ResponseWriter, r *http.Request, uri string) bool {
@@ -53,9 +61,36 @@ func (c *Controller) tryGetStructItems(w http.ResponseWriter, r *http.Request, u
 			return true
 		}
 
+		page := r.FormValue("page")
+		limit := r.FormValue("limit")
+		rawFilter := r.FormValue("rawFilter")
+		order := r.FormValue("order")
+		orderDirection := strings.ToUpper(r.FormValue("orderDirection"))
+
+		reNumber := regexp.MustCompile(`^[0-9]+$`)
+		if !reNumber.MatchString(page) {
+			page = "1"
+		}
+		if !reNumber.MatchString(limit) {
+			limit = "25"
+		}
+		// todo: rawFilter
+		pageInt, _ := strconv.ParseInt(page, 10, 64)
+		limitInt, _ := strconv.ParseInt(limit, 10, 64)
+
+		if orderDirection != "DESC" {
+			orderDirection = "ASC"
+		}
+		if !stsql.IsStructField(c.uriStructNameFunc[uri][structName](), order) {
+			order = "ID"
+		}
+
 		c.renderStructItems(w, r, uri, c.uriStructNameFunc[uri][structName], structItemsParams{
-			Page: 1,
-			Limit: 25,
+			Page: int(pageInt),
+			Limit: int(limitInt),
+			RawFilter: rawFilter,
+			Order: order,
+			OrderDirection: orderDirection,
 		})
 		return true
 	}
@@ -213,9 +248,11 @@ func (c *Controller) getStructItemsTplObj(uri string, objFunc func() interface{}
 		Fields:      stsql.GetStructFieldNames(o),
 		ItemsHTML:   itemsHTML,
 		ItemsCount:  itemsCount,
-		ParamPage:   getPage,
-		ParamLimit:  getLimit,
+		ParamPage:   fmt.Sprintf("%d", getPage),
+		ParamLimit:  fmt.Sprintf("%d", getLimit),
 		PageNumbers: pageNumbers,
+		ParamOrder:  params.Order,
+		ParamOrderDirection: params.OrderDirection,
 	}
 
 	return its, nil

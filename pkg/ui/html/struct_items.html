@@ -1,28 +1,79 @@
+{{ define "paramsFiltersOnLoad" }}{{ range . }}, filter{{ . }}:document.getElementById('struct_items_filteronload_{{ . }}').value{{ end }}{{ end }}
+{{ define "paramsFiltersInput" }}{{ range . }}, filter{{ . }}:document.getElementById('struct_items_filter_{{ . }}').value{{ end }}{{ end }}
+{{ define "paramsLimitOnLoad" }}, limit:document.getElementById('struct_items_limit_onload').value{{ end }}
+{{ define "paramsLimitSelect" }}, limit:document.getElementById('struct_items_limit').options[document.getElementById('struct_items_limit').selectedIndex].value{{ end }}
+{{ define "paramsRawFilterInput" }}, rawFilter:document.getElementById('struct_items_raw_filter').value{{ end }}
+{{ define "paramsRawFilterOnLoad" }}, rawFilter:document.getElementById('struct_items_raw_filter_onload').value{{ end }}
+{{ define "paramsOrderOnLoad" }}, order:document.getElementById('struct_items_order_onload').value{{ end }}
+{{ define "paramsOrderDirectionOnLoad" }}, orderDirection:document.getElementById('struct_items_order_direction_onload').value{{ end }}
+
 {{ $uri := .URI }}
 {{ $name := .Name }}
 {{ $count := .ItemsCount }}
+{{ $paramPage := .ParamPage }}
+{{ $paramLimit := .ParamLimit }}
+{{ $paramRawFilter := .ParamRawFilter }}
+{{ $paramRawFilterEscaped := .ParamRawFilterEscaped }}
+{{ $paramFilters := .ParamFilters }}
+{{ $paramFiltersEscaped := .ParamFiltersEscaped }}
+{{ $paramOrder := .ParamOrder }}
+{{ $paramOrderDirection := .ParamOrderDirection }}
+{{ $fields := .Fields }}
+
+<input type="hidden" id="struct_items_raw_filter_onload" value="{{ $paramRawFilterEscaped }}"/>
+<input type="hidden" id="struct_items_page_onload" value="{{ $paramPage }}"/>
+<input type="hidden" id="struct_items_limit_onload" value="{{ $paramLimit }}"/>
+<input type="hidden" id="struct_items_order_onload" value="{{ $paramOrder }}"/>
+<input type="hidden" id="struct_items_order_direction_onload" value="{{ $paramOrderDirection }}"/>
+{{ range .Fields }}
+<input type="hidden" id="struct_items_filteronload_{{ . }}" value="{{ index $paramFiltersEscaped . }}"/>
+{{ end }}
+
 <div class="header glow"><i class="fa-solid fa-table-list" alt="Struct items"></i>{{ $name }} items</div>
 
 <div class="selection">
-  <div class="left"><button hx-get="{{ $uri }}x/struct_item/{{ .Name }}/" hx-trigger="click" hx-target="#right_text" hx-swap="innerHTML"><i class="fa-solid fa-plus" alt="Add item"></i> Add item</button></div>
+  <div class="left"><button hx-get="{{ $uri }}x/struct_item/{{ $name }}/" hx-trigger="click" hx-target="#right_text" hx-swap="innerHTML"><i class="fa-solid fa-plus" alt="Add item"></i> Add item</button></div>
 </div>
 
 <div class="filter">
   <div class="label">Advanced filter:</div>
-  <div class="input"><input type="text"/></div>
-  <div><button>Clear</button> <button>Filter</button></div>
+  <div class="input"><input type="text" id="struct_items_raw_filter" value="{{ $paramRawFilterEscaped }}"/></div>
+  <div><button
+    hx-get="{{ $uri }}x/struct_items/{{ $name }}/"
+    hx-trigger="click"
+    hx-target="#center_text"
+    hx-swap="innerHTML"
+    hx-vals="js:{ page:1{{ template "paramsLimitOnLoad" }}{{ template "paramsFiltersOnLoad" $fields }}{{ template "paramsOrderOnLoad" }}{{ template "paramsOrderDirectionOnLoad" }} }"
+    >Clear</button> <button
+    hx-get="{{ $uri }}x/struct_items/{{ $name }}/"
+    hx-trigger="click"
+    hx-target="#center_text"
+    hx-swap="innerHTML"
+    hx-vals="js:{ page:1{{ template "paramsLimitOnLoad" }}{{ template "paramsFiltersOnLoad" $fields }}{{ template "paramsRawFilterInput" }}{{ template "paramsOrderOnLoad" }}{{ template "paramsOrderDirectionOnLoad" }} }"
+    >Filter</button></div>
 </div>
 
 <div class="paging">
   <div class="pages"><b>{{ $count }}</b> items found</div>
 </div>
 <div class="paging">
-  <div class="pages">Page: {{ range .PageNumbers }}{{ if eq . "" }} ... {{ else }} <button>{{ . }}</button>{{ end }} {{ end }}</div>
-  <div class="items">Items per page: <select>
-    <option value="10"{{ if eq .ParamLimit 10 }} selected{{ end }}>10</option>
-    <option value="25"{{ if eq .ParamLimit 25 }} selected{{ end }}>25</option>
-    <option value="50"{{ if eq .ParamLimit 50 }} selected{{ end }}>50</option>
-    <option value="100"{{ if eq .ParamLimit 100 }} selected{{ end }}>100</option>
+  <div class="pages">Page: {{ range .PageNumbers }}{{ if eq . "" }} ... {{ else }} <button{{ if eq . $paramPage }} class="selected"{{ end }}
+    hx-get="{{ $uri }}x/struct_items/{{ $name }}/"
+    hx-trigger="click"
+    hx-target="#center_text"
+    hx-swap="innerHTML"
+    hx-vals="js:{ page:{{ . }}{{ template "paramsLimitOnLoad" }}{{ template "paramsFiltersOnLoad" $fields }}{{ template "paramsRawFilterOnLoad" }}{{ template "paramsOrderOnLoad" }}{{ template "paramsOrderDirectionOnLoad" }} }"
+    >{{ . }}</button>{{ end }} {{ end }}</div>
+  <div class="items">Items per page: <select id="struct_items_limit"
+    hx-get="{{ $uri }}x/struct_items/{{ $name }}/"
+    hx-trigger="change"
+    hx-target="#center_text"
+    hx-swap="innerHTML"
+    hx-vals="js:{ page:1{{ template "paramsLimitSelect" }}{{ template "paramsFiltersOnLoad" $fields }}{{ template "paramsRawFilterOnLoad" }}{{ template "paramsOrderOnLoad" }}{{ template "paramsOrderDirectionOnLoad" }} }">
+    <option value="10"{{ if eq .ParamLimit "10" }} selected{{ end }}>10</option>
+    <option value="25"{{ if eq .ParamLimit "25" }} selected{{ end }}>25</option>
+    <option value="50"{{ if eq .ParamLimit "50" }} selected{{ end }}>50</option>
+    <option value="100"{{ if eq .ParamLimit "100" }} selected{{ end }}>100</option>
   </select></div>
 </div>
 
@@ -39,10 +90,22 @@
 
       {{ range .Fields }}
       <th>
-        <div>{{ . }}</div>
+        <div class="field_name{{ if eq . $paramOrder }} selected{{ end }}">{{ . }} <i class="fa-solid fa-arrow-down{{ if and (eq . $paramOrder) (eq $paramOrderDirection "ASC") }} selected{{ end }}" alt="Sort ascending"
+          hx-get="{{ $uri }}x/struct_items/{{ $name }}/"
+          hx-trigger="click"
+          hx-target="#center_text"
+          hx-swap="innerHTML"
+          hx-vals="js:{ page:1, order:'{{ . }}', orderDirection:'ASC'{{ template "paramsLimitOnLoad" }}{{ template "paramsFiltersOnLoad" $fields }}{{ template "paramsRawFilterOnLoad" }} }"
+          ></i> <i class="fa-solid fa-arrow-up{{ if and (eq . $paramOrder) (eq $paramOrderDirection "DESC") }} selected{{ end }}" alt="Sort descending"
+          hx-get="{{ $uri }}x/struct_items/{{ $name }}/"
+          hx-trigger="click"
+          hx-target="#center_text"
+          hx-swap="innerHTML"
+          hx-vals="js:{ page:1, order:'{{ . }}', orderDirection:'DESC'{{ template "paramsLimitOnLoad" }}{{ template "paramsFiltersOnLoad" $fields }}{{ template "paramsRawFilterOnLoad" }} }"
+          ></i></div>
         <div class="filter">
-          <div class="input"><input type="text"/></div>
-          <div class="icon"><i class="fa-solid fa-delete-left" alt="Filter"></i></div>
+          <div class="input"><input type="text" id="struct_items_filter_{{ . }}" value="{{ index $paramFiltersEscaped . }}"/></div>
+          <div class="icon"><i class="fa-solid fa-delete-left" alt="Clear filter" onclick="document.getElementById('struct_items_filter_{{ . }}').value='';"></i></div>
         </div>
       </th>
       {{ end }}
@@ -50,7 +113,13 @@
       <th>
         <div>Actions</div>
         <div class="filter">
-          <button>Filter</button>
+          <button
+            hx-get="{{ $uri }}x/struct_items/{{ $name }}/"
+            hx-trigger="click"
+            hx-target="#center_text"
+            hx-swap="innerHTML"
+            hx-vals="js:{ page:1{{ template "paramsLimitOnLoad" }}{{ template "paramsFiltersInput" $fields }}{{ template "paramsRawFilterOnLoad" }}{{ template "paramsOrderOnLoad" }}{{ template "paramsOrderDirectionOnLoad" }} }"
+          >Filter</button>
         </div>
       </th>
     </thead>
@@ -68,11 +137,6 @@
       {{ end }}
     </tbody>
   </table>
-</div>
-
-<div class="paging">
-  <div class="pages">Page: <button>1</button> <button>2</button> ... <button>50</button> <button class="selected">51</button> <button>52</button> ... <button>134</button> <button>135</button></div>
-  <div class="items">Items per page: <select><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
 </div>
 
 <!--
