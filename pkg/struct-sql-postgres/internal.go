@@ -63,6 +63,7 @@ func (h *StructSQL) reflectStructForDBQueries(u interface{}, dbTablePrefix strin
 
 	h.dbFieldCols = make(map[string]string)
 	h.dbCols = make(map[string]string)
+	h.fieldsNotString = make(map[string]bool)
 
 	var colsWithTypes, cols, vals, valsWithoutID, colsWithoutID, colVals, colValsAgain string
 	idCol := h.dbColPrefix + "_id"
@@ -85,6 +86,10 @@ func (h *StructSQL) reflectStructForDBQueries(u interface{}, dbTablePrefix strin
 		// Check the function below for the details.
 		if !IsFieldKindSupported(k) {
 			continue
+		}
+
+		if k != reflect.String {
+			h.fieldsNotString[f.Name] = true
 		}
 
 		// Process field named 'xx_yy' which could be a joined struct field
@@ -547,12 +552,38 @@ func (h *StructSQL) getQueryFilters(filters map[string]interface{}, filterFields
 
 	// Sort filter by their names
 	filterNames := []string{}
+	filterComparison := map[string]int{}
 	for k := range filters {
-		filterNames = append(filterNames, k)
+		n := k
+		if strings.Contains(k, ":") {
+			kArr := strings.Split(k, ":")
+			n = kArr[0]
+			switch (kArr[1]) {
+			case "%":
+				filterComparison[n] = ValueLike
+			case "~":
+				filterComparison[n] = ValueMatch
+			case "<":
+				filterComparison[n] = ValueLower
+			case ">":
+				filterComparison[n] = ValueGreater
+			case "<=":
+				filterComparison[n] = ValueLowerOrEqual
+			case ">=":
+				filterComparison[n] = ValueGreaterOrEqual
+			case "&":
+				filterComparison[n] = ValueBit
+			default:
+				filterComparison[n] = ValueEqual
+			}
+		}
+		filterNames = append(filterNames, n)
 	}
 	sort.Strings(filterNames)
 
 	sorted := []string{}
+	sortedComparisons := []int{}
+	sortedNotString := []bool{}
 	for _, k := range filterNames {
 		if h.dbFieldCols[k] == "" {
 			continue
@@ -565,11 +596,40 @@ func (h *StructSQL) getQueryFilters(filters map[string]interface{}, filterFields
 			continue
 		}
 		sorted = append(sorted, h.dbFieldCols[k])
+		sortedComparisons = append(sortedComparisons, filterComparison[k])
+		sortedNotString = append(sortedNotString, h.fieldsNotString[k])
 	}
 
 	if len(sorted) > 0 {
-		for _, col := range sorted {
-			qWhere = h.addWithAnd(qWhere, fmt.Sprintf(col+"=$%d", i))
+		for j, col := range sorted {
+			// Field that is numeric or bool needs casting
+			filterSQL := ""
+
+			if sortedNotString[j] && (sortedComparisons[j] == ValueLike || sortedComparisons[j] == ValueMatch) {
+				col = fmt.Sprintf("CAST(%s AS TEXT)", col)
+			}
+
+			switch sortedComparisons[j] {
+			case ValueLike:
+				filterSQL = fmt.Sprintf("%s LIKE $%d", col, i)
+			case ValueMatch:
+				filterSQL = fmt.Sprintf("%s ~ $%d", col, i)
+			case ValueNotEqual:
+				filterSQL = fmt.Sprintf("%s!=$%d", col, i)
+			case ValueGreater:
+				filterSQL = fmt.Sprintf("%s>$%d", col, i)
+			case ValueLower:
+				filterSQL = fmt.Sprintf("%s<$%d", col, i)
+			case ValueGreaterOrEqual:
+				filterSQL = fmt.Sprintf("%s>=$%d", col, i)
+			case ValueLowerOrEqual:
+				filterSQL = fmt.Sprintf("%s<=$%d", col, i)
+			case ValueBit:
+				filterSQL = fmt.Sprintf("%s&$%d>0", col, i)
+			default:
+				filterSQL = fmt.Sprintf("%s=$%d", col, i)
+			}
+			qWhere = h.addWithAnd(qWhere, filterSQL)
 			i++
 		}
 	}

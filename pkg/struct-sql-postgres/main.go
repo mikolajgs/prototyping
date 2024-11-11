@@ -27,6 +27,7 @@ type StructSQL struct {
 	fieldsUniq          map[string]bool
 	fieldsTags          map[string]map[string]string
 	fieldsOverwriteType map[string]string
+	fieldsNotString     map[string]bool
 
 	flags int
 
@@ -43,6 +44,16 @@ type StructSQL struct {
 
 const RawConjuctionOR = 1
 const RawConjuctionAND = 2
+
+const ValueEqual = 1
+const ValueNotEqual = 2
+const ValueLike = 3
+const ValueMatch = 4
+const ValueGreater = 5
+const ValueLower = 6
+const ValueGreaterOrEqual = 7
+const ValueLowerOrEqual = 8
+const ValueBit = 9
 
 type StructSQLOptions struct {
 	DatabaseTablePrefix string
