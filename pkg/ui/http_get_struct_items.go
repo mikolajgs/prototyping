@@ -65,7 +65,7 @@ func (c *Controller) tryGetStructItems(w http.ResponseWriter, r *http.Request, u
 		limit := r.FormValue("limit")
 		rawFilter := r.FormValue("rawFilter")
 		order := r.FormValue("order")
-		orderDirection := strings.ToUpper(r.FormValue("orderDirection"))
+		orderDirection := strings.ToLower(r.FormValue("orderDirection"))
 
 		reNumber := regexp.MustCompile(`^[0-9]+$`)
 		if !reNumber.MatchString(page) {
@@ -78,9 +78,10 @@ func (c *Controller) tryGetStructItems(w http.ResponseWriter, r *http.Request, u
 		pageInt, _ := strconv.ParseInt(page, 10, 64)
 		limitInt, _ := strconv.ParseInt(limit, 10, 64)
 
-		if orderDirection != "DESC" {
-			orderDirection = "ASC"
+		if orderDirection != "desc" {
+			orderDirection = "asc"
 		}
+
 		if !stsql.IsStructField(c.uriStructNameFunc[uri][structName](), order) {
 			order = "ID"
 		}
@@ -202,6 +203,7 @@ func (c *Controller) getStructItemsTplObj(uri string, objFunc func() interface{}
 	itemsHTML, err := c.struct2db.Get(objFunc, struct2db.GetOptions{
 		Offset: getOffset,
 		Limit:  getLimit,
+		Order: []string{params.Order, params.OrderDirection},
 		RowObjTransformFunc: func(obj interface{}) interface{} {
 			out := ""
 			id := ""

@@ -90,18 +90,18 @@
 
       {{ range .Fields }}
       <th>
-        <div class="field_name{{ if eq . $paramOrder }} selected{{ end }}">{{ . }} <i class="fa-solid fa-arrow-down{{ if and (eq . $paramOrder) (eq $paramOrderDirection "ASC") }} selected{{ end }}" alt="Sort ascending"
+        <div class="field_name{{ if eq . $paramOrder }} selected{{ end }}">{{ . }} <i class="fa-solid fa-arrow-down{{ if and (eq . $paramOrder) (eq $paramOrderDirection "asc") }} selected{{ end }}" alt="Sort ascending"
           hx-get="{{ $uri }}x/struct_items/{{ $name }}/"
           hx-trigger="click"
           hx-target="#center_text"
           hx-swap="innerHTML"
-          hx-vals="js:{ page:1, order:'{{ . }}', orderDirection:'ASC'{{ template "paramsLimitOnLoad" }}{{ template "paramsFiltersOnLoad" $fields }}{{ template "paramsRawFilterOnLoad" }} }"
-          ></i> <i class="fa-solid fa-arrow-up{{ if and (eq . $paramOrder) (eq $paramOrderDirection "DESC") }} selected{{ end }}" alt="Sort descending"
+          hx-vals="js:{ page:1, order:'{{ . }}', orderDirection:'asc'{{ template "paramsLimitOnLoad" }}{{ template "paramsFiltersOnLoad" $fields }}{{ template "paramsRawFilterOnLoad" }} }"
+          ></i> <i class="fa-solid fa-arrow-up{{ if and (eq . $paramOrder) (eq $paramOrderDirection "desc") }} selected{{ end }}" alt="Sort descending"
           hx-get="{{ $uri }}x/struct_items/{{ $name }}/"
           hx-trigger="click"
           hx-target="#center_text"
           hx-swap="innerHTML"
-          hx-vals="js:{ page:1, order:'{{ . }}', orderDirection:'DESC'{{ template "paramsLimitOnLoad" }}{{ template "paramsFiltersOnLoad" $fields }}{{ template "paramsRawFilterOnLoad" }} }"
+          hx-vals="js:{ page:1, order:'{{ . }}', orderDirection:'desc'{{ template "paramsLimitOnLoad" }}{{ template "paramsFiltersOnLoad" $fields }}{{ template "paramsRawFilterOnLoad" }} }"
           ></i></div>
         <div class="filter">
           <div class="input"><input type="text" id="struct_items_filter_{{ . }}" value="{{ index $paramFiltersEscaped . }}"/></div>
