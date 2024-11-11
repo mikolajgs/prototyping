@@ -14,7 +14,7 @@ import (
 	"regexp"
 	"math"
 
-	struct2db "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
+	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
 	stsql "github.com/mikolajgs/prototyping/pkg/struct-sql-postgres"
 )
 
@@ -27,9 +27,7 @@ type structItemsTplObj struct {
 	PageNumbers []string
 	ParamPage   string
 	ParamLimit  string
-	ParamRawFilter string
 	ParamRawFilterEscaped string
-	ParamFilters map[string]string
 	ParamFiltersEscaped map[string]string
 	ParamOrder  string
 	ParamOrderDirection string
@@ -39,63 +37,86 @@ type structItemsParams struct {
 	Page     int
 	Limit    int
 	RawFilter string
-	Filters  map[string]string
+	FiltersForDB  map[string]interface{}
+	FiltersForUI map[string]string
 	Order    string
 	OrderDirection string
 }
 
 func (c *Controller) tryGetStructItems(w http.ResponseWriter, r *http.Request, uri string) bool {
 	realURI := c.getRealURI(uri, r.RequestURI)
-	if strings.HasPrefix(realURI, "x/struct_items/") {
-		structName := strings.Replace(realURI, "x/struct_items/", "", 1)
-		matched, err := regexp.MatchString(`^[a-zA-Z0-9_]+/$`, structName)
-		if err != nil || !matched {
-			w.WriteHeader(http.StatusBadRequest)
-			return true
-		}
-		structName = strings.Replace(structName, "/", "", 1)
+	if !strings.HasPrefix(realURI, "x/struct_items/") {
+		return false
+	}
 
-		_, ok := c.uriStructNameFunc[uri][structName]
-		if !ok {
-			w.WriteHeader(http.StatusBadRequest)
-			return true
-		}
-
-		page := r.FormValue("page")
-		limit := r.FormValue("limit")
-		rawFilter := r.FormValue("rawFilter")
-		order := r.FormValue("order")
-		orderDirection := strings.ToLower(r.FormValue("orderDirection"))
-
-		reNumber := regexp.MustCompile(`^[0-9]+$`)
-		if !reNumber.MatchString(page) {
-			page = "1"
-		}
-		if !reNumber.MatchString(limit) {
-			limit = "25"
-		}
-		// todo: rawFilter
-		pageInt, _ := strconv.ParseInt(page, 10, 64)
-		limitInt, _ := strconv.ParseInt(limit, 10, 64)
-
-		if orderDirection != "desc" {
-			orderDirection = "asc"
-		}
-
-		if !stsql.IsStructField(c.uriStructNameFunc[uri][structName](), order) {
-			order = "ID"
-		}
-
-		c.renderStructItems(w, r, uri, c.uriStructNameFunc[uri][structName], structItemsParams{
-			Page: int(pageInt),
-			Limit: int(limitInt),
-			RawFilter: rawFilter,
-			Order: order,
-			OrderDirection: orderDirection,
-		})
+	structName := strings.Replace(realURI, "x/struct_items/", "", 1)
+	matched, err := regexp.MatchString(`^[a-zA-Z0-9_]+/$`, structName)
+	if err != nil || !matched {
+		w.WriteHeader(http.StatusBadRequest)
 		return true
 	}
-	return false
+	structName = strings.Replace(structName, "/", "", 1)
+
+	_, ok := c.uriStructNameFunc[uri][structName]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return true
+	}
+
+	page := r.FormValue("page")
+	limit := r.FormValue("limit")
+	rawFilter := r.FormValue("rawFilter")
+	order := r.FormValue("order")
+	orderDirection := strings.ToLower(r.FormValue("orderDirection"))
+
+	reNumber := regexp.MustCompile(`^[0-9]+$`)
+	if !reNumber.MatchString(page) {
+		page = "1"
+	}
+	if !reNumber.MatchString(limit) {
+		limit = "25"
+	}
+	// todo: rawFilter
+	pageInt, _ := strconv.ParseInt(page, 10, 64)
+	limitInt, _ := strconv.ParseInt(limit, 10, 64)
+
+	if orderDirection != "desc" {
+		orderDirection = "asc"
+	}
+
+	obj := c.uriStructNameFunc[uri][structName]()
+
+	if !stsql.IsStructField(obj, order) {
+		order = "ID"
+	}
+
+	filtersForDB := map[string]interface{}{}
+	filtersForUI := map[string]string{}
+	s := reflect.ValueOf(obj).Elem()
+	for fk, fv := range r.Form {
+		// TODO: fv is actually an array and we just take the first value
+		if !strings.HasPrefix(fk, "filter") || strings.TrimSpace(fv[0]) == "" {
+			continue
+		}
+		filterName := fk[6:]
+		f := s.FieldByName(filterName)
+		if !f.IsValid() {
+			continue
+		}
+		filtersForDB[filterName+":%"] = "%"+fv[0]+"%"
+		filtersForUI[filterName] = html.EscapeString(fv[0])
+	}
+
+	c.renderStructItems(w, r, uri, c.uriStructNameFunc[uri][structName], structItemsParams{
+		Page: int(pageInt),
+		Limit: int(limitInt),
+		RawFilter: rawFilter,
+		Order: order,
+		OrderDirection: orderDirection,
+		FiltersForDB: filtersForDB,
+		FiltersForUI: filtersForUI,
+	})
+	return true
 }
 
 func (c *Controller) tryStructItems(w http.ResponseWriter, r *http.Request, uri string) bool {
@@ -136,7 +157,7 @@ func (c *Controller) tryStructItems(w http.ResponseWriter, r *http.Request, uri 
 			idsInt = append(idsInt, idInt)
 		}
 
-		err2 := c.struct2db.DeleteMultiple(newObjFunc, struct2db.DeleteMultipleOptions{
+		err2 := c.struct2db.DeleteMultiple(newObjFunc, stdb.DeleteMultipleOptions{
 			Filters: map[string]interface{}{
 				"_raw": []interface{}{
 					".ID IN (?)",
@@ -200,10 +221,11 @@ func (c *Controller) getStructItemsTplObj(uri string, objFunc func() interface{}
 
 	getPage, getLimit, getOffset := c.getPageLimitOffset(params.Page, params.Limit)
 
-	itemsHTML, err := c.struct2db.Get(objFunc, struct2db.GetOptions{
+	itemsHTML, err := c.struct2db.Get(objFunc, stdb.GetOptions{
 		Offset: getOffset,
 		Limit:  getLimit,
 		Order: []string{params.Order, params.OrderDirection},
+		Filters: params.FiltersForDB,
 		RowObjTransformFunc: func(obj interface{}) interface{} {
 			out := ""
 			id := ""
@@ -238,7 +260,9 @@ func (c *Controller) getStructItemsTplObj(uri string, objFunc func() interface{}
 		return nil, err
 	}
 
-	itemsCount, err := c.struct2db.GetCount(objFunc, struct2db.GetCountOptions{})
+	itemsCount, err := c.struct2db.GetCount(objFunc, stdb.GetCountOptions{
+		Filters: params.FiltersForDB,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -255,6 +279,7 @@ func (c *Controller) getStructItemsTplObj(uri string, objFunc func() interface{}
 		PageNumbers: pageNumbers,
 		ParamOrder:  params.Order,
 		ParamOrderDirection: params.OrderDirection,
+		ParamFiltersEscaped: params.FiltersForUI,
 	}
 
 	return its, nil
@@ -297,6 +322,5 @@ func (c *Controller) getPageNumbers(itemsCount int64, getLimit int, getPage int)
 		a = append(a, "")
 	}
 	a = append(a, fmt.Sprintf("%d", p))
-	log.Printf("a: %v", a)
 	return a
 } 
