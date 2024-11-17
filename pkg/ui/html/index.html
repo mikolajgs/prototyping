@@ -3,15 +3,11 @@
 <head>
 <title>crud/ui</title>
 <script src="https://unpkg.com/htmx.org@2.0.1"></script>
-<style>
-body { padding:0; margin: 0; font-family: arial; font-size: 12px; }
-.container { display: flex; }
-.left { flex: 300px; flex-grow: 0; flex-shrink: 0; }
-table.struct_list { padding:0; margin:10px; }
-.small_btn { font-size:10px; }
-input:invalid { border: solid 1px #ff0000; }
-textarea:invalid { border: solid 1px #ff0000; }
-</style>
+<link href="/css2/config.css" rel="stylesheet"/>
+<link href="/css/styles.css" rel="stylesheet"/>
+<link href="/css/fontawesome-free-6.6.0-web/css/fontawesome.css" rel="stylesheet"/>
+<link href="/css/fontawesome-free-6.6.0-web/css/solid.css" rel="stylesheet"/>
+<link href="/css/fontawesome-free-6.6.0-web/css/brands.css" rel="stylesheet"/>
 <script>
   function tickAllStructItems(n) {
     document.querySelectorAll('input[struct-item-checkbox="'+n+'"]').forEach(e => {
@@ -48,14 +44,36 @@ textarea:invalid { border: solid 1px #ff0000; }
 </script>
 </head>
 <body>
-<div class="container">
-<div class="left">
-  <button hx-get="{{ .URI }}x/struct_list/" hx-trigger="click" hx-target="#struct-list" hx-swap="innerHTML">Refresh list</button>
-  <div id="struct-list">{{ .StructList }}</div>
-</div>
-<div class="right" id="content">
-{{ .Content }}
-</div>
-</div>
+  <div id="layout">
+    <div id="left_icons">
+      <div class="top">
+        <div class="header">Admin</div>
+        <a href="{{ .URI }}"><i class="fa-solid fa-home" alt="Home"></i></a>
+        <a href="https://github.com/mikolajgs/prototyping" target="_blank"><i class="fa-brands fa-github" alt="Source code"></i></a>
+      </div>
+      <div class="bottom"></div>
+    </div>
+    <div id="left_text">
+      <div class="header"><i class="fa-solid fa-list" alt="Structs"></i>Structs</div>
+      <div class="info">
+        Click on the struct name to see items.
+      </div>
+      <ul style="padding-top:0" id="struct-list">{{ .StructList }}</ul>      
+    </div>
+    <div id="center_text">{{ .Content }}</div>
+
+    <div id="right_text">
+      <div class="header"><i class="fa-solid fa-pen" alt="Image properties"></i>Item properties</div>
+    </div>
+
+    <div id="bottom">
+      <div class="text">
+        <div class="left"></div>
+        <div class="center"></div>
+        <div class="right"></div>
+        <div class="status">v0.1-rc</div>
+      </div>
+    </div>
+  </div>
 </body>
 </html> 

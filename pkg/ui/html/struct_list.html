@@ -1,21 +1,9 @@
 {{ $uri := .URI }}
-<table class="struct_list">
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
 
 {{ range .Structs }}
-    <tr>
-      <td>{{ .Name }}</td>
-      <td>
-        <button class="small_btn" hx-get="{{ $uri }}x/struct_items/{{ .Name }}/" hx-trigger="click" hx-target="#content" hx-swap="innerHTML">items</button>
-      </td>
-    </tr>
+<li><a
+    hx-get="{{ $uri }}x/struct_items/{{ .Name }}/"
+    hx-trigger="click"
+    hx-target="#center_text"
+    hx-swap="innerHTML"><i class="fa-solid fa-table-list"></i> {{ .Name }}</a></li>
 {{ end }}
-
-  </tbody>
-</table>

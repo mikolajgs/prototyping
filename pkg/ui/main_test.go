@@ -94,7 +94,7 @@ func createHTTPServer() {
 	ctx, httpCancelCtx = context.WithCancel(context.Background())
 	go func(ctx context.Context) {
 		go func() {
-			http.Handle(httpURI, testController.GetHTTPHandler(
+			http.Handle(httpURI, testController.Handler(
 				httpURI,
 				func() interface{} { return &Person{} },
 				func() interface{} { return &Group{} },

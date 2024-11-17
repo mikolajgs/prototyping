@@ -43,7 +43,28 @@ func main() {
 		log.Fatalf("Error with creating tables: %s", err.Error())
 	}
 	
-	http.Handle("/ui/v1/", uiCtl.GetHTTPHandler(
+	// create dummy objects in the database
+	for i:=0; i<301; i++ {
+		item.ID = 0;
+		item.Flags = int64(i);
+		item.Title = fmt.Sprintf("Item %d", i)
+		item.Text = fmt.Sprintf("Description %d", i)
+		s2db.Save(item, stdb.SaveOptions{})
+	}
+	for i:=0; i<73; i++ {
+		itemGroup.ID = 0;
+		itemGroup.Flags = int64(i);
+		itemGroup.Name = fmt.Sprintf("Name %d", i)
+		itemGroup.Description = fmt.Sprintf("Description %d", i)
+		s2db.Save(itemGroup, stdb.SaveOptions{})
+	}
+
+	fs := http.FileServer(http.Dir("entire-window-html-template"))
+	fs2 := http.FileServer(http.Dir("css"))
+	http.Handle("/css/", http.StripPrefix("/css", fs))
+	http.Handle("/css2/", http.StripPrefix("/css2", fs2))
+
+	http.Handle("/ui/v1/", uiCtl.Handler(
 		"/ui/v1/",
 		func() interface{}{ return &Item{} },
 		func() interface{}{ return &ItemGroup{} },

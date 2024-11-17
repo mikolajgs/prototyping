@@ -1,6 +1,8 @@
 package structsqlpostgres
 
-import "reflect"
+import (
+	"reflect"
+)
 
 // GetStructName returns struct name of a struct instance
 func GetStructName(u interface{}) string {
@@ -22,7 +24,7 @@ func GetStructFieldNames(u interface{}) []string {
 		f := s.Field(j)
 		k := f.Type.Kind()
 
-		if IsFieldKindSupported(k) {
+		if !IsFieldKindSupported(k) {
 			continue
 		}
 
@@ -59,4 +61,26 @@ func IsFieldKindSupported(k reflect.Kind) bool {
 	default:
 		return false
 	}
+}
+
+// IsStructField checks if a specific string is a name of a field
+func IsStructField(u interface{}, field string) bool {
+	v := reflect.ValueOf(u)
+	i := reflect.Indirect(v)
+	s := i.Type()
+
+	for j := 0; j < s.NumField(); j++ {
+		f := s.Field(j)
+		k := f.Type.Kind()
+
+		if !IsFieldKindSupported(k) {
+			continue
+		}
+
+		if f.Name == field {
+			return true
+		}
+	}
+
+	return false
 }
