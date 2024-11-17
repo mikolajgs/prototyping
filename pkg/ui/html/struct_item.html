@@ -1,32 +1,39 @@
 {{ $uri := .URI }}
 
+{{ if eq .ID "" }}
+<div class="header"><i class="fa-solid fa-pen" alt="Image properties"></i>New {{ .Name }} item</div>
+{{ else }}
+<div class="header"><i class="fa-solid fa-pen" alt="Image properties"></i>{{ .Name }} item with ID {{ .ID }}</div>
+{{ end }}
+
+
+{{ if ne .MsgHTML "" }}
 {{ .MsgHTML }}
+{{ end }}
 
 {{ if not .OnlyMsg }}
-
-
 {{ if eq .ID "" }}
 
-<div class="header"><i class="fa-solid fa-pen" alt="Image properties"></i>New {{ .Name }} item</div>
-<div class="form" style="margin-bottom: 100px;">
-<form hx-put="{{ $uri }}x/struct_item/{{ .Name }}/" hx-target="closest div">
+<div>
+<form class="item" hx-put="{{ $uri }}x/struct_item/{{ .Name }}/" hx-target="closest div">
 {{ .FieldsHTML }}
+<p>
 <button type="submit">add</button>
 <button type="reset">reset</button>
+</p>
 </form>
 </div>
 
 {{ else }}
 
-<div class="header"><i class="fa-solid fa-pen" alt="Image properties"></i>{{ .Name }} item with ID {{ .ID }}</div>
-<div class="form" style="margin-bottom: 100px;">
-<form hx-post="{{ $uri }}x/struct_item/{{ .Name }}/{{ .ID }}" hx-target="closest div">
+<div>
+<form class="item" hx-post="{{ $uri }}x/struct_item/{{ .Name }}/{{ .ID }}" hx-target="#right_text">
 {{ .FieldsHTML }}
+<p>
 <button type="submit">save</button>
+</p>
 </form>
 </div>
 
 {{ end }}
-
-
 {{ end }}

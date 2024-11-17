@@ -82,7 +82,7 @@ func (c *Controller) getMsgHTML(msgType int, msg string) string {
 	if msgType == 0 {
 		return ""
 	}
-	return fmt.Sprintf("<div>%d: %s</div>", msgType, html.EscapeString(msg))
+	return fmt.Sprintf(`<div class="info">%s</div>`, html.EscapeString(msg))
 }
 
 func (c *Controller) getRealURI(handlerURI string, requestURI string) string {
