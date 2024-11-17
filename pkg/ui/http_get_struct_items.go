@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"html"
 	"log"
+	"math"
 	"net/http"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
-	"regexp"
-	"math"
 
 	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
 	stsql "github.com/mikolajgs/prototyping/pkg/struct-sql-postgres"
@@ -157,7 +157,7 @@ func (c *Controller) tryStructItems(w http.ResponseWriter, r *http.Request, uri 
 			idsInt = append(idsInt, idInt)
 		}
 
-		err2 := c.struct2db.DeleteMultiple(newObjFunc, stdb.DeleteMultipleOptions{
+		err2 := c.struct2db.DeleteMultiple(newObjFunc(), stdb.DeleteMultipleOptions{
 			Filters: map[string]interface{}{
 				"_raw": []interface{}{
 					".ID IN (?)",

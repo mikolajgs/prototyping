@@ -7,20 +7,24 @@
 
 {{ if eq .ID "" }}
 
-<h3>Add {{ .Name }} item</h3>
+<div class="header"><i class="fa-solid fa-pen" alt="Image properties"></i>New {{ .Name }} item</div>
+<div>
 <form hx-put="{{ $uri }}x/struct_item/{{ .Name }}/" hx-target="closest div">
 {{ .FieldsHTML }}
 <button type="submit">add</button>
 <button type="reset">reset</button>
 </form>
+</div>
 
 {{ else }}
 
-<h3>Edit {{ .Name }} item with ID {{ .ID }}</h3>
+<div class="header"><i class="fa-solid fa-pen" alt="Image properties"></i>{{ .Name }} item with ID {{ .ID }}</div>
+<div>
 <form hx-post="{{ $uri }}x/struct_item/{{ .Name }}/{{ .ID }}" hx-target="closest div">
 {{ .FieldsHTML }}
 <button type="submit">save</button>
 </form>
+</div>
 
 {{ end }}
 

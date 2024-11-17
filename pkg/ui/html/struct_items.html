@@ -33,7 +33,7 @@
   <div class="left"><button hx-get="{{ $uri }}x/struct_item/{{ $name }}/" hx-trigger="click" hx-target="#right_text" hx-swap="innerHTML"><i class="fa-solid fa-plus" alt="Add item"></i> Add item</button></div>
 </div>
 
-<div class="filter">
+{{/*<div class="filter">
   <div class="label">Advanced filter:</div>
   <div class="input"><input type="text" id="struct_items_raw_filter" value="{{ $paramRawFilterEscaped }}"/></div>
   <div><button
@@ -49,7 +49,7 @@
     hx-swap="innerHTML"
     hx-vals="js:{ page:1{{ template "paramsLimitOnLoad" }}{{ template "paramsFiltersOnLoad" $fields }}{{ template "paramsRawFilterInput" }}{{ template "paramsOrderOnLoad" }}{{ template "paramsOrderDirectionOnLoad" }} }"
     >Filter</button></div>
-</div>
+</div>*/}}
 
 <div class="paging">
   <div class="pages"><b>{{ $count }}</b> items found</div>
@@ -76,8 +76,18 @@
 </div>
 
 <div class="selection">
-  <div class="left">Selection: <button>Select all</button> <button>Select none</button> <button>Invert selection</button></div>
-  <div class="right">Selected: <button>Delete</button></div>
+  <div class="left">Selection: 
+    <button onclick="tickAllStructItems('{{ $name }}');">Select all</button>
+    <button onclick="untickAllStructItems('{{ $name }}');">Select none</button>
+    <button onclick="invertAllStructItems('{{ $name }}');">Invert selection</button>
+  </div>
+  <div class="right">Selected: 
+    <button 
+      hx-on-htmx-after-request="removeTickedStructItemTableRows('{{ $name }}');"
+      hx-delete="{{ $uri }}x/struct_items/{{ $name }}/"
+      hx-vals="js:{ ids: getTickedStructItems('{{ $name }}') }"
+      hx-trigger="click" hx-swap="none">Delete</button>
+  </div>
 </div>
 
 
@@ -128,7 +138,7 @@
         <td><input type="checkbox" struct-item-checkbox="{{ $name }}" struct-item-id="{{ index $split 0 }}"/></td>
         {{ index $split 1 }}
         <td>
-          <i hx-get="{{ $uri }}x/struct_item/{{ $name }}/{{ index $split 0 }}" hx-trigger="click" hx-target="closest div" hx-swap="innerHTML" class="fa-solid fa-pen"></i>
+          <i hx-get="{{ $uri }}x/struct_item/{{ $name }}/{{ index $split 0 }}" hx-trigger="click"  hx-target="#right_text" hx-swap="innerHTML" class="fa-solid fa-pen"></i>
           <i hx-delete="{{ $uri }}x/struct_item/{{ $name }}/{{ index $split 0 }}" hx-trigger="click" hx-target="closest tr" hx-swap="delete" class="fa-solid fa-trash"></i>
         </td>
       </tr>
@@ -142,13 +152,10 @@
 <p>
   <button>add</button>
   select:
-  <button onclick="tickAllStructItems('{{ $name }}');">all</button>
-  <button onclick="untickAllStructItems('{{ $name }}');">none</button>
-  <button onclick="invertAllStructItems('{{ $name }}');">invert</button>
+  <button onclick="">all</button>
+  <button onclick="">none</button>
+  <button onclick="">invert</button>
   do with selected:
-  <button hx-on-htmx-after-request="removeTickedStructItemTableRows('{{ $name }}');"
-          hx-delete="{{ $uri }}x/struct_items/{{ $name }}/"
-          hx-vals="js:{ ids: getTickedStructItems('{{ $name }}') }"
-          hx-trigger="click" hx-swap="none">delete</button>
+  <button >delete</button>
 </p>
 -->
