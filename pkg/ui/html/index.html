@@ -3,11 +3,11 @@
 <head>
 <title>crud/ui</title>
 <script src="https://unpkg.com/htmx.org@2.0.1"></script>
-<link href="/css2/config.css" rel="stylesheet"/>
-<link href="/css/styles.css" rel="stylesheet"/>
-<link href="/css/fontawesome-free-6.6.0-web/css/fontawesome.css" rel="stylesheet"/>
-<link href="/css/fontawesome-free-6.6.0-web/css/solid.css" rel="stylesheet"/>
-<link href="/css/fontawesome-free-6.6.0-web/css/brands.css" rel="stylesheet"/>
+<style>
+  {{ .ConfigCss }}
+
+  {{ .StylesCss }}
+</style>
 <script>
   function tickAllStructItems(n) {
     document.querySelectorAll('input[struct-item-checkbox="'+n+'"]').forEach(e => {
@@ -48,13 +48,13 @@
     <div id="left_icons">
       <div class="top">
         <div class="header">Admin</div>
-        <a href="{{ .URI }}"><i class="fa-solid fa-home" alt="Home"></i></a>
-        <a href="https://github.com/mikolajgs/prototyping" target="_blank"><i class="fa-brands fa-github" alt="Source code"></i></a>
+        <a href="{{ .URI }}"></a>
+        <div class="icon"><a href="https://github.com/mikolajgs/prototyping" target="_blank">source code</a></div>
       </div>
       <div class="bottom"></div>
     </div>
     <div id="left_text">
-      <div class="header"><i class="fa-solid fa-list" alt="Structs"></i>Structs</div>
+      <div class="header">Structs</div>
       <div class="info">
         Click on the struct name to see items.
       </div>
@@ -63,7 +63,7 @@
     <div id="center_text">{{ .Content }}</div>
 
     <div id="right_text">
-      <div class="header"><i class="fa-solid fa-pen" alt="Image properties"></i>Item properties</div>
+      <div class="header">Item properties</div>
     </div>
 
     <div id="bottom">

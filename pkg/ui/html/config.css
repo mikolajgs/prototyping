@@ -1,0 +1,35 @@
+:root {
+  --font-family: Arial, Helvetica, sans-serif;
+
+  --font-size-1: 14px;
+  --font-size-2: 16px;
+  --font-size-3: 20px;
+  --font-size-5: 34px;
+
+  --color-1: #e0fbfc;
+  --color-2: #98c1d9;
+  --color-3: #3d5a80;
+  --color-4: #ee6c4d;
+  --color-5: #293241;
+  --color-7: #ffb684;
+
+  --color-bg: #E1F2FE;
+  --color-bottom: #98d2eb;
+
+  --zindex-bottom: 500;
+  --zindex-bottom-message: 501;
+  --zindex-top-menu: 502;
+
+  --bottom-height: 25px;
+  --top-height: 30px;
+  --left-icons-width: 50px;
+  --left-text-width: 290px;
+  --right-text-width: 290px;
+  --right-icons-width: 50px;
+
+  --bottom-message-width: 550px;
+  --bottom-message-height: 100px;
+
+  --thumbnail-width: 200px;
+  --thumbnail-height: 200px;
+}
