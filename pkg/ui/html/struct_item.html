@@ -1,9 +1,9 @@
 {{ $uri := .URI }}
 
 {{ if eq .ID "" }}
-<div class="header"><i class="fa-solid fa-pen" alt="Image properties"></i>New {{ .Name }} item</div>
+<div class="header">New {{ .Name }} item</div>
 {{ else }}
-<div class="header"><i class="fa-solid fa-pen" alt="Image properties"></i>{{ .Name }} item with ID {{ .ID }}</div>
+<div class="header">{{ .Name }} item with ID {{ .ID }}</div>
 {{ end }}
 
 

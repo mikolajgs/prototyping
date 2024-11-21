@@ -27,10 +27,10 @@
 <input type="hidden" id="struct_items_filteronload_{{ . }}" value="{{ index $paramFiltersEscaped . }}"/>
 {{ end }}
 
-<div class="header glow"><i class="fa-solid fa-table-list" alt="Struct items"></i>{{ $name }} items</div>
+<div class="header">{{ $name }} items</div>
 
 <div class="selection">
-  <div class="left"><button hx-get="{{ $uri }}x/struct_item/{{ $name }}/" hx-trigger="click" hx-target="#right_text" hx-swap="innerHTML"><i class="fa-solid fa-plus" alt="Add item"></i> Add item</button></div>
+  <div class="left"><button hx-get="{{ $uri }}x/struct_item/{{ $name }}/" hx-trigger="click" hx-target="#right_text" hx-swap="innerHTML">Add item</button></div>
 </div>
 
 {{/*<div class="filter">
@@ -98,22 +98,22 @@
 
       {{ range .Fields }}
       <th>
-        <div class="field_name{{ if eq . $paramOrder }} selected{{ end }}">{{ . }} <i class="fa-solid fa-arrow-down{{ if and (eq . $paramOrder) (eq $paramOrderDirection "asc") }} selected{{ end }}" alt="Sort ascending"
+        <div class="field_name{{ if eq . $paramOrder }} selected{{ end }}">{{ . }} <a class="{{ if and (eq . $paramOrder) (eq $paramOrderDirection "asc") }} selected{{ end }}" alt="Sort ascending"
           hx-get="{{ $uri }}x/struct_items/{{ $name }}/"
           hx-trigger="click"
           hx-target="#center_text"
           hx-swap="innerHTML"
           hx-vals="js:{ page:1, order:'{{ . }}', orderDirection:'asc'{{ template "paramsLimitOnLoad" }}{{ template "paramsFiltersOnLoad" $fields }}{{ template "paramsRawFilterOnLoad" }} }"
-          ></i> <i class="fa-solid fa-arrow-up{{ if and (eq . $paramOrder) (eq $paramOrderDirection "desc") }} selected{{ end }}" alt="Sort descending"
+          >A</a> <a class="{{ if and (eq . $paramOrder) (eq $paramOrderDirection "desc") }} selected{{ end }}" alt="Sort descending"
           hx-get="{{ $uri }}x/struct_items/{{ $name }}/"
           hx-trigger="click"
           hx-target="#center_text"
           hx-swap="innerHTML"
           hx-vals="js:{ page:1, order:'{{ . }}', orderDirection:'desc'{{ template "paramsLimitOnLoad" }}{{ template "paramsFiltersOnLoad" $fields }}{{ template "paramsRawFilterOnLoad" }} }"
-          ></i></div>
+          >D</a></div>
         <div class="filter">
           <div class="input"><input type="text" id="struct_items_filter_{{ . }}" value="{{ index $paramFiltersEscaped . }}"/></div>
-          <div class="icon"><i class="fa-solid fa-delete-left" alt="Clear filter" onclick="document.getElementById('struct_items_filter_{{ . }}').value='';"></i></div>
+          <div class="icon"><a alt="Clear filter" onclick="document.getElementById('struct_items_filter_{{ . }}').value='';">&#10005;</a></div>
         </div>
       </th>
       {{ end }}
@@ -138,24 +138,11 @@
         <td><input type="checkbox" struct-item-checkbox="{{ $name }}" struct-item-id="{{ index $split 0 }}"/></td>
         {{ index $split 1 }}
         <td>
-          <i hx-get="{{ $uri }}x/struct_item/{{ $name }}/{{ index $split 0 }}" hx-trigger="click"  hx-target="#right_text" hx-swap="innerHTML" class="fa-solid fa-pen"></i>
-          <i hx-delete="{{ $uri }}x/struct_item/{{ $name }}/{{ index $split 0 }}" hx-trigger="click" hx-target="closest tr" hx-swap="delete" class="fa-solid fa-trash"></i>
+          <a hx-get="{{ $uri }}x/struct_item/{{ $name }}/{{ index $split 0 }}" hx-trigger="click"  hx-target="#right_text" hx-swap="innerHTML">&#9998;</a>
+          <a hx-delete="{{ $uri }}x/struct_item/{{ $name }}/{{ index $split 0 }}" hx-trigger="click" hx-target="closest tr" hx-swap="delete">&#10005;</a>
         </td>
       </tr>
       {{ end }}
     </tbody>
   </table>
 </div>
-
-<!--
-<h3>List of {{ .Name }} items</h3>
-<p>
-  <button>add</button>
-  select:
-  <button onclick="">all</button>
-  <button onclick="">none</button>
-  <button onclick="">invert</button>
-  do with selected:
-  <button >delete</button>
-</p>
--->

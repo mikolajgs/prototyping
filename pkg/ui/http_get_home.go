@@ -1,10 +1,10 @@
 package ui
 
 import (
-	"net/http"
+	"bytes"
 	"embed"
 	"log"
-	"bytes"
+	"net/http"
 	"text/template"
 )
 
@@ -18,6 +18,9 @@ func (c *Controller) tryGetHome(w http.ResponseWriter, r *http.Request, uri stri
 }
 
 func (c *Controller) renderMain(w http.ResponseWriter, r *http.Request, uri string, objFuncs ...func() interface{}) {
+	configCss, _ := embed.FS.ReadFile(htmlDir, "html/config.css")
+	stylesCss, _ := embed.FS.ReadFile(htmlDir, "html/styles.css")
+
 	indexTpl, _ := embed.FS.ReadFile(htmlDir, "html/index.html")
 
 	structListTpl, err := c.getStructListHTML(uri, objFuncs...)
@@ -33,10 +36,14 @@ func (c *Controller) renderMain(w http.ResponseWriter, r *http.Request, uri stri
 		URI        string
 		StructList string
 		Content    string
+		ConfigCss  string
+		StylesCss  string
 	}{
 		URI:        uri,
 		StructList: structListTpl,
 		Content:    string(contentHomeTpl),
+		ConfigCss:  string(configCss),
+		StylesCss:  string(stylesCss),
 	}
 	buf := &bytes.Buffer{}
 	t := template.Must(template.New("index").Parse(string(indexTpl)))

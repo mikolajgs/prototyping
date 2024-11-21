@@ -59,11 +59,6 @@ func main() {
 		s2db.Save(itemGroup, stdb.SaveOptions{})
 	}
 
-	fs := http.FileServer(http.Dir("entire-window-html-template"))
-	fs2 := http.FileServer(http.Dir("css"))
-	http.Handle("/css/", http.StripPrefix("/css", fs))
-	http.Handle("/css2/", http.StripPrefix("/css2", fs2))
-
 	http.Handle("/ui/v1/", uiCtl.Handler(
 		"/ui/v1/",
 		func() interface{}{ return &Item{} },
