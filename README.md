@@ -26,6 +26,10 @@ This module enables the creation of CRUD HTTP endpoints based on structs for cre
 
 Check [README in pkg/rest-api](pkg/rest-api/README.md) for more information.
 
+## umbrella
+
+With that package you can hide any HTTP API endpoint behind a simple login system, and in addition to that, module exposes endpoint for registration, activations, refreshing token and signing out.
+
 ## ui
 
 This module is currently under development and will be renamed. Its goal is to automatically generate a simple administration panel for managing data defined by structs and stored in a PostgreSQL database.
