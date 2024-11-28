@@ -6,29 +6,23 @@
   --font-size-3: 20px;
   --font-size-5: 34px;
 
-  --color-1: #e0fbfc;
-  --color-2: #98c1d9;
-  --color-3: #3d5a80;
-  --color-4: #ee6c4d;
-  --color-5: #293241;
-  --color-7: #ffb684;
+  --color-1: #ffffff;
+  --color-2: #e6e8e6;
+  --color-3: #ced0ce;
+  --color-4: #f15025;
+  --color-5: #191919;
+  --color-6: #6c757d;
+  --color-success: #7cb518;
+  --color-error: #e53d00;
+  --color-warning: #ffba08;
 
-  --color-bg: #E1F2FE;
-  --color-bottom: #98d2eb;
-
-  --zindex-bottom: 500;
-  --zindex-bottom-message: 501;
   --zindex-top-menu: 502;
 
-  --bottom-height: 25px;
-  --top-height: 30px;
+  --top-height: 25px;
   --left-icons-width: 50px;
-  --left-text-width: 290px;
-  --right-text-width: 290px;
+  --left-text-width: 180px;
+  --right-text-width: 390px;
   --right-icons-width: 50px;
-
-  --bottom-message-width: 550px;
-  --bottom-message-height: 100px;
 
   --thumbnail-width: 200px;
   --thumbnail-height: 200px;

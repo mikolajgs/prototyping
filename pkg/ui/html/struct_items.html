@@ -27,10 +27,10 @@
 <input type="hidden" id="struct_items_filteronload_{{ . }}" value="{{ index $paramFiltersEscaped . }}"/>
 {{ end }}
 
-<div class="header">{{ $name }} items</div>
+<h3>{{ $name }} items</h3>
 
-<div class="selection">
-  <div class="left"><button hx-get="{{ $uri }}x/struct_item/{{ $name }}/" hx-trigger="click" hx-target="#right_text" hx-swap="innerHTML">Add item</button></div>
+<div>
+  <div><button hx-get="{{ $uri }}x/struct_item/{{ $name }}/" hx-trigger="click" hx-target="#right_text" hx-swap="innerHTML">Add item</button></div>
 </div>
 
 {{/*<div class="filter">
@@ -51,18 +51,18 @@
     >Filter</button></div>
 </div>*/}}
 
-<div class="paging">
-  <div class="pages"><b>{{ $count }}</b> items found</div>
+<div>
+  <div><b>{{ $count }}</b> items found</div>
 </div>
-<div class="paging">
-  <div class="pages">Page: {{ range .PageNumbers }}{{ if eq . "" }} ... {{ else }} <button{{ if eq . $paramPage }} class="selected"{{ end }}
+<div>
+  <div>Page: {{ range .PageNumbers }}{{ if eq . "" }} ... {{ else }} <button{{ if eq . $paramPage }} class="selected"{{ end }}
     hx-get="{{ $uri }}x/struct_items/{{ $name }}/"
     hx-trigger="click"
     hx-target="#center_text"
     hx-swap="innerHTML"
     hx-vals="js:{ page:{{ . }}{{ template "paramsLimitOnLoad" }}{{ template "paramsFiltersOnLoad" $fields }}{{ template "paramsRawFilterOnLoad" }}{{ template "paramsOrderOnLoad" }}{{ template "paramsOrderDirectionOnLoad" }} }"
     >{{ . }}</button>{{ end }} {{ end }}</div>
-  <div class="items">Items per page: <select id="struct_items_limit"
+  <div class="txt_r">Items per page: <select id="struct_items_limit"
     hx-get="{{ $uri }}x/struct_items/{{ $name }}/"
     hx-trigger="change"
     hx-target="#center_text"
@@ -75,13 +75,13 @@
   </select></div>
 </div>
 
-<div class="selection">
-  <div class="left">Selection: 
+<div>
+  <div>Selection: 
     <button onclick="tickAllStructItems('{{ $name }}');">Select all</button>
     <button onclick="untickAllStructItems('{{ $name }}');">Select none</button>
     <button onclick="invertAllStructItems('{{ $name }}');">Invert selection</button>
   </div>
-  <div class="right">Selected: 
+  <div class="txt_r">Selected: 
     <button 
       hx-on-htmx-after-request="removeTickedStructItemTableRows('{{ $name }}');"
       hx-delete="{{ $uri }}x/struct_items/{{ $name }}/"
@@ -91,14 +91,14 @@
 </div>
 
 
-<div class="table">
+<div>
   <table>
     <thead>
       <th></th>
 
       {{ range .Fields }}
       <th>
-        <div class="field_name{{ if eq . $paramOrder }} selected{{ end }}">{{ . }} <a class="{{ if and (eq . $paramOrder) (eq $paramOrderDirection "asc") }} selected{{ end }}" alt="Sort ascending"
+        <div class="{{ if eq . $paramOrder }} selected{{ end }}">{{ . }} <a class="{{ if and (eq . $paramOrder) (eq $paramOrderDirection "asc") }} selected{{ end }}" alt="Sort ascending"
           hx-get="{{ $uri }}x/struct_items/{{ $name }}/"
           hx-trigger="click"
           hx-target="#center_text"
@@ -111,16 +111,16 @@
           hx-swap="innerHTML"
           hx-vals="js:{ page:1, order:'{{ . }}', orderDirection:'desc'{{ template "paramsLimitOnLoad" }}{{ template "paramsFiltersOnLoad" $fields }}{{ template "paramsRawFilterOnLoad" }} }"
           >D</a></div>
-        <div class="filter">
-          <div class="input"><input type="text" id="struct_items_filter_{{ . }}" value="{{ index $paramFiltersEscaped . }}"/></div>
-          <div class="icon"><a alt="Clear filter" onclick="document.getElementById('struct_items_filter_{{ . }}').value='';">&#10005;</a></div>
+        <div class="fl">
+          <div><input type="text" id="struct_items_filter_{{ . }}" value="{{ index $paramFiltersEscaped . }}"/></div>
+          <div><a alt="Clear filter" onclick="document.getElementById('struct_items_filter_{{ . }}').value='';">&#10005;</a></div>
         </div>
       </th>
       {{ end }}
 
       <th>
         <div>Actions</div>
-        <div class="filter">
+        <div>
           <button
             hx-get="{{ $uri }}x/struct_items/{{ $name }}/"
             hx-trigger="click"

@@ -45,35 +45,18 @@
 </head>
 <body>
   <div id="layout">
-    <div id="left_icons">
-      <div class="top">
-        <div class="header">Admin</div>
-        <a href="{{ .URI }}"></a>
-        <div class="icon"><a href="https://github.com/mikolajgs/prototyping" target="_blank">source code</a></div>
-      </div>
-      <div class="bottom"></div>
-    </div>
     <div id="left_text">
-      <div class="header">Structs</div>
-      <div class="info">
-        Click on the struct name to see items.
-      </div>
-      <ul style="padding-top:0" id="struct-list">{{ .StructList }}</ul>      
+      <h3>Structs</h3>
+      <h5>Click on the struct name to manage its contents</h5>
+      <ul id="struct-list">{{ .StructList }}</ul>      
     </div>
     <div id="center_text">{{ .Content }}</div>
-
     <div id="right_text">
-      <div class="header">Item properties</div>
+      <h3>Item properties</h3>
     </div>
+  </div>
 
-    <div id="bottom">
-      <div class="text">
-        <div class="left"></div>
-        <div class="center"></div>
-        <div class="right"></div>
-        <div class="status">v0.1-rc</div>
-      </div>
-    </div>
+  <div id="top_menu">
   </div>
 </body>
 </html> 
