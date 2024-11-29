@@ -16,21 +16,24 @@ import (
 )
 
 type Prototype struct {
-	dbCfg DbConfig
-	db *sql.DB
+	dbDSN string
+	dbTablePrefix string
+	uriAPI string
+	uriUI string
+	port string
 	constructors []func() interface{}
+	db *sql.DB
 	apiCtl restapi.Controller
 	uiCtl ui.Controller
-	httpCfg HttpConfig
 }
 
 func (p *Prototype) CreateDB() error {
-	db, err := sql.Open("postgres", fmt.Sprintf("host=localhost user=%s password=%s port=%s dbname=%s sslmode=disable", p.dbCfg.User, p.dbCfg.Pass, p.dbCfg.Port, p.dbCfg.Name))
+	db, err := sql.Open("postgres", p.dbDSN)
 	if err != nil {
 		log.Fatal("Error connecting to db")
 	}
 
-	stDB := stdb.NewController(db, p.dbCfg.TablePrefix, nil)
+	stDB := stdb.NewController(db, p.dbTablePrefix, nil)
 	for _, f := range p.constructors {
 		o := f()
 		err := stDB.CreateTable(o)
@@ -46,51 +49,49 @@ func (p *Prototype) CreateDB() error {
 
 func (p *Prototype) Run() error {
 	if p.db == nil {
-		db, err := sql.Open("postgres", fmt.Sprintf("host=localhost user=%s password=%s port=%s dbname=%s sslmode=disable", p.dbCfg.User, p.dbCfg.Pass, p.dbCfg.Port, p.dbCfg.Name))
+		db, err := sql.Open("postgres", p.dbDSN)
 		if err != nil {
 			return errors.New("error connecting to db")
 		}
 		p.db = db
 	}
 
-	p.apiCtl = *restapi.NewController(p.db, p.dbCfg.TablePrefix, nil)
+	p.apiCtl = *restapi.NewController(p.db, p.dbTablePrefix, nil)
 	for _, f := range p.constructors {
 		s := sqldb.GetStructName(f())
 
 		http.Handle(
-			fmt.Sprintf("%s%s", p.httpCfg.ApiUri, s),
+			fmt.Sprintf("%s%s", p.uriAPI, s),
 			p.apiCtl.Handler(
-				fmt.Sprintf("%s%s", p.httpCfg.ApiUri, s), 
+				fmt.Sprintf("%s%s", p.uriAPI, s), 
 				f,
 				restapi.HandlerOptions{},
 			),
 		)
 	}
 
-	p.uiCtl = *ui.NewController(p.db, p.dbCfg.TablePrefix)
-	http.Handle(p.httpCfg.UiUri, p.uiCtl.Handler(
-		p.httpCfg.UiUri,
+	p.uiCtl = *ui.NewController(p.db, p.dbTablePrefix)
+	http.Handle(p.uriUI, p.uiCtl.Handler(
+		p.uriUI,
 		p.constructors...,
 	))
 
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", p.httpCfg.Port), nil))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", p.port), nil))
 	return nil
 }
 
-func NewPrototype(dbCfg DbConfig, constructors []func() interface{}, httpCfg HttpConfig) (*Prototype, error) {
-	err := validateDbConfig(&dbCfg)
+func NewPrototype(cfg Config, constructors ...func() interface{}) (*Prototype, error) {
+	err := validateConfig(&cfg)
 	if err != nil {
-		return nil, fmt.Errorf("init error: %w", err)
-	}
-
-	err = validateHttpConfig(&httpCfg)
-	if err != nil {
-		return nil, fmt.Errorf("init error: %w", err)
+		return nil, fmt.Errorf("error with config validation: %w", err)
 	}
 
 	p := &Prototype{}
-	p.dbCfg = dbCfg
-	p.httpCfg = httpCfg
+	p.dbDSN = cfg.DatabaseDSN
 	p.constructors = constructors
+	p.dbTablePrefix = "proto_"
+	p.uriAPI = "/api/"
+	p.uriUI = "/ui/"
+	p.port = "9001"
 	return p, nil
 }

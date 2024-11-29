@@ -13,28 +13,16 @@ import (
 	_ "github.com/lib/pq"
 )
 
-const dbUser = "uiuser"
-const dbPass = "uipass"
-const dbName = "uidb"
-const dbPort = "54320"
+const dbDSN = "host=localhost user=protouser password=protopass port=54320 dbname=protodb sslmode=disable"
 
 func main() {
-	p, err := prototyping.NewPrototype(prototyping.DbConfig{
-		Host: "localhost",
-		Port: "54320",
-		User: "uiuser",
-		Pass: "uipass",
-		Name: "uidb",
-		TablePrefix: "ui_",
-	}, []func() interface{}{
+	p, err := prototyping.NewPrototype(
+		prototyping.Config{
+			DatabaseDSN: dbDSN,
+		},
 		func() interface{} { return &Item{} },
 		func() interface{} { return &ItemGroup{} },
-	},
-		prototyping.HttpConfig{
-		Port: "9001",
-		ApiUri: "/api/v1/",
-		UiUri: "/ui/v1/",
-	})
+	)
 	if err != nil {
 		log.Fatalf("error creating new prototype: %s", err.Error())
 	}
@@ -45,11 +33,12 @@ func main() {
 	}
 
 	// creating dummy objects in the database
-	db, err := sql.Open("postgres", fmt.Sprintf("host=localhost user=%s password=%s port=%s dbname=%s sslmode=disable", dbUser, dbPass, dbPort, dbName))
+	db, err := sql.Open("postgres", dbDSN)
 	if err != nil {
 		log.Fatal("Error connecting to db")
 	}
-	s2db := stdb.NewController(db, "ui_", nil)
+	// proto_ is the default db table prefix (will be configurable later)
+	s2db := stdb.NewController(db, "proto_", nil)
 	item := &Item{}
 	itemGroup := &ItemGroup{}
 	for i:=0; i<301; i++ {
@@ -67,6 +56,7 @@ func main() {
 		s2db.Save(itemGroup, stdb.SaveOptions{})
 	}
 	db.Close()
+	// end of creating dummy objects
 
 	err = p.Run()
 	if err != nil {
