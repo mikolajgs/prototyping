@@ -12,7 +12,6 @@ import (
 	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
 	sqldb "github.com/mikolajgs/prototyping/pkg/struct-sql-postgres"
 	"github.com/mikolajgs/prototyping/pkg/ui"
-	"github.com/mikolajgs/prototyping/pkg/umbrella"
 	umb "github.com/mikolajgs/prototyping/pkg/umbrella"
 
 	_ "github.com/lib/pq"
@@ -69,7 +68,7 @@ func (p *Prototype) Run() error {
 
 	p.apiCtl = *restapi.NewController(p.db, p.dbTablePrefix, nil)
 	p.uiCtl = *ui.NewController(p.db, p.dbTablePrefix)
-	p.umbrella = *umbrella.NewUmbrella(p.db, p.dbTablePrefix, umb.JWTConfig{
+	p.umbrella = *umb.NewUmbrella(p.db, p.dbTablePrefix, umb.JWTConfig{
 		Key: "protoSecretKey",
 		Issuer: "prototyping.gasior.dev",
 		ExpirationMinutes: 5,
@@ -97,7 +96,7 @@ func (p *Prototype) Run() error {
 				p.constructors...,
 			))
 
-			http.Handle(p.uriUmbrella, &p.umbrella.GetHTTPHandler(p.uriUmbrella))
+			http.Handle(p.uriUmbrella, &p.umb.GetHTTPHandler(p.uriUmbrella))
 
 			log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", p.port), nil))
 		}()
