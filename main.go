@@ -12,7 +12,7 @@ import (
 	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
 	sqldb "github.com/mikolajgs/prototyping/pkg/struct-sql-postgres"
 	"github.com/mikolajgs/prototyping/pkg/ui"
-	umb "github.com/mikolajgs/prototyping/pkg/umbrella"
+	"github.com/mikolajgs/prototyping/pkg/umbrella"
 
 	_ "github.com/lib/pq"
 )
@@ -28,7 +28,7 @@ type Prototype struct {
 	db *sql.DB
 	apiCtl restapi.Controller
 	uiCtl ui.Controller
-	umbrella umb.Umbrella
+	umbrella umbrella.Umbrella
 }
 
 func (p *Prototype) CreateDB() error {
@@ -46,7 +46,7 @@ func (p *Prototype) CreateDB() error {
 		}
 	}
 
-	p.umbrella = *umb.NewUmbrella(db, p.dbTablePrefix, umb.JWTConfig{})
+	p.umbrella = *umbrella.NewUmbrella(db, p.dbTablePrefix, umbrella.JWTConfig{})
 	errUmb := p.umbrella.CreateDBTables()
 	if errUmb != nil {
 		return fmt.Errorf("error with creating umbrella db: %w", errUmb.Unwrap())
@@ -68,7 +68,7 @@ func (p *Prototype) Run() error {
 
 	p.apiCtl = *restapi.NewController(p.db, p.dbTablePrefix, nil)
 	p.uiCtl = *ui.NewController(p.db, p.dbTablePrefix)
-	p.umbrella = *umb.NewUmbrella(p.db, p.dbTablePrefix, umb.JWTConfig{
+	p.umbrella = *umbrella.NewUmbrella(p.db, p.dbTablePrefix, umbrella.JWTConfig{
 		Key: "protoSecretKey",
 		Issuer: "prototyping.gasior.dev",
 		ExpirationMinutes: 5,
@@ -96,7 +96,7 @@ func (p *Prototype) Run() error {
 				p.constructors...,
 			))
 
-			http.Handle(p.uriUmbrella, &p.umb.GetHTTPHandler(p.uriUmbrella))
+			http.Handle(p.uriUmbrella, &p.umbrella.GetHTTPHandler(p.uriUmbrella))
 
 			log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", p.port), nil))
 		}()
