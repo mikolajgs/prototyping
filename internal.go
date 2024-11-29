@@ -2,10 +2,9 @@ package prototyping
 
 import (
 	"errors"
-	"regexp"
 )
 
-func validateDBConfig(dbCfg *DBConfig) error {
+func validateDbConfig(dbCfg *DbConfig) error {
 	if dbCfg == nil {
 		return errors.New("database config is missing")
 	}
@@ -28,17 +27,7 @@ func validateDBConfig(dbCfg *DBConfig) error {
 	return nil
 }
 
-func validateAPIConfig(apiCfg *APIConfig) error {
+func validateHttpConfig(apiCfg *HttpConfig) error {
 	// TODO
-	return nil
-}
-
-func validateConstructors(c *map[string]func() interface{}) error {
-	re := regexp.MustCompile(`[a-zA-Z0-9_]+`)
-	for k, _ := range *c {
-		if !re.MatchString(k) {
-			return errors.New("constructor name is invalid")
-		}
-	}
 	return nil
 }

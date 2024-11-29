@@ -1,6 +1,6 @@
 package prototyping
 
-type DBConfig struct {
+type DbConfig struct {
 	Host string
 	Port string
 	User string
@@ -9,7 +9,8 @@ type DBConfig struct {
 	TablePrefix string
 }
 
-type APIConfig struct {
+type HttpConfig struct {
 	Port string
-	URI string
+	ApiUri string
+	UiUri string
 }
