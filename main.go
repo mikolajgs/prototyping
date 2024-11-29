@@ -1,7 +1,6 @@
 package prototyping
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -46,7 +45,7 @@ func (p *Prototype) CreateDB() error {
 		}
 	}
 
-	p.umbrella = *umbrella.NewUmbrella(db, p.dbTablePrefix, umbrella.JWTConfig{})
+	p.umbrella = *umbrella.NewUmbrella(db, p.dbTablePrefix, &umbrella.JWTConfig{})
 	errUmb := p.umbrella.CreateDBTables()
 	if errUmb != nil {
 		return fmt.Errorf("error with creating umbrella db: %w", errUmb.Unwrap())
@@ -68,16 +67,16 @@ func (p *Prototype) Run() error {
 
 	p.apiCtl = *restapi.NewController(p.db, p.dbTablePrefix, nil)
 	p.uiCtl = *ui.NewController(p.db, p.dbTablePrefix)
-	p.umbrella = *umbrella.NewUmbrella(p.db, p.dbTablePrefix, umbrella.JWTConfig{
+	p.umbrella = *umbrella.NewUmbrella(p.db, p.dbTablePrefix, &umbrella.JWTConfig{
 		Key: "protoSecretKey",
 		Issuer: "prototyping.gasior.dev",
 		ExpirationMinutes: 5,
 	})
 
-	var ctx context.Context
-	ctx, _ = context.WithCancel(context.Background())
-	go func(ctx context.Context) {
-		go func() {
+	//var ctx context.Context
+	//ctx, _ = context.WithCancel(context.Background())
+	//go func(ctx context.Context) {
+		//go func() {
 			for _, f := range p.constructors {
 				s := sqldb.GetStructName(f())
 		
@@ -96,11 +95,11 @@ func (p *Prototype) Run() error {
 				p.constructors...,
 			))
 
-			http.Handle(p.uriUmbrella, &p.umbrella.GetHTTPHandler(p.uriUmbrella))
+			http.Handle(p.uriUmbrella, p.umbrella.GetHTTPHandler(p.uriUmbrella))
 
 			log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", p.port), nil))
-		}()
-	}(ctx)
+		//}()
+	//}(ctx)
 
 	return nil
 }
@@ -117,6 +116,7 @@ func NewPrototype(cfg Config, constructors ...func() interface{}) (*Prototype, e
 	p.dbTablePrefix = "proto_"
 	p.uriAPI = "/api/"
 	p.uriUI = "/ui/"
+	p.uriUmbrella = "/umbrella/"
 	p.port = "9001"
 	return p, nil
 }
