@@ -75,7 +75,7 @@ type customClaims struct {
 	SID string
 }
 
-func NewUmbrellaWithDB(dbConn *sql.DB, tblPrefix string, jwtConfig *JWTConfig) *Umbrella {
+func NewUmbrella(dbConn *sql.DB, tblPrefix string, jwtConfig *JWTConfig) *Umbrella {
 	u := &Umbrella{
 		dbConn:      dbConn,
 		dbTblPrefix: tblPrefix,

@@ -1,6 +1,7 @@
 package prototyping
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -11,6 +12,8 @@ import (
 	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
 	sqldb "github.com/mikolajgs/prototyping/pkg/struct-sql-postgres"
 	"github.com/mikolajgs/prototyping/pkg/ui"
+	"github.com/mikolajgs/prototyping/pkg/umbrella"
+	umb "github.com/mikolajgs/prototyping/pkg/umbrella"
 
 	_ "github.com/lib/pq"
 )
@@ -20,11 +23,13 @@ type Prototype struct {
 	dbTablePrefix string
 	uriAPI string
 	uriUI string
+	uriUmbrella string
 	port string
 	constructors []func() interface{}
 	db *sql.DB
 	apiCtl restapi.Controller
 	uiCtl ui.Controller
+	umbrella umb.Umbrella
 }
 
 func (p *Prototype) CreateDB() error {
@@ -42,6 +47,12 @@ func (p *Prototype) CreateDB() error {
 		}
 	}
 
+	p.umbrella = *umb.NewUmbrella(db, p.dbTablePrefix, umb.JWTConfig{})
+	errUmb := p.umbrella.CreateDBTables()
+	if errUmb != nil {
+		return fmt.Errorf("error with creating umbrella db: %w", errUmb.Unwrap())
+	}
+
 	db.Close()
 
 	return nil
@@ -57,26 +68,41 @@ func (p *Prototype) Run() error {
 	}
 
 	p.apiCtl = *restapi.NewController(p.db, p.dbTablePrefix, nil)
-	for _, f := range p.constructors {
-		s := sqldb.GetStructName(f())
-
-		http.Handle(
-			fmt.Sprintf("%s%s", p.uriAPI, s),
-			p.apiCtl.Handler(
-				fmt.Sprintf("%s%s", p.uriAPI, s), 
-				f,
-				restapi.HandlerOptions{},
-			),
-		)
-	}
-
 	p.uiCtl = *ui.NewController(p.db, p.dbTablePrefix)
-	http.Handle(p.uriUI, p.uiCtl.Handler(
-		p.uriUI,
-		p.constructors...,
-	))
+	p.umbrella = *umbrella.NewUmbrella(p.db, p.dbTablePrefix, umb.JWTConfig{
+		Key: "protoSecretKey",
+		Issuer: "prototyping.gasior.dev",
+		ExpirationMinutes: 5,
+	})
 
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", p.port), nil))
+	var ctx context.Context
+	ctx, _ = context.WithCancel(context.Background())
+	go func(ctx context.Context) {
+		go func() {
+			for _, f := range p.constructors {
+				s := sqldb.GetStructName(f())
+		
+				http.Handle(
+					fmt.Sprintf("%s%s", p.uriAPI, s),
+					p.apiCtl.Handler(
+						fmt.Sprintf("%s%s", p.uriAPI, s), 
+						f,
+						restapi.HandlerOptions{},
+					),
+				)
+			}
+
+			http.Handle(p.uriUI, p.uiCtl.Handler(
+				p.uriUI,
+				p.constructors...,
+			))
+
+			http.Handle(p.uriUmbrella, &p.umbrella.GetHTTPHandler(p.uriUmbrella))
+
+			log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", p.port), nil))
+		}()
+	}(ctx)
+
 	return nil
 }
 
