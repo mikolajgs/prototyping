@@ -1,13 +1,13 @@
 package ui
 
 import (
-	"net/http"
-	"regexp"
-	"strings"
 	"embed"
 	"fmt"
 	"html"
+	"net/http"
 	"reflect"
+	"regexp"
+	"strings"
 )
 
 //go:embed html/*
@@ -82,7 +82,11 @@ func (c *Controller) getMsgHTML(msgType int, msg string) string {
 	if msgType == 0 {
 		return ""
 	}
-	return fmt.Sprintf(`<div class="info">%s</div>`, html.EscapeString(msg))
+	t := "success"
+	if msgType == MsgFailure {
+		t = "error"
+	}
+	return fmt.Sprintf(`<div class="msg %s">%s</div>`, t, html.EscapeString(msg))
 }
 
 func (c *Controller) getRealURI(handlerURI string, requestURI string) string {
