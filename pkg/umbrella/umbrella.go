@@ -75,7 +75,7 @@ type customClaims struct {
 	SID string
 }
 
-func NewUmbrellaWithDB(dbConn *sql.DB, tblPrefix string, jwtConfig *JWTConfig) *Umbrella {
+func NewUmbrella(dbConn *sql.DB, tblPrefix string, jwtConfig *JWTConfig) *Umbrella {
 	u := &Umbrella{
 		dbConn:      dbConn,
 		dbTblPrefix: tblPrefix,
@@ -254,7 +254,7 @@ func (u Umbrella) handleRegister(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	_, err2 := u.createUser(email, password, extraFields)
+	_, err2 := u.CreateUser(email, password, extraFields)
 	if err2 != nil {
 		u.writeErrText(w, http.StatusInternalServerError, "create_error")
 		return
@@ -280,7 +280,7 @@ func (u Umbrella) handleConfirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err2 := u.confirmEmail(key)
+	err2 := u.ConfirmEmail(key)
 	if err2 != nil {
 		var errUmb *ErrUmbrella
 		if errors.As(err2, &errUmb) {
@@ -446,7 +446,7 @@ func (u Umbrella) writeOK(w http.ResponseWriter, status int, data map[string]int
 	}
 }
 
-func (u Umbrella) createUser(email string, pass string, extraFields map[string]string) (string, *ErrUmbrella) {
+func (u Umbrella) CreateUser(email string, pass string, extraFields map[string]string) (string, *ErrUmbrella) {
 	passEncrypted, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
 	if err != nil {
 		return "", &ErrUmbrella{
@@ -485,7 +485,7 @@ func (u Umbrella) createUser(email string, pass string, extraFields map[string]s
 	return key, nil
 }
 
-func (u Umbrella) confirmEmail(key string) *ErrUmbrella {
+func (u Umbrella) ConfirmEmail(key string) *ErrUmbrella {
 	user := u.Interfaces.User()
 	got, err := user.GetByEmailActivationKey(key)
 
