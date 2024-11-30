@@ -45,10 +45,25 @@ func (p *Prototype) CreateDB() error {
 		}
 	}
 
-	p.umbrella = *umbrella.NewUmbrella(db, p.dbTablePrefix, &umbrella.JWTConfig{})
+	p.umbrella = *umbrella.NewUmbrella(db, p.dbTablePrefix, &umbrella.JWTConfig{
+		Key: "protoSecretKey",
+		Issuer: "prototyping.gasior.dev",
+		ExpirationMinutes: 5,
+	})
 	errUmb := p.umbrella.CreateDBTables()
 	if errUmb != nil {
 		return fmt.Errorf("error with creating umbrella db: %w", errUmb.Unwrap())
+	}
+
+	key, errUmb := p.umbrella.CreateUser("admin@example.com", "admin", map[string]string{
+		"Name": "admin",
+	})
+	if errUmb != nil {
+		return fmt.Errorf("error with creating admin: %w", errUmb.Unwrap())
+	}
+	errUmb = p.umbrella.ConfirmEmail(key)
+	if errUmb != nil {
+		return fmt.Errorf("error with confirming admin email: %w", errUmb.Unwrap())
 	}
 
 	db.Close()
@@ -70,38 +85,48 @@ func (p *Prototype) Run() error {
 	p.umbrella = *umbrella.NewUmbrella(p.db, p.dbTablePrefix, &umbrella.JWTConfig{
 		Key: "protoSecretKey",
 		Issuer: "prototyping.gasior.dev",
-		ExpirationMinutes: 5,
+		ExpirationMinutes: 15,
 	})
 
-	//var ctx context.Context
-	//ctx, _ = context.WithCancel(context.Background())
-	//go func(ctx context.Context) {
-		//go func() {
-			for _, f := range p.constructors {
-				s := sqldb.GetStructName(f())
-		
-				http.Handle(
-					fmt.Sprintf("%s%s", p.uriAPI, s),
-					p.apiCtl.Handler(
-						fmt.Sprintf("%s%s", p.uriAPI, s), 
-						f,
-						restapi.HandlerOptions{},
-					),
-				)
-			}
+	http.Handle(p.uriUmbrella, p.umbrella.GetHTTPHandler(p.uriUmbrella))
 
-			http.Handle(p.uriUI, p.uiCtl.Handler(
-				p.uriUI,
-				p.constructors...,
-			))
+	http.Handle(p.uriUI, p.umbrella.GetHTTPHandlerWrapper(p.wrapHandlerWithUmbrella(
+		p.uiCtl.Handler(
+			p.uriUI,
+			p.constructors...,
+		),
+	)))
 
-			http.Handle(p.uriUmbrella, p.umbrella.GetHTTPHandler(p.uriUmbrella))
+	for _, f := range p.constructors {
+		s := sqldb.GetStructName(f())
 
-			log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", p.port), nil))
-		//}()
-	//}(ctx)
+		http.Handle(
+			fmt.Sprintf("%s%s", p.uriAPI, s),
+			p.umbrella.GetHTTPHandlerWrapper(p.wrapHandlerWithUmbrella(
+				p.apiCtl.Handler(
+					fmt.Sprintf("%s%s", p.uriAPI, s), 
+					f,
+					restapi.HandlerOptions{},
+				),
+			)),
+		)
+	}
+
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", p.port), nil))
 
 	return nil
+}
+
+func (p *Prototype) wrapHandlerWithUmbrella(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userId := umbrella.GetUserIDFromRequest(r)
+		if userId == 0 {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("NoAccess"))
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
 }
 
 func NewPrototype(cfg Config, constructors ...func() interface{}) (*Prototype, error) {
