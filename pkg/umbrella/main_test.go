@@ -141,7 +141,7 @@ func makeRequest(method string, wrapped bool, additionalURI string, data string,
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	}
 	if bearerToken != "" {
-		req.Header.Add("Authorization", "Bearer " + bearerToken)
+		req.Header.Add("Authorization", "Bearer "+bearerToken)
 	}
 
 	c := &http.Client{}

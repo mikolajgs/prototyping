@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
-	"text/template"
 	"log"
+	"text/template"
 
 	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
 	sthtml "github.com/mikolajgs/prototyping/pkg/struct-html"

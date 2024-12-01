@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
 )
@@ -49,7 +50,15 @@ func (c Controller) handleHTTPPut(w http.ResponseWriter, r *http.Request, newObj
 		return
 	}
 
-	err2 := c.struct2db.Save(objClone, stdb.SaveOptions{})
+	opts := stdb.SaveOptions{}
+	userId := r.Context().Value("UmbrellaUserID")
+	rk := reflect.ValueOf(userId).Kind()
+	if rk == reflect.Int64 && userId.(int64) != 0 {
+		opts.ModifiedBy = userId.(int64)
+		opts.ModifiedAt = time.Now().Unix()
+	}
+
+	err2 := c.struct2db.Save(objClone, opts)
 	if err2 != nil {
 		c.writeErrText(w, http.StatusInternalServerError, "cannot_save_to_db")
 		return

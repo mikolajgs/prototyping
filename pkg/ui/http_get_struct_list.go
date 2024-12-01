@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
+	"log"
 	"net/http"
 	"reflect"
-	"log"
 	"text/template"
 )
 

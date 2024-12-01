@@ -7,17 +7,17 @@ import (
 )
 
 type Session struct {
-	ID        int    `json:"session_id"`
-	Flags     int    `json:"flags"`
+	ID        int64  `json:"session_id"`
+	Flags     int64  `json:"flags"`
 	Key       string `json:"key" 2db:"uniq lenmin:32 lenmax:2000"`
 	ExpiresAt int64  `json:"expires_at"`
-	UserID    int    `json:"user_id" 2db:"req"`
+	UserID    int64  `json:"user_id" 2db:"req"`
 }
 
 // DefaultSession is default implementation of SessionInterface using struct-db-postgres
 type DefaultSession struct {
-	ctl *sdb.Controller
-	session          *Session
+	ctl     *sdb.Controller
+	session *Session
 }
 
 func (g *DefaultSession) CreateDBTable() error {
@@ -28,7 +28,7 @@ func (g *DefaultSession) CreateDBTable() error {
 	}
 	return nil
 }
-func (g *DefaultSession) GetFlags() int {
+func (g *DefaultSession) GetFlags() int64 {
 	return g.session.Flags
 }
 func (g *DefaultSession) GetKey() string {
@@ -37,10 +37,10 @@ func (g *DefaultSession) GetKey() string {
 func (g *DefaultSession) GetExpiresAt() int64 {
 	return g.session.ExpiresAt
 }
-func (g *DefaultSession) GetUserID() int {
+func (g *DefaultSession) GetUserID() int64 {
 	return g.session.UserID
 }
-func (g *DefaultSession) SetFlags(flags int) {
+func (g *DefaultSession) SetFlags(flags int64) {
 	g.session.Flags = flags
 }
 func (g *DefaultSession) SetKey(k string) {
@@ -49,7 +49,7 @@ func (g *DefaultSession) SetKey(k string) {
 func (g *DefaultSession) SetExpiresAt(exp int64) {
 	g.session.ExpiresAt = exp
 }
-func (g *DefaultSession) SetUserID(i int) {
+func (g *DefaultSession) SetUserID(i int64) {
 	g.session.UserID = i
 }
 func (g *DefaultSession) Save() error {
@@ -61,9 +61,9 @@ func (g *DefaultSession) Save() error {
 }
 func (g *DefaultSession) GetByKey(key string) (bool, error) {
 	sessions, errCrud := g.ctl.Get(func() interface{} { return &Session{} }, sdb.GetOptions{
-		Order: []string{"ID", "asc"},
-		Limit: 1,
-		Offset: 0,
+		Order:   []string{"ID", "asc"},
+		Limit:   1,
+		Offset:  0,
 		Filters: map[string]interface{}{"Key": key},
 	})
 

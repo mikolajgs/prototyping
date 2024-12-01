@@ -19,27 +19,27 @@ import (
 )
 
 type structItemsTplObj struct {
-	Name        string
-	URI         string
-	Fields      []string
-	ItemsHTML   []interface{}
-	ItemsCount  int64
-	PageNumbers []string
-	ParamPage   string
-	ParamLimit  string
+	Name                  string
+	URI                   string
+	Fields                []string
+	ItemsHTML             []interface{}
+	ItemsCount            int64
+	PageNumbers           []string
+	ParamPage             string
+	ParamLimit            string
 	ParamRawFilterEscaped string
-	ParamFiltersEscaped map[string]string
-	ParamOrder  string
-	ParamOrderDirection string
+	ParamFiltersEscaped   map[string]string
+	ParamOrder            string
+	ParamOrderDirection   string
 }
 
 type structItemsParams struct {
-	Page     int
-	Limit    int
-	RawFilter string
-	FiltersForDB  map[string]interface{}
-	FiltersForUI map[string]string
-	Order    string
+	Page           int
+	Limit          int
+	RawFilter      string
+	FiltersForDB   map[string]interface{}
+	FiltersForUI   map[string]string
+	Order          string
 	OrderDirection string
 }
 
@@ -103,18 +103,18 @@ func (c *Controller) tryGetStructItems(w http.ResponseWriter, r *http.Request, u
 		if !f.IsValid() {
 			continue
 		}
-		filtersForDB[filterName+":%"] = "%"+fv[0]+"%"
+		filtersForDB[filterName+":%"] = "%" + fv[0] + "%"
 		filtersForUI[filterName] = html.EscapeString(fv[0])
 	}
 
 	c.renderStructItems(w, r, uri, c.uriStructNameFunc[uri][structName], structItemsParams{
-		Page: int(pageInt),
-		Limit: int(limitInt),
-		RawFilter: rawFilter,
-		Order: order,
+		Page:           int(pageInt),
+		Limit:          int(limitInt),
+		RawFilter:      rawFilter,
+		Order:          order,
 		OrderDirection: orderDirection,
-		FiltersForDB: filtersForDB,
-		FiltersForUI: filtersForUI,
+		FiltersForDB:   filtersForDB,
+		FiltersForUI:   filtersForUI,
 	})
 	return true
 }
@@ -222,9 +222,9 @@ func (c *Controller) getStructItemsTplObj(uri string, objFunc func() interface{}
 	getPage, getLimit, getOffset := c.getPageLimitOffset(params.Page, params.Limit)
 
 	itemsHTML, err := c.struct2db.Get(objFunc, stdb.GetOptions{
-		Offset: getOffset,
-		Limit:  getLimit,
-		Order: []string{params.Order, params.OrderDirection},
+		Offset:  getOffset,
+		Limit:   getLimit,
+		Order:   []string{params.Order, params.OrderDirection},
 		Filters: params.FiltersForDB,
 		RowObjTransformFunc: func(obj interface{}) interface{} {
 			out := ""
@@ -269,15 +269,15 @@ func (c *Controller) getStructItemsTplObj(uri string, objFunc func() interface{}
 	pageNumbers := c.getPageNumbers(itemsCount, getLimit, getPage)
 
 	its := &structItemsTplObj{
-		URI:         uri,
-		Name:        stsql.GetStructName(o),
-		Fields:      stsql.GetStructFieldNames(o),
-		ItemsHTML:   itemsHTML,
-		ItemsCount:  itemsCount,
-		ParamPage:   fmt.Sprintf("%d", getPage),
-		ParamLimit:  fmt.Sprintf("%d", getLimit),
-		PageNumbers: pageNumbers,
-		ParamOrder:  params.Order,
+		URI:                 uri,
+		Name:                stsql.GetStructName(o),
+		Fields:              stsql.GetStructFieldNames(o),
+		ItemsHTML:           itemsHTML,
+		ItemsCount:          itemsCount,
+		ParamPage:           fmt.Sprintf("%d", getPage),
+		ParamLimit:          fmt.Sprintf("%d", getLimit),
+		PageNumbers:         pageNumbers,
+		ParamOrder:          params.Order,
 		ParamOrderDirection: params.OrderDirection,
 		ParamFiltersEscaped: params.FiltersForUI,
 	}
@@ -300,7 +300,7 @@ func (c *Controller) getPageNumbers(itemsCount int64, getLimit int, getPage int)
 
 	a := []string{}
 	if p < 11 {
-		for i:=1; i<=p; i++ {
+		for i := 1; i <= p; i++ {
 			a = append(a, fmt.Sprintf("%d", i))
 		}
 		return a
@@ -323,4 +323,4 @@ func (c *Controller) getPageNumbers(itemsCount int64, getLimit int, getPage int)
 	}
 	a = append(a, fmt.Sprintf("%d", p))
 	return a
-} 
+}

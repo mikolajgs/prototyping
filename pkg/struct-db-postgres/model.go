@@ -208,3 +208,15 @@ func (c Controller) ResetFields(obj interface{}) {
 		}
 	}
 }
+
+// SetObjCreated sets object's CreatedAt and CreatedBy fields
+func (c *Controller) SetObjCreated(obj interface{}, at int64, by int64) {
+	reflect.ValueOf(obj).Elem().FieldByName("CreatedAt").SetInt(at)
+	reflect.ValueOf(obj).Elem().FieldByName("CreatedBy").SetInt(by)
+}
+
+// SetObjLastModified sets object's LastModifiedAt and LastModifiedBy fields
+func (c *Controller) SetObjLastModified(obj interface{}, at int64, by int64) {
+	reflect.ValueOf(obj).Elem().FieldByName("LastModifiedAt").SetInt(at)
+	reflect.ValueOf(obj).Elem().FieldByName("LastModifiedBy").SetInt(by)
+}
