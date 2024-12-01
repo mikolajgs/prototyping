@@ -16,8 +16,8 @@ type Session struct {
 
 // DefaultSession is default implementation of SessionInterface using struct-db-postgres
 type DefaultSession struct {
-	ctl *sdb.Controller
-	session          *Session
+	ctl     *sdb.Controller
+	session *Session
 }
 
 func (g *DefaultSession) CreateDBTable() error {
@@ -61,9 +61,9 @@ func (g *DefaultSession) Save() error {
 }
 func (g *DefaultSession) GetByKey(key string) (bool, error) {
 	sessions, errCrud := g.ctl.Get(func() interface{} { return &Session{} }, sdb.GetOptions{
-		Order: []string{"ID", "asc"},
-		Limit: 1,
-		Offset: 0,
+		Order:   []string{"ID", "asc"},
+		Limit:   1,
+		Offset:  0,
 		Filters: map[string]interface{}{"Key": key},
 	})
 

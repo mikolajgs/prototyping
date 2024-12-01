@@ -21,7 +21,7 @@ type User struct {
 
 // DefaultUserModel is default implementation of UserInterface using struct-db-postgres package
 type DefaultUser struct {
-	ctl *sdb.Controller
+	ctl  *sdb.Controller
 	user *User
 }
 
@@ -80,9 +80,9 @@ func (g *DefaultUser) Save() error {
 }
 func (g *DefaultUser) GetByID(id int64) (bool, error) {
 	users, errCrud := g.ctl.Get(func() interface{} { return &User{} }, sdb.GetOptions{
-		Order: []string{"ID", "asc"},
-		Limit: 1,
-		Offset: 0,
+		Order:   []string{"ID", "asc"},
+		Limit:   1,
+		Offset:  0,
 		Filters: map[string]interface{}{"ID": id},
 	})
 	if errCrud != nil {
@@ -97,9 +97,9 @@ func (g *DefaultUser) GetByID(id int64) (bool, error) {
 }
 func (g *DefaultUser) GetByEmail(email string) (bool, error) {
 	users, errCrud := g.ctl.Get(func() interface{} { return &User{} }, sdb.GetOptions{
-		Order: []string{"ID", "asc"},
-		Limit: 1,
-		Offset: 0,
+		Order:   []string{"ID", "asc"},
+		Limit:   1,
+		Offset:  0,
 		Filters: map[string]interface{}{"Email": email},
 	})
 	if errCrud != nil {
@@ -114,9 +114,9 @@ func (g *DefaultUser) GetByEmail(email string) (bool, error) {
 }
 func (g *DefaultUser) GetByEmailActivationKey(key string) (bool, error) {
 	users, errCrud := g.ctl.Get(func() interface{} { return &User{} }, sdb.GetOptions{
-		Order: []string{"id", "asc"},
-		Limit: 1,
-		Offset: 0,
+		Order:   []string{"id", "asc"},
+		Limit:   1,
+		Offset:  0,
 		Filters: map[string]interface{}{"EmailActivationKey": key},
 	})
 	if errCrud != nil {

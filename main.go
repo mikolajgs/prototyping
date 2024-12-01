@@ -17,17 +17,17 @@ import (
 )
 
 type Prototype struct {
-	dbDSN string
+	dbDSN         string
 	dbTablePrefix string
-	uriAPI string
-	uriUI string
-	uriUmbrella string
-	port string
-	constructors []func() interface{}
-	db *sql.DB
-	apiCtl restapi.Controller
-	uiCtl ui.Controller
-	umbrella umbrella.Umbrella
+	uriAPI        string
+	uriUI         string
+	uriUmbrella   string
+	port          string
+	constructors  []func() interface{}
+	db            *sql.DB
+	apiCtl        restapi.Controller
+	uiCtl         ui.Controller
+	umbrella      umbrella.Umbrella
 }
 
 func (p *Prototype) CreateDB() error {
@@ -46,8 +46,8 @@ func (p *Prototype) CreateDB() error {
 	}
 
 	p.umbrella = *umbrella.NewUmbrella(db, p.dbTablePrefix, &umbrella.JWTConfig{
-		Key: "protoSecretKey",
-		Issuer: "prototyping.gasior.dev",
+		Key:               "protoSecretKey",
+		Issuer:            "prototyping.gasior.dev",
 		ExpirationMinutes: 5,
 	})
 	errUmb := p.umbrella.CreateDBTables()
@@ -83,8 +83,8 @@ func (p *Prototype) Run() error {
 	p.apiCtl = *restapi.NewController(p.db, p.dbTablePrefix, nil)
 	p.uiCtl = *ui.NewController(p.db, p.dbTablePrefix)
 	p.umbrella = *umbrella.NewUmbrella(p.db, p.dbTablePrefix, &umbrella.JWTConfig{
-		Key: "protoSecretKey",
-		Issuer: "prototyping.gasior.dev",
+		Key:               "protoSecretKey",
+		Issuer:            "prototyping.gasior.dev",
 		ExpirationMinutes: 15,
 	})
 
@@ -99,12 +99,11 @@ func (p *Prototype) Run() error {
 
 	for _, f := range p.constructors {
 		s := sqldb.GetStructName(f())
-
 		http.Handle(
-			fmt.Sprintf("%s%s", p.uriAPI, s),
+			fmt.Sprintf("%s%s/", p.uriAPI, s),
 			p.umbrella.GetHTTPHandlerWrapper(p.wrapHandlerWithUmbrella(
 				p.apiCtl.Handler(
-					fmt.Sprintf("%s%s", p.uriAPI, s), 
+					fmt.Sprintf("%s%s/", p.uriAPI, s),
 					f,
 					restapi.HandlerOptions{},
 				),

@@ -1,10 +1,10 @@
 package structdbpostgres
 
 import (
+	validator "github.com/mikolajgs/struct-validator"
 	"reflect"
 	"regexp"
 	"strings"
-	validator "github.com/mikolajgs/struct-validator"
 )
 
 // Validate checks object's fields. It returns result of validation as a bool and list of fields with invalid value

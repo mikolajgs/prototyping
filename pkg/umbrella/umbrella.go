@@ -94,15 +94,15 @@ func NewUmbrella(dbConn *sql.DB, tblPrefix string, jwtConfig *JWTConfig) *Umbrel
 		User: func() UserInterface {
 			user := &User{}
 			return &DefaultUser{
-				ctl: u.goCRUDController,
-				user:             user,
+				ctl:  u.goCRUDController,
+				user: user,
 			}
 		},
 		Session: func() SessionInterface {
 			session := &Session{}
 			return &DefaultSession{
-				ctl: u.goCRUDController,
-				session:          session,
+				ctl:     u.goCRUDController,
+				session: session,
 			}
 		},
 	}

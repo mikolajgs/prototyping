@@ -17,7 +17,7 @@ type LoadOptions struct {
 }
 
 type SaveOptions struct {
-	NoInsert bool
+	NoInsert   bool
 	ModifiedBy int64
 	ModifiedAt int64
 }

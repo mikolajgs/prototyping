@@ -568,7 +568,7 @@ func (h *StructSQL) getQueryFilters(filters map[string]interface{}, filterFields
 		if strings.Contains(k, ":") {
 			kArr := strings.Split(k, ":")
 			n = kArr[0]
-			switch (kArr[1]) {
+			switch kArr[1] {
 			case "%":
 				filterComparison[n] = ValueLike
 			case "~":

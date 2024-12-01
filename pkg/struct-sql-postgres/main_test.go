@@ -190,12 +190,12 @@ func TestSQLSelectQueries(t *testing.T) {
 	}
 
 	got = h.GetQuerySelect([]string{"EmailSecondary", "desc", "Age", "asc"}, 67, 13, map[string]interface{}{
-		"Price:>": 4443,
-		"PostCode2:%": "11%",
-		"Age:<=": 99,
-		"FirstName:~": "^[A-Z][a-z]+$",
+		"Price:>":            4443,
+		"PostCode2:%":        "11%",
+		"Age:<=":             99,
+		"FirstName:~":        "^[A-Z][a-z]+$",
 		"CreatedByUserID:>=": 100,
-		"Flags:&": 8,
+		"Flags:&":            8,
 	}, map[string]bool{"EmailSecondary": true}, nil)
 	want = selectPrefix + " WHERE age<=$1 AND created_by_user_id>=$2 AND first_name ~ $3 AND test_struct_flags&$4>0 AND post_code2 LIKE $5 AND price>$6"
 	want += " ORDER BY email_secondary DESC LIMIT 67 OFFSET 13"
@@ -205,7 +205,7 @@ func TestSQLSelectQueries(t *testing.T) {
 
 	got = h.GetQuerySelect([]string{"EmailSecondary", "desc", "Age", "asc"}, 67, 13, map[string]interface{}{
 		"Price:%": 44,
-		"Age:~": 99,
+		"Age:~":   99,
 	}, map[string]bool{"EmailSecondary": true}, nil)
 	want = selectPrefix + " WHERE CAST(age AS TEXT) ~ $1 AND CAST(price AS TEXT) LIKE $2"
 	want += " ORDER BY email_secondary DESC LIMIT 67 OFFSET 13"
