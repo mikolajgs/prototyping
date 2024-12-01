@@ -1,6 +1,8 @@
 package restapi
 
-import "net/http"
+import (
+	"net/http"
+)
 
 type HandlerOptions struct {
 	CreateConstructor func() interface{}
@@ -48,6 +50,7 @@ func (c Controller) Handler(uri string, constructor func() interface{}, options 
 			}
 			return
 		}
+
 		if r.Method == http.MethodGet && id != "" && (options.Operations == OpAll || options.Operations&OpRead > 0) {
 			if options.ReadConstructor != nil {
 				c.handleHTTPGet(w, r, options.ReadConstructor, id)

@@ -7,16 +7,16 @@ import (
 )
 
 type User struct {
-	ID                 int    `json:"user_id"`
-	Flags              int    `json:"flags"`
+	ID                 int64  `json:"user_id"`
+	Flags              int64  `json:"flags"`
 	Name               string `json:"name" 2db:"lenmin:0 lenmax:50"`
 	Email              string `json:"email" 2db:"req"`
 	Password           string `json:"password"`
 	EmailActivationKey string `json:"email_activation_key" 2db:""`
-	CreatedAt          int    `json:"created_at"`
-	CreatedByUserID    int    `json:"created_by_user_id"`
-	LastModifiedAt          int    `json:"last_modified_at"`
-	LastModifiedByUserID    int    `json:"last_modified_by_user_id"`
+	CreatedAt          int64  `json:"created_at"`
+	CreatedBy          int64  `json:"created_by"`
+	LastModifiedAt     int64  `json:"last_modified_at"`
+	LastModifiedBy     int64  `json:"last_modified_by"`
 }
 
 // DefaultUserModel is default implementation of UserInterface using struct-db-postgres package
@@ -33,7 +33,7 @@ func (g *DefaultUser) CreateDBTable() error {
 	}
 	return nil
 }
-func (g *DefaultUser) GetID() int {
+func (g *DefaultUser) GetID() int64 {
 	return g.user.ID
 }
 func (g *DefaultUser) GetEmail() string {
@@ -45,7 +45,7 @@ func (g *DefaultUser) GetPassword() string {
 func (g *DefaultUser) GetEmailActivationKey() string {
 	return g.user.EmailActivationKey
 }
-func (g *DefaultUser) GetFlags() int {
+func (g *DefaultUser) GetFlags() int64 {
 	return g.user.Flags
 }
 func (g *DefaultUser) GetExtraField(n string) string {
@@ -63,7 +63,7 @@ func (g *DefaultUser) SetPassword(p string) {
 func (g *DefaultUser) SetEmailActivationKey(k string) {
 	g.user.EmailActivationKey = k
 }
-func (g *DefaultUser) SetFlags(flags int) {
+func (g *DefaultUser) SetFlags(flags int64) {
 	g.user.Flags = flags
 }
 func (g *DefaultUser) SetExtraField(n string, v string) {
@@ -78,7 +78,7 @@ func (g *DefaultUser) Save() error {
 	}
 	return nil
 }
-func (g *DefaultUser) GetByID(id int) (bool, error) {
+func (g *DefaultUser) GetByID(id int64) (bool, error) {
 	users, errCrud := g.ctl.Get(func() interface{} { return &User{} }, sdb.GetOptions{
 		Order: []string{"ID", "asc"},
 		Limit: 1,

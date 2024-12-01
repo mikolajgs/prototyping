@@ -3,20 +3,20 @@ package umbrella
 type UserInterface interface {
 	CreateDBTable() error
 
-	GetID() int
+	GetID() int64
 	GetEmail() string
 	SetEmail(string)
 	GetPassword() string
 	SetPassword(string)
 	GetEmailActivationKey() string
 	SetEmailActivationKey(string)
-	GetFlags() int
-	SetFlags(int)
+	GetFlags() int64
+	SetFlags(int64)
 	GetExtraField(n string) string
 	SetExtraField(n string, v string)
 
 	Save() error
-	GetByID(int) (bool, error)
+	GetByID(int64) (bool, error)
 	GetByEmail(string) (bool, error)
 	GetByEmailActivationKey(string) (bool, error)
 }
@@ -28,10 +28,10 @@ type SessionInterface interface {
 	SetKey(string)
 	GetExpiresAt() int64
 	SetExpiresAt(int64)
-	GetUserID() int
-	SetUserID(int)
-	GetFlags() int
-	SetFlags(int)
+	GetUserID() int64
+	SetUserID(int64)
+	GetFlags() int64
+	SetFlags(int64)
 
 	Save() error
 	GetByKey(string) (bool, error)

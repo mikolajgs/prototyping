@@ -465,7 +465,8 @@ func (u Umbrella) CreateUser(email string, pass string, extraFields map[string]s
 	}
 	user.SetEmailActivationKey(key)
 
-	flags := FlagUserActive
+	var flags int64
+	flags = FlagUserActive
 	if u.Flags&RegisterConfirmed > 0 {
 		flags += FlagUserEmailConfirmed
 	}
@@ -636,7 +637,7 @@ func (u Umbrella) logout(token string) *ErrUmbrella {
 	return nil
 }
 
-func (u Umbrella) check(token string, refresh bool) (string, int64, int, *ErrUmbrella) {
+func (u Umbrella) check(token string, refresh bool) (string, int64, int64, *ErrUmbrella) {
 	sID, errUmbrella := u.parseTokenWithCheck(token)
 	if errUmbrella != nil {
 		return "", 0, 0, errUmbrella

@@ -78,6 +78,8 @@ func (h *StructSQL) reflectStructForDBQueries(u interface{}, dbTablePrefix strin
 	valCnt := 0
 	valWithoutIDCnt := 0
 
+	foundModificationFields := 0
+
 	for j := 0; j < s.NumField(); j++ {
 		f := s.Field(j)
 		k := f.Type.Kind()
@@ -156,6 +158,14 @@ func (h *StructSQL) reflectStructForDBQueries(u interface{}, dbTablePrefix strin
 		valCnt++
 
 		h.fields = append(h.fields, f.Name)
+
+		if (f.Name == "CreatedAt" || f.Name == "CreatedBy" || f.Name == "LastModifiedAt" || f.Name == "LastModifiedBy") && k == reflect.Int64 {
+			foundModificationFields++
+		}
+	}
+
+	if foundModificationFields == 4 {
+		h.hasModificationFields = true
 	}
 
 	colValsAgain = colVals

@@ -18,6 +18,8 @@ type LoadOptions struct {
 
 type SaveOptions struct {
 	NoInsert bool
+	ModifiedBy int64
+	ModifiedAt int64
 }
 
 type GetOptions struct {
@@ -76,6 +78,10 @@ func (c Controller) Save(obj interface{}, options SaveOptions) *ErrController {
 
 	var err3 error
 	if c.GetObjIDValue(obj) != 0 {
+		if options.ModifiedAt != 0 && options.ModifiedBy != 0 && h.HasModificationFields() {
+			c.SetObjLastModified(obj, options.ModifiedAt, options.ModifiedBy)
+		}
+
 		// do no try to insert if NoInsert is set
 		// TODO: error handling, we should check if object exists - for now nothing happens, UPDATE gets executed and updates nothing
 		if options.NoInsert {
@@ -85,6 +91,9 @@ func (c Controller) Save(obj interface{}, options SaveOptions) *ErrController {
 			_, err3 = c.dbConn.Exec(h.GetQueryInsertOnConflictUpdate(), append(c.GetObjFieldInterfaces(obj, true), c.GetObjFieldInterfaces(obj, false)...)...)
 		}
 	} else {
+		if options.ModifiedAt != 0 && options.ModifiedBy != 0 && h.HasModificationFields() {
+			c.SetObjCreated(obj, options.ModifiedAt, options.ModifiedBy)
+		}
 		err3 = c.dbConn.QueryRow(h.GetQueryInsert(), c.GetObjFieldInterfaces(obj, false)...).Scan(c.GetObjIDInterface(obj))
 	}
 	if err3 != nil {

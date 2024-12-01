@@ -37,6 +37,8 @@ type StructSQL struct {
 	hasJoined bool
 	joined    map[string]*StructSQL
 
+	hasModificationFields bool
+
 	err *ErrStructSQL
 
 	tagName string
@@ -252,4 +254,9 @@ func (h *StructSQL) GetQueryUpdate(values map[string]interface{}, filters map[st
 // GetFieldNameFromDBCol returns field name from a table column.
 func (h *StructSQL) GetFieldNameFromDBCol(n string) string {
 	return h.dbCols[n]
+}
+
+// HasModificationFields returns true if struct has all of the following int64 fields: CreatedAt, CreatedBy, LastModifiedAt, LastModifiedBy
+func (h *StructSQL) HasModificationFields() bool {
+	return h.hasModificationFields
 }
