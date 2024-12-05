@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>crud/ui</title>
+<title>admin</title>
 <script src="https://unpkg.com/htmx.org@2.0.1"></script>
 <style>
   {{ .ConfigCss }}
@@ -57,6 +57,13 @@
   </div>
 
   <div id="top_menu">
+    <div>
+    </div>
+    <div class="logout">
+      <div>
+        <button class="nobold nobtm">Signed in</button> <button class="color nobtm" onclick="location.href='{{ .URI }}r/logout/';">Logout</button>
+      </div>
+    </div>
   </div>
 </body>
 </html> 

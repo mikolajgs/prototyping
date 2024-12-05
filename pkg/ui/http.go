@@ -24,6 +24,9 @@ func (c *Controller) Handler(uri string, objFuncs ...func() interface{}) http.Ha
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
+			if c.tryGetLogin(w, r, uri) {
+				return
+			}
 			if c.tryGetHome(w, r, uri, objFuncs...) {
 				return
 			}

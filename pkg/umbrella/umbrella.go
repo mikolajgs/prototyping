@@ -70,6 +70,13 @@ type UserExtraField struct {
 	DefaultValue string
 }
 
+type HandlerConfig struct {
+	UseCookie string
+	CookiePath string
+	SuccessRedirectURL string
+	FailureRedirectURL string
+}
+
 type customClaims struct {
 	jwt.StandardClaims
 	SID string
@@ -151,11 +158,11 @@ func (u Umbrella) GetHTTPHandler(uri string) http.Handler {
 				u.handleConfirm(w, r)
 			}
 		case "login":
-			if u.Flags&DisableLogin > 0 {
-				u.writeErrText(w, http.StatusNotFound, "invalid_uri")
-			} else {
-				u.handleLogin(w, r)
-			}
+			//if u.Flags&DisableLogin > 0 {
+			//	u.writeErrText(w, http.StatusNotFound, "invalid_uri")
+			//} else {
+				u.handleLogin(w, r, nil, "", "")
+			//}
 		case "check":
 			if u.Flags&DisableCheck > 0 {
 				u.writeErrText(w, http.StatusNotFound, "invalid_uri")
@@ -163,20 +170,53 @@ func (u Umbrella) GetHTTPHandler(uri string) http.Handler {
 				u.handleCheck(w, r)
 			}
 		case "logout":
-			if u.Flags&DisableLogin > 0 {
-				u.writeErrText(w, http.StatusNotFound, "invalid_uri")
-			} else {
-				u.handleLogout(w, r)
-			}
+			//if u.Flags&DisableLogin > 0 {
+			//	u.writeErrText(w, http.StatusNotFound, "invalid_uri")
+			//} else {
+				u.handleLogout(w, r, nil, "", "")
+			//}
 		default:
 			u.writeErrText(w, http.StatusNotFound, "invalid_uri")
 		}
 	})
 }
 
-func (u Umbrella) GetHTTPHandlerWrapper(next http.Handler) http.Handler {
+func (u Umbrella) GetLoginHTTPHandler(config HandlerConfig) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token := GetAuthorizationBearerToken(r)
+		u.handleLogin(w, r, &http.Cookie{
+			Name: config.UseCookie,
+			Path: config.CookiePath,
+			Value: "ReplaceMe",
+			HttpOnly: false,
+		}, config.SuccessRedirectURL, config.FailureRedirectURL)
+	})
+}
+
+
+func (u Umbrella) GetLogoutHTTPHandler(config HandlerConfig) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		u.handleLogout(w, r, &http.Cookie{
+			Name: config.UseCookie,
+			Path: config.CookiePath,
+			Value: "ReplaceMe",
+			HttpOnly: false,
+		}, config.SuccessRedirectURL, config.FailureRedirectURL)
+	})
+}
+
+func (u Umbrella) GetHTTPHandlerWrapper(next http.Handler, config HandlerConfig) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var token string
+		if config.UseCookie != "" {
+			cookie, err := r.Cookie(config.UseCookie)
+			if err != nil {
+				token = ""
+			} else {
+				token = cookie.Value
+			}
+		} else {
+			token = GetAuthorizationBearerToken(r)
+		}
 		_, _, userID, _ := u.check(token, false)
 		ctx := context.WithValue(r.Context(), "UmbrellaUserID", int64(userID))
 		req := r.WithContext(ctx)
@@ -304,18 +344,39 @@ func (u Umbrella) handleConfirm(w http.ResponseWriter, r *http.Request) {
 	u.writeOK(w, http.StatusOK, map[string]interface{}{})
 }
 
-func (u Umbrella) handleLogin(w http.ResponseWriter, r *http.Request) {
+func (u Umbrella) handleLogin(w http.ResponseWriter, r *http.Request, setCookie *http.Cookie, successURI string, failureURI string) {
+	if u.Flags&DisableLogin > 0 {
+		if failureURI != "" {
+			u.writeRedirect(w, fmt.Sprintf("%s?err=disabled", failureURI))
+			return
+		}
+		u.writeErrText(w, http.StatusNotFound, "invalid_uri")
+		return
+	}
+
 	if r.Method != http.MethodPost {
+		if failureURI != "" {
+			u.writeRedirect(w, fmt.Sprintf("%s?err=unknown", failureURI))
+			return
+		}
 		u.writeErrText(w, http.StatusBadRequest, "invalid_request")
 		return
 	}
 	email := r.FormValue("email")
 	password := r.FormValue("password")
 	if !u.isValidEmail(email) {
+		if failureURI != "" {
+			u.writeRedirect(w, fmt.Sprintf("%s?err=invalid_credentials", failureURI))
+			return
+		}
 		u.writeErrText(w, http.StatusBadRequest, "invalid_credentials")
 		return
 	}
 	if password == "" {
+		if failureURI != "" {
+			u.writeRedirect(w, fmt.Sprintf("%s?err=invalid_credentials", failureURI))
+			return
+		}
 		u.writeErrText(w, http.StatusBadRequest, "invalid_credentials")
 		return
 	}
@@ -325,10 +386,22 @@ func (u Umbrella) handleLogin(w http.ResponseWriter, r *http.Request) {
 		var errUmb *ErrUmbrella
 		if errors.As(err, &errUmb) {
 			if errUmb.Op == "NoRow" || errUmb.Op == "UserInactive" || errUmb.Op == "InvalidPassword" {
+				if failureURI != "" {
+					u.writeRedirect(w, fmt.Sprintf("%s?err=invalid_credentials", failureURI))
+					return
+				}
 				u.writeErrText(w, http.StatusNotFound, "invalid_credentials")
 			} else if errUmb.Op == "GetFromDB" {
+				if failureURI != "" {
+					u.writeRedirect(w, fmt.Sprintf("%s?err=database_error", failureURI))
+					return
+				}
 				u.writeErrText(w, http.StatusInternalServerError, "database_error")
 			} else {
+				if failureURI != "" {
+					u.writeRedirect(w, fmt.Sprintf("%s?err=login_error", failureURI))
+					return
+				}
 				u.writeErrText(w, http.StatusInternalServerError, "login_error")
 			}
 		}
@@ -339,6 +412,20 @@ func (u Umbrella) handleLogin(w http.ResponseWriter, r *http.Request) {
 		if !u.Hooks.PostLoginSuccess(w, email, token, expiresAt) {
 			return
 		}
+	}
+
+	if successURI != "" {
+		if setCookie != nil {
+			cookieClone := http.Cookie{
+				Name: setCookie.Name,
+				Path: setCookie.Path,
+				Value: token,
+				HttpOnly: setCookie.HttpOnly,
+			}
+			http.SetCookie(w, &cookieClone)
+		}
+		u.writeRedirect(w, successURI)
+		return
 	}
 
 	u.writeOK(w, http.StatusOK, map[string]interface{}{
@@ -392,13 +479,55 @@ func (u Umbrella) handleCheck(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (u Umbrella) handleLogout(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		u.writeErrText(w, http.StatusBadRequest, "invalid_request")
+func (u Umbrella) handleLogout(w http.ResponseWriter, r *http.Request, useCookie *http.Cookie, successURI string, failureURI string) {
+	if u.Flags&DisableLogin > 0 {
+		if failureURI != "" {
+			u.writeRedirect(w, fmt.Sprintf("%s?err=disabled", failureURI))
+			return
+		}
+		u.writeErrText(w, http.StatusNotFound, "invalid_uri")
 		return
 	}
-	token := r.FormValue("token")
+
+	var token string
+	if useCookie != nil {
+		if r.Method != http.MethodGet {
+			if failureURI != "" {
+				u.writeRedirect(w, fmt.Sprintf("%s?err=invalid_request", failureURI))
+				return
+			}
+			u.writeErrText(w, http.StatusBadRequest, "invalid_request")
+			return
+		}
+
+		cookie, err := r.Cookie(useCookie.Name)
+		if err != nil {
+			if failureURI != "" {
+				u.writeRedirect(w, fmt.Sprintf("%s?err=no_cookie", failureURI))
+				return
+			}
+			u.writeErrText(w, http.StatusNotFound, "no_cookie")
+			return
+		}
+		token = cookie.Value
+	} else {
+		if r.Method != http.MethodPost {
+			if failureURI != "" {
+				u.writeRedirect(w, fmt.Sprintf("%s?err=invalid_request", failureURI))
+				return
+			}
+			u.writeErrText(w, http.StatusBadRequest, "invalid_request")
+			return
+		}
+		token = r.FormValue("token")
+	}
+
 	if token == "" {
+		// If token is empty then user is logged out
+		if successURI != "" {
+			u.writeRedirect(w, fmt.Sprintf("%s?suc=no_cookie", successURI))
+			return
+		}
 		u.writeErrText(w, http.StatusBadRequest, "invalid_token")
 		return
 	}
@@ -408,10 +537,22 @@ func (u Umbrella) handleLogout(w http.ResponseWriter, r *http.Request) {
 		var errUmb *ErrUmbrella
 		if errors.As(err, &errUmb) {
 			if errUmb.Op == "InvalidToken" || errUmb.Op == "Expired" || errUmb.Op == "ParseToken" || errUmb.Op == "InvalidSession" {
+				if successURI != "" {
+					u.writeRedirect(w, fmt.Sprintf("%s?suc=logged_out", successURI))
+					return
+				}
 				u.writeErrText(w, http.StatusNotFound, "invalid_credentials")
 			} else if errUmb.Op == "GetFromDB" {
+				if failureURI != "" {
+					u.writeRedirect(w, fmt.Sprintf("%s?err=database_error", failureURI))
+					return
+				}
 				u.writeErrText(w, http.StatusInternalServerError, "database_error")
 			} else {
+				if failureURI != "" {
+					u.writeRedirect(w, fmt.Sprintf("%s?err=login_error", failureURI))
+					return
+				}
 				u.writeErrText(w, http.StatusInternalServerError, "login_error")
 			}
 		}
@@ -424,7 +565,26 @@ func (u Umbrella) handleLogout(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if successURI != "" {
+		if useCookie != nil {
+			cookieClone := http.Cookie{
+				Name: useCookie.Name,
+				Path: useCookie.Path,
+				Value: "",
+				HttpOnly: useCookie.HttpOnly,
+			}
+			http.SetCookie(w, &cookieClone)
+		}
+		u.writeRedirect(w, successURI)
+		return
+	}
+
 	u.writeOK(w, http.StatusOK, map[string]interface{}{})
+}
+
+func (u Umbrella) writeRedirect(w http.ResponseWriter, url string) {
+	w.Header().Set("Location", url)
+	w.WriteHeader(http.StatusSeeOther)
 }
 
 func (u Umbrella) writeErrText(w http.ResponseWriter, status int, errText string) {

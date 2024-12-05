@@ -116,7 +116,7 @@ func createHTTPServer() {
 	go func(ctx context.Context) {
 		go func() {
 			http.Handle(httpURI, testUmbrella.GetHTTPHandler(httpURI))
-			http.Handle(httpURI2, testUmbrella.GetHTTPHandlerWrapper(getRestrictedStuffHTTPHandler()))
+			http.Handle(httpURI2, testUmbrella.GetHTTPHandlerWrapper(getRestrictedStuffHTTPHandler(), HandlerConfig{}))
 			http.ListenAndServe(":"+httpPort, nil)
 		}()
 	}(ctx)
