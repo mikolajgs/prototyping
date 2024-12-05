@@ -88,15 +88,43 @@ func (p *Prototype) Run() error {
 		ExpirationMinutes: 15,
 	})
 
+	// /umbrella/
 	http.Handle(p.uriUmbrella, p.umbrella.GetHTTPHandler(p.uriUmbrella))
 
+	// /ui/login/
+	http.Handle(fmt.Sprintf("%s%s/", p.uriUI, "login"), p.uiCtl.Handler(
+		p.uriUI,
+		p.constructors...,
+	))
+
+	// /ui/r/login/
+	http.Handle(fmt.Sprintf("%s%s/", p.uriUI, "r/login"), p.umbrella.GetLoginHTTPHandler(umbrella.HandlerConfig{
+		UseCookie: "UmbrellaToken",
+		CookiePath: p.uriUI,
+		SuccessRedirectURL: "/ui/",
+		FailureRedirectURL: "/ui/login/",
+	}))
+
+	// /ui/r/logout/
+	http.Handle(fmt.Sprintf("%s%s/", p.uriUI, "r/logout"), p.umbrella.GetLogoutHTTPHandler(umbrella.HandlerConfig{
+		UseCookie: "UmbrellaToken",
+		CookiePath: p.uriUI,
+		FailureRedirectURL: "/ui/",
+		SuccessRedirectURL: "/ui/login/",
+	}))
+
+	// /ui/ behind umbrella
 	http.Handle(p.uriUI, p.umbrella.GetHTTPHandlerWrapper(p.wrapHandlerWithUmbrella(
 		p.uiCtl.Handler(
 			p.uriUI,
 			p.constructors...,
 		),
-	)))
+		"/ui/login/",
+	), umbrella.HandlerConfig{
+		UseCookie: "UmbrellaToken",
+	}))
 
+	// /api/ behind umbrella
 	for _, f := range p.constructors {
 		s := sqldb.GetStructName(f())
 		http.Handle(
@@ -107,7 +135,8 @@ func (p *Prototype) Run() error {
 					f,
 					restapi.HandlerOptions{},
 				),
-			)),
+				"",
+			), umbrella.HandlerConfig{}),
 		)
 	}
 
@@ -116,10 +145,15 @@ func (p *Prototype) Run() error {
 	return nil
 }
 
-func (p *Prototype) wrapHandlerWithUmbrella(h http.Handler) http.Handler {
+func (p *Prototype) wrapHandlerWithUmbrella(h http.Handler, redirectNotLogged string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userId := umbrella.GetUserIDFromRequest(r)
 		if userId == 0 {
+			if redirectNotLogged != "" {
+				w.Header().Set("Location", redirectNotLogged)
+				w.WriteHeader(http.StatusSeeOther)
+				return
+			}
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("NoAccess"))
 			return
