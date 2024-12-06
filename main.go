@@ -1,6 +1,7 @@
 package prototyping
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -99,16 +100,16 @@ func (p *Prototype) Run() error {
 
 	// /ui/r/login/
 	http.Handle(fmt.Sprintf("%s%s/", p.uriUI, "r/login"), p.umbrella.GetLoginHTTPHandler(umbrella.HandlerConfig{
-		UseCookie: "UmbrellaToken",
-		CookiePath: p.uriUI,
+		UseCookie:          "UmbrellaToken",
+		CookiePath:         p.uriUI,
 		SuccessRedirectURL: "/ui/",
 		FailureRedirectURL: "/ui/login/",
 	}))
 
 	// /ui/r/logout/
 	http.Handle(fmt.Sprintf("%s%s/", p.uriUI, "r/logout"), p.umbrella.GetLogoutHTTPHandler(umbrella.HandlerConfig{
-		UseCookie: "UmbrellaToken",
-		CookiePath: p.uriUI,
+		UseCookie:          "UmbrellaToken",
+		CookiePath:         p.uriUI,
 		FailureRedirectURL: "/ui/",
 		SuccessRedirectURL: "/ui/login/",
 	}))
@@ -117,7 +118,11 @@ func (p *Prototype) Run() error {
 	http.Handle(p.uriUI, p.umbrella.GetHTTPHandlerWrapper(p.wrapHandlerWithUmbrella(
 		p.uiCtl.Handler(
 			p.uriUI,
-			p.constructors...,
+			append(
+				p.constructors,
+				func() interface{} { return p.umbrella.Interfaces.User().GetUser() },
+				func() interface{} { return p.umbrella.Interfaces.Session().GetSession() },
+			)...,
 		),
 		"/ui/login/",
 	), umbrella.HandlerConfig{
@@ -148,17 +153,25 @@ func (p *Prototype) Run() error {
 func (p *Prototype) wrapHandlerWithUmbrella(h http.Handler, redirectNotLogged string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userId := umbrella.GetUserIDFromRequest(r)
-		if userId == 0 {
-			if redirectNotLogged != "" {
-				w.Header().Set("Location", redirectNotLogged)
-				w.WriteHeader(http.StatusSeeOther)
+
+		if userId != 0 {
+			user := p.umbrella.Interfaces.User()
+			found, _ := user.GetByID(userId)
+			if found {
+				ctx := context.WithValue(r.Context(), "LoggedUserName", user.GetExtraField("name"))
+				req := r.WithContext(ctx)
+				h.ServeHTTP(w, req)
 				return
 			}
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte("NoAccess"))
+		}
+
+		if redirectNotLogged != "" {
+			w.Header().Set("Location", redirectNotLogged)
+			w.WriteHeader(http.StatusSeeOther)
 			return
 		}
-		h.ServeHTTP(w, r)
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("NoAccess"))
 	})
 }
 

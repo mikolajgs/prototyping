@@ -129,3 +129,7 @@ func (g *DefaultUser) GetByEmailActivationKey(key string) (bool, error) {
 	g.user = users[0].(*User)
 	return true, nil
 }
+
+func (g *DefaultUser) GetUser() interface{} {
+	return g.user
+}
