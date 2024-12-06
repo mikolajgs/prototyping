@@ -16,6 +16,10 @@ var htmlDir embed.FS
 const MsgSuccess = 1
 const MsgFailure = 2
 
+type HandlerConfig struct {
+	UserNameFunc func(int) string
+}
+
 // Handler returns an HTTP handler that can be attached to HTTP server. It runs a simple UI that allows
 // managing the data.
 // Each of the func() argument should be funcs that create objects that are meant to be managed in the UI.
@@ -27,6 +31,7 @@ func (c *Controller) Handler(uri string, objFuncs ...func() interface{}) http.Ha
 			if c.tryGetLogin(w, r, uri) {
 				return
 			}
+
 			if c.tryGetHome(w, r, uri, objFuncs...) {
 				return
 			}

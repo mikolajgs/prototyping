@@ -77,3 +77,6 @@ func (g *DefaultSession) GetByKey(key string) (bool, error) {
 	g.session = sessions[0].(*Session)
 	return true, nil
 }
+func (g *DefaultSession) GetSession() interface{} {
+	return g.session
+}

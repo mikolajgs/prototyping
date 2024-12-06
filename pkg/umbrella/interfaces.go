@@ -19,6 +19,8 @@ type UserInterface interface {
 	GetByID(int64) (bool, error)
 	GetByEmail(string) (bool, error)
 	GetByEmailActivationKey(string) (bool, error)
+
+	GetUser() interface{}
 }
 
 type SessionInterface interface {
@@ -35,4 +37,6 @@ type SessionInterface interface {
 
 	Save() error
 	GetByKey(string) (bool, error)
+
+	GetSession() interface{}
 }
