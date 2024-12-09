@@ -105,7 +105,7 @@ func NewUmbrella(dbConn *sql.DB, tblPrefix string, jwtConfig *JWTConfig, cfg *Um
 	}
 	u.tagName = tagName
 
-	if cfg.NoDefaultConstructors {
+	if cfg != nil && cfg.NoDefaultConstructors {
 		return u
 	}
 
