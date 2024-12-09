@@ -11,13 +11,26 @@ import (
 type Controller struct {
 	struct2db         *struct2db.Controller
 	uriStructNameFunc map[string]map[string]func() interface{}
+	tagName           string
+}
+
+type ControllerConfig struct {
+	TagName string
 }
 
 // NewController returns new Controller object
-func NewController(dbConn *sql.DB, tblPrefix string) *Controller {
+func NewController(dbConn *sql.DB, tblPrefix string, cfg *ControllerConfig) *Controller {
 	c := &Controller{}
+
+	tagName := "ui"
+	if cfg != nil && cfg.TagName != "" {
+		tagName = cfg.TagName
+	}
+	c.tagName = tagName
+
 	c.struct2db = struct2db.NewController(dbConn, tblPrefix, &struct2db.ControllerConfig{
-		TagName: "ui",
+		TagName: tagName,
 	})
+
 	return c
 }

@@ -81,7 +81,7 @@ func createDocker() {
 }
 
 func createController() {
-	testController = NewController(dbConn, "ui_")
+	testController = NewController(dbConn, "ui_", nil)
 }
 
 func createDBStructure() {

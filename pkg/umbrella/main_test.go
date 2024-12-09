@@ -76,7 +76,7 @@ func createUmbrella() {
 		Key:               "someSecretKey--.",
 		Issuer:            "prototyping.gasior.dev",
 		ExpirationMinutes: 1,
-	})
+	}, nil)
 	testUmbrella.Hooks = &Hooks{
 		PostRegisterSuccess: func(w http.ResponseWriter, email string) bool {
 			testPostRegisterSuccessVariable = true

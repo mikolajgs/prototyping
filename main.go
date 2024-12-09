@@ -18,17 +18,19 @@ import (
 )
 
 type Prototype struct {
-	dbDSN         string
-	dbTablePrefix string
-	uriAPI        string
-	uriUI         string
-	uriUmbrella   string
-	port          string
-	constructors  []func() interface{}
-	db            *sql.DB
-	apiCtl        restapi.Controller
-	uiCtl         ui.Controller
-	umbrella      umbrella.Umbrella
+	dbDSN                      string
+	dbTablePrefix              string
+	uriAPI                     string
+	uriUI                      string
+	uriUmbrella                string
+	port                       string
+	constructors               []func() interface{}
+	db                         *sql.DB
+	apiCtl                     restapi.Controller
+	uiCtl                      ui.Controller
+	umbrella                   umbrella.Umbrella
+	umbrellaUserConstructor    func() interface{}
+	umbrellaSessionConstructor func() interface{}
 }
 
 func (p *Prototype) CreateDB() error {
@@ -50,7 +52,28 @@ func (p *Prototype) CreateDB() error {
 		Key:               "protoSecretKey",
 		Issuer:            "prototyping.gasior.dev",
 		ExpirationMinutes: 5,
+	}, &umbrella.UmbrellaConfig{
+		TagName:               "ui",
+		NoDefaultConstructors: true,
 	})
+
+	p.umbrella.Interfaces = &umbrella.Interfaces{
+		User: func() umbrella.UserInterface {
+			user := p.umbrellaUserConstructor()
+			return &UserForUmbrella{
+				ctl:  stDB,
+				user: user,
+			}
+		},
+		Session: func() umbrella.SessionInterface {
+			session := p.umbrellaSessionConstructor()
+			return &SessionForUmbrella{
+				ctl:     stDB,
+				session: session,
+			}
+		},
+	}
+
 	errUmb := p.umbrella.CreateDBTables()
 	if errUmb != nil {
 		return fmt.Errorf("error with creating umbrella db: %w", errUmb.Unwrap())
@@ -82,11 +105,13 @@ func (p *Prototype) Run() error {
 	}
 
 	p.apiCtl = *restapi.NewController(p.db, p.dbTablePrefix, nil)
-	p.uiCtl = *ui.NewController(p.db, p.dbTablePrefix)
+	p.uiCtl = *ui.NewController(p.db, p.dbTablePrefix, &ui.ControllerConfig{})
 	p.umbrella = *umbrella.NewUmbrella(p.db, p.dbTablePrefix, &umbrella.JWTConfig{
 		Key:               "protoSecretKey",
 		Issuer:            "prototyping.gasior.dev",
 		ExpirationMinutes: 15,
+	}, &umbrella.UmbrellaConfig{
+		TagName: "2db",
 	})
 
 	// /umbrella/
@@ -189,5 +214,15 @@ func NewPrototype(cfg Config, constructors ...func() interface{}) (*Prototype, e
 	p.uriUI = "/ui/"
 	p.uriUmbrella = "/umbrella/"
 	p.port = "9001"
+
+	if cfg.UserConstructor != nil {
+		p.constructors = append(p.constructors, cfg.UserConstructor)
+		p.umbrellaUserConstructor = cfg.UserConstructor
+	}
+	if cfg.SessionConstructor != nil {
+		p.constructors = append(p.constructors, cfg.SessionConstructor)
+		p.umbrellaSessionConstructor = cfg.SessionConstructor
+	}
+
 	return p, nil
 }

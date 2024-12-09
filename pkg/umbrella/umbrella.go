@@ -42,6 +42,7 @@ type Umbrella struct {
 	Interfaces       *Interfaces
 	Flags            int
 	UserExtraFields  []UserExtraField
+	tagName          string
 }
 
 type JWTConfig struct {
@@ -71,10 +72,15 @@ type UserExtraField struct {
 }
 
 type HandlerConfig struct {
-	UseCookie string
-	CookiePath string
+	UseCookie          string
+	CookiePath         string
 	SuccessRedirectURL string
 	FailureRedirectURL string
+}
+
+type UmbrellaConfig struct {
+	TagName               string
+	NoDefaultConstructors bool
 }
 
 type customClaims struct {
@@ -82,7 +88,7 @@ type customClaims struct {
 	SID string
 }
 
-func NewUmbrella(dbConn *sql.DB, tblPrefix string, jwtConfig *JWTConfig) *Umbrella {
+func NewUmbrella(dbConn *sql.DB, tblPrefix string, jwtConfig *JWTConfig, cfg *UmbrellaConfig) *Umbrella {
 	u := &Umbrella{
 		dbConn:      dbConn,
 		dbTblPrefix: tblPrefix,
@@ -93,8 +99,18 @@ func NewUmbrella(dbConn *sql.DB, tblPrefix string, jwtConfig *JWTConfig) *Umbrel
 		log.Fatalf("Umbrella requires DB Connection")
 	}
 
+	tagName := "2db"
+	if cfg != nil && cfg.TagName != "" {
+		tagName = cfg.TagName
+	}
+	u.tagName = tagName
+
+	if cfg.NoDefaultConstructors {
+		return u
+	}
+
 	u.goCRUDController = sdb.NewController(dbConn, tblPrefix, &sdb.ControllerConfig{
-		TagName: "2db",
+		TagName: tagName,
 	})
 
 	u.Interfaces = &Interfaces{
@@ -161,7 +177,7 @@ func (u Umbrella) GetHTTPHandler(uri string) http.Handler {
 			//if u.Flags&DisableLogin > 0 {
 			//	u.writeErrText(w, http.StatusNotFound, "invalid_uri")
 			//} else {
-				u.handleLogin(w, r, nil, "", "")
+			u.handleLogin(w, r, nil, "", "")
 			//}
 		case "check":
 			if u.Flags&DisableCheck > 0 {
@@ -173,7 +189,7 @@ func (u Umbrella) GetHTTPHandler(uri string) http.Handler {
 			//if u.Flags&DisableLogin > 0 {
 			//	u.writeErrText(w, http.StatusNotFound, "invalid_uri")
 			//} else {
-				u.handleLogout(w, r, nil, "", "")
+			u.handleLogout(w, r, nil, "", "")
 			//}
 		default:
 			u.writeErrText(w, http.StatusNotFound, "invalid_uri")
@@ -184,21 +200,20 @@ func (u Umbrella) GetHTTPHandler(uri string) http.Handler {
 func (u Umbrella) GetLoginHTTPHandler(config HandlerConfig) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		u.handleLogin(w, r, &http.Cookie{
-			Name: config.UseCookie,
-			Path: config.CookiePath,
-			Value: "ReplaceMe",
+			Name:     config.UseCookie,
+			Path:     config.CookiePath,
+			Value:    "ReplaceMe",
 			HttpOnly: false,
 		}, config.SuccessRedirectURL, config.FailureRedirectURL)
 	})
 }
 
-
 func (u Umbrella) GetLogoutHTTPHandler(config HandlerConfig) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		u.handleLogout(w, r, &http.Cookie{
-			Name: config.UseCookie,
-			Path: config.CookiePath,
-			Value: "ReplaceMe",
+			Name:     config.UseCookie,
+			Path:     config.CookiePath,
+			Value:    "ReplaceMe",
 			HttpOnly: false,
 		}, config.SuccessRedirectURL, config.FailureRedirectURL)
 	})
@@ -417,9 +432,9 @@ func (u Umbrella) handleLogin(w http.ResponseWriter, r *http.Request, setCookie 
 	if successURI != "" {
 		if setCookie != nil {
 			cookieClone := http.Cookie{
-				Name: setCookie.Name,
-				Path: setCookie.Path,
-				Value: token,
+				Name:     setCookie.Name,
+				Path:     setCookie.Path,
+				Value:    token,
 				HttpOnly: setCookie.HttpOnly,
 			}
 			http.SetCookie(w, &cookieClone)
@@ -568,9 +583,9 @@ func (u Umbrella) handleLogout(w http.ResponseWriter, r *http.Request, useCookie
 	if successURI != "" {
 		if useCookie != nil {
 			cookieClone := http.Cookie{
-				Name: useCookie.Name,
-				Path: useCookie.Path,
-				Value: "",
+				Name:     useCookie.Name,
+				Path:     useCookie.Path,
+				Value:    "",
 				HttpOnly: useCookie.HttpOnly,
 			}
 			http.SetCookie(w, &cookieClone)
