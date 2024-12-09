@@ -238,6 +238,21 @@ func (c *Controller) getStructItemsTplObj(uri string, objFunc func() interface{}
 				out += "<td>"
 				field := s.Field(j)
 				fieldType := field.Type.Kind()
+				hideValue := false
+				fieldTag := field.Tag.Get(c.tagName)
+				if fieldTag != "" {
+					fieldTags := strings.Split(fieldTag, " ")
+					for _, ft := range fieldTags {
+						if ft == "hidden" {
+							hideValue = true
+						}
+					}
+				}
+				if hideValue {
+					out += "(hidden)</td>"
+					continue
+				}
+
 				if fieldType == reflect.String {
 					out += html.EscapeString(elem.Field(j).String())
 				}
@@ -251,6 +266,7 @@ func (c *Controller) getStructItemsTplObj(uri string, objFunc func() interface{}
 					}
 				}
 				out += "</td>"
+
 			}
 
 			return fmt.Sprintf("%s:%s", id, out)

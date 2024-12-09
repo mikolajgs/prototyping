@@ -12,7 +12,7 @@ type User struct {
 	Name               string `json:"name" 2db:"lenmin:0 lenmax:50"`
 	Email              string `json:"email" 2db:"req"`
 	Password           string `json:"password"`
-	EmailActivationKey string `json:"email_activation_key" 2db:""`
+	EmailActivationKey string `json:"email_activation_key"`
 	CreatedAt          int64  `json:"created_at"`
 	CreatedBy          int64  `json:"created_by"`
 	LastModifiedAt     int64  `json:"last_modified_at"`

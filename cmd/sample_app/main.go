@@ -18,7 +18,9 @@ const dbDSN = "host=localhost user=protouser password=protopass port=54320 dbnam
 func main() {
 	p, err := prototyping.NewPrototype(
 		prototyping.Config{
-			DatabaseDSN: dbDSN,
+			DatabaseDSN:        dbDSN,
+			UserConstructor:    func() interface{} { return &User{} },
+			SessionConstructor: func() interface{} { return &Session{} },
 		},
 		func() interface{} { return &Item{} },
 		func() interface{} { return &ItemGroup{} },
@@ -41,16 +43,16 @@ func main() {
 	s2db := stdb.NewController(db, "proto_", nil)
 	item := &Item{}
 	itemGroup := &ItemGroup{}
-	for i:=0; i<301; i++ {
-		item.ID = 0;
-		item.Flags = int64(i);
+	for i := 0; i < 301; i++ {
+		item.ID = 0
+		item.Flags = int64(i)
 		item.Title = fmt.Sprintf("Item %d", i)
 		item.Text = fmt.Sprintf("Description %d", i)
 		s2db.Save(item, stdb.SaveOptions{})
 	}
-	for i:=0; i<73; i++ {
-		itemGroup.ID = 0;
-		itemGroup.Flags = int64(i);
+	for i := 0; i < 73; i++ {
+		itemGroup.ID = 0
+		itemGroup.Flags = int64(i)
 		itemGroup.Name = fmt.Sprintf("Name %d", i)
 		itemGroup.Description = fmt.Sprintf("Description %d", i)
 		s2db.Save(itemGroup, stdb.SaveOptions{})

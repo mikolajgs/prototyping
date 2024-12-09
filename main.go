@@ -18,17 +18,19 @@ import (
 )
 
 type Prototype struct {
-	dbDSN         string
-	dbTablePrefix string
-	uriAPI        string
-	uriUI         string
-	uriUmbrella   string
-	port          string
-	constructors  []func() interface{}
-	db            *sql.DB
-	apiCtl        restapi.Controller
-	uiCtl         ui.Controller
-	umbrella      umbrella.Umbrella
+	dbDSN                      string
+	dbTablePrefix              string
+	uriAPI                     string
+	uriUI                      string
+	uriUmbrella                string
+	port                       string
+	constructors               []func() interface{}
+	db                         *sql.DB
+	apiCtl                     restapi.Controller
+	uiCtl                      ui.Controller
+	umbrella                   umbrella.Umbrella
+	umbrellaUserConstructor    func() interface{}
+	umbrellaSessionConstructor func() interface{}
 }
 
 func (p *Prototype) CreateDB() error {
@@ -46,14 +48,42 @@ func (p *Prototype) CreateDB() error {
 		}
 	}
 
+	noDefaultConstructors := false
+	if p.umbrellaUserConstructor != nil || p.umbrellaSessionConstructor != nil {
+		noDefaultConstructors = true
+	}
+
 	p.umbrella = *umbrella.NewUmbrella(db, p.dbTablePrefix, &umbrella.JWTConfig{
 		Key:               "protoSecretKey",
 		Issuer:            "prototyping.gasior.dev",
 		ExpirationMinutes: 5,
+	}, &umbrella.UmbrellaConfig{
+		TagName:               "ui",
+		NoDefaultConstructors: noDefaultConstructors,
 	})
-	errUmb := p.umbrella.CreateDBTables()
-	if errUmb != nil {
-		return fmt.Errorf("error with creating umbrella db: %w", errUmb.Unwrap())
+
+	if p.umbrellaUserConstructor != nil || p.umbrellaSessionConstructor != nil {
+		p.umbrella.Interfaces = &umbrella.Interfaces{
+			User: func() umbrella.UserInterface {
+				return &DefaultUser{
+					ctl:         stDB,
+					user:        p.umbrellaUserConstructor().(UserInterface),
+					constructor: func() UserInterface { return p.umbrellaUserConstructor().(UserInterface) },
+				}
+			},
+			Session: func() umbrella.SessionInterface {
+				return &DefaultSession{
+					ctl:         stDB,
+					session:     p.umbrellaSessionConstructor().(SessionInterface),
+					constructor: func() SessionInterface { return p.umbrellaSessionConstructor().(SessionInterface) },
+				}
+			},
+		}
+	} else {
+		errUmb := p.umbrella.CreateDBTables()
+		if errUmb != nil {
+			return fmt.Errorf("error with creating umbrella db: %w", errUmb.Unwrap())
+		}
 	}
 
 	key, errUmb := p.umbrella.CreateUser("admin@example.com", "admin", map[string]string{
@@ -81,13 +111,40 @@ func (p *Prototype) Run() error {
 		p.db = db
 	}
 
+	noDefaultConstructors := false
+	if p.umbrellaUserConstructor != nil || p.umbrellaSessionConstructor != nil {
+		noDefaultConstructors = true
+	}
+
 	p.apiCtl = *restapi.NewController(p.db, p.dbTablePrefix, nil)
-	p.uiCtl = *ui.NewController(p.db, p.dbTablePrefix)
+	p.uiCtl = *ui.NewController(p.db, p.dbTablePrefix, &ui.ControllerConfig{})
 	p.umbrella = *umbrella.NewUmbrella(p.db, p.dbTablePrefix, &umbrella.JWTConfig{
 		Key:               "protoSecretKey",
 		Issuer:            "prototyping.gasior.dev",
 		ExpirationMinutes: 15,
+	}, &umbrella.UmbrellaConfig{
+		TagName:               "2db",
+		NoDefaultConstructors: noDefaultConstructors,
 	})
+
+	if p.umbrellaUserConstructor != nil || p.umbrellaSessionConstructor != nil {
+		p.umbrella.Interfaces = &umbrella.Interfaces{
+			User: func() umbrella.UserInterface {
+				return &DefaultUser{
+					ctl:         p.uiCtl.GetStruct2DB(),
+					user:        p.umbrellaUserConstructor().(UserInterface),
+					constructor: func() UserInterface { return p.umbrellaUserConstructor().(UserInterface) },
+				}
+			},
+			Session: func() umbrella.SessionInterface {
+				return &DefaultSession{
+					ctl:         p.uiCtl.GetStruct2DB(),
+					session:     p.umbrellaSessionConstructor().(SessionInterface),
+					constructor: func() SessionInterface { return p.umbrellaSessionConstructor().(SessionInterface) },
+				}
+			},
+		}
+	}
 
 	// /umbrella/
 	http.Handle(p.uriUmbrella, p.umbrella.GetHTTPHandler(p.uriUmbrella))
@@ -118,11 +175,7 @@ func (p *Prototype) Run() error {
 	http.Handle(p.uriUI, p.umbrella.GetHTTPHandlerWrapper(p.wrapHandlerWithUmbrella(
 		p.uiCtl.Handler(
 			p.uriUI,
-			append(
-				p.constructors,
-				func() interface{} { return p.umbrella.Interfaces.User().GetUser() },
-				func() interface{} { return p.umbrella.Interfaces.Session().GetSession() },
-			)...,
+			p.constructors...,
 		),
 		"/ui/login/",
 	), umbrella.HandlerConfig{
@@ -189,5 +242,15 @@ func NewPrototype(cfg Config, constructors ...func() interface{}) (*Prototype, e
 	p.uriUI = "/ui/"
 	p.uriUmbrella = "/umbrella/"
 	p.port = "9001"
+
+	if cfg.UserConstructor != nil {
+		p.constructors = append(p.constructors, cfg.UserConstructor)
+		p.umbrellaUserConstructor = cfg.UserConstructor
+	}
+	if cfg.SessionConstructor != nil {
+		p.constructors = append(p.constructors, cfg.SessionConstructor)
+		p.umbrellaSessionConstructor = cfg.SessionConstructor
+	}
+
 	return p, nil
 }

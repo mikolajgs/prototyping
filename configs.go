@@ -1,5 +1,7 @@
 package prototyping
 
 type Config struct {
-	DatabaseDSN string
+	DatabaseDSN        string
+	UserConstructor    func() interface{}
+	SessionConstructor func() interface{}
 }
