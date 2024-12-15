@@ -179,6 +179,14 @@ func (c *Controller) tryStructItem(w http.ResponseWriter, r *http.Request, uri s
 		}
 	}
 
+	// TODO: quick hack - if any '___repeat' exist then it should have the same value as field without it
+	for fk, fv := range postValues {
+		if strings.HasSuffix(fk, "___repeat") && fv != postValues[strings.Replace(fk, "___repeat", "", 1)] {
+			valid = false
+			failedFields[fk] = validator.Required
+		}
+	}
+
 	if !valid || len(failedFields) > 0 {
 		invVals := []string{}
 		for k := range failedFields {
@@ -260,7 +268,7 @@ func (c *Controller) getStructItemTplObj(uri string, objFunc func() interface{},
 	a := &structItemTplObj{
 		URI:        uri,
 		Name:       stsql.GetStructName(o),
-		FieldsHTML: sthtml.GetFields(o, postValues, useFieldValues),
+		FieldsHTML: sthtml.GetFields(o, postValues, useFieldValues, c.tagName),
 		MsgHTML:    c.getMsgHTML(msgType, msg),
 		OnlyMsg:    onlyMsg,
 		ID:         id,

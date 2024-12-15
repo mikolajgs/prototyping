@@ -1,9 +1,11 @@
 {{ $uri := .URI }}
 
+{{ if not .OnlyMsg }}
 {{ if eq .ID "" }}
 <h3>New {{ .Name }} item</h3>
 {{ else }}
 <h3>{{ .Name }} item with ID {{ .ID }}</h3>
+{{ end }}
 {{ end }}
 
 
