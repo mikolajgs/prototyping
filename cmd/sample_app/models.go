@@ -27,7 +27,7 @@ type User struct {
 	Flags              int64  `json:"flags"`
 	Name               string `json:"name" ui:"lenmin:0 lenmax:50"`
 	Email              string `json:"email" ui:"req"`
-	Password           string `json:"password" ui:"hidden"`
+	Password           string `json:"password" ui:"hidden password uipassword"`
 	EmailActivationKey string `json:"email_activation_key" ui:"hidden"`
 	CreatedAt          int64  `json:"created_at"`
 	CreatedBy          int64  `json:"created_by"`

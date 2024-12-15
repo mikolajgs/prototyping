@@ -44,6 +44,32 @@ func (c Controller) handleHTTPPut(w http.ResponseWriter, r *http.Request, newObj
 		return
 	}
 
+	// Password fields when password function was passed
+	if c.passFunc != nil {
+		v := reflect.ValueOf(objClone)
+		s := v.Elem()
+		indir := reflect.Indirect(v)
+		typ := indir.Type()
+		for j := 0; j < s.NumField(); j++ {
+			f := s.Field(j)
+			fieldTag := typ.Field(j).Tag.Get(c.tagName)
+			gotPassField := false
+			if f.Kind() == reflect.String && fieldTag != "" {
+				fieldTags := strings.Split(fieldTag, " ")
+				for _, ft := range fieldTags {
+					if ft == "password" {
+						gotPassField = true
+						break
+					}
+				}
+			}
+			if gotPassField {
+				passVal := c.passFunc(f.String())
+				s.Field(j).SetString(passVal)
+			}
+		}
+	}
+
 	b, _, err := c.Validate(objClone, nil)
 	if !b || err != nil {
 		c.writeErrText(w, http.StatusBadRequest, "validation_failed")

@@ -116,8 +116,6 @@ func (p *Prototype) Run() error {
 		noDefaultConstructors = true
 	}
 
-	p.apiCtl = *restapi.NewController(p.db, p.dbTablePrefix, nil)
-	p.uiCtl = *ui.NewController(p.db, p.dbTablePrefix, &ui.ControllerConfig{})
 	p.umbrella = *umbrella.NewUmbrella(p.db, p.dbTablePrefix, &umbrella.JWTConfig{
 		Key:               "protoSecretKey",
 		Issuer:            "prototyping.gasior.dev",
@@ -125,6 +123,24 @@ func (p *Prototype) Run() error {
 	}, &umbrella.UmbrellaConfig{
 		TagName:               "2db",
 		NoDefaultConstructors: noDefaultConstructors,
+	})
+	p.uiCtl = *ui.NewController(p.db, p.dbTablePrefix, &ui.ControllerConfig{
+		PasswordGenerator: func(pass string) string {
+			passForDB, err := p.umbrella.GeneratePassword(pass)
+			if err != nil {
+				return ""
+			}
+			return passForDB
+		},
+	})
+	p.apiCtl = *restapi.NewController(p.db, p.dbTablePrefix, &restapi.ControllerConfig{
+		PasswordGenerator: func(pass string) string {
+			passForDB, err := p.umbrella.GeneratePassword(pass)
+			if err != nil {
+				return ""
+			}
+			return passForDB
+		},
 	})
 
 	if p.umbrellaUserConstructor != nil || p.umbrellaSessionConstructor != nil {

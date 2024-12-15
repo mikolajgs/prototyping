@@ -621,7 +621,7 @@ func (u Umbrella) writeOK(w http.ResponseWriter, status int, data map[string]int
 	}
 }
 
-func (u Umbrella) CreateUser(email string, pass string, extraFields map[string]string) (string, *ErrUmbrella) {
+func (u Umbrella) GeneratePassword(pass string) (string, *ErrUmbrella) {
 	passEncrypted, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
 	if err != nil {
 		return "", &ErrUmbrella{
@@ -630,11 +630,20 @@ func (u Umbrella) CreateUser(email string, pass string, extraFields map[string]s
 		}
 	}
 
+	return base64.StdEncoding.EncodeToString(passEncrypted), nil
+}
+
+func (u Umbrella) CreateUser(email string, pass string, extraFields map[string]string) (string, *ErrUmbrella) {
+	pass, err := u.GeneratePassword(pass)
+	if err != nil {
+		return "", err
+	}
+
 	key := uuid.New().String()
 
 	user := u.Interfaces.User()
 	user.SetEmail(email)
-	user.SetPassword(base64.StdEncoding.EncodeToString(passEncrypted))
+	user.SetPassword(pass)
 	for k, v := range extraFields {
 		user.SetExtraField(k, v)
 	}
@@ -650,11 +659,11 @@ func (u Umbrella) CreateUser(email string, pass string, extraFields map[string]s
 	}
 	user.SetFlags(flags)
 
-	err = user.Save()
-	if err != nil {
+	err2 := user.Save()
+	if err2 != nil {
 		return "", &ErrUmbrella{
 			Op:  "SaveToDB",
-			Err: err,
+			Err: err2,
 		}
 	}
 
