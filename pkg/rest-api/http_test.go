@@ -75,7 +75,7 @@ func TestHTTPHandlerPutMethodForUpdating(t *testing.T) {
 		"created_by_user_id": 12,
 		"key": "123456789012345678901234567890nbh"
 	}`
-	_ = makePUTUpdateRequest(j, createdID, false, t)
+	_ = makePUTUpdateRequest(j, createdID, "", t)
 
 	id, flags, primaryEmail, emailSecondary, firstName, lastName, age, price, postCode, postCode2, password, createdByUserID, key, err := getRow()
 	if err != nil {
@@ -104,7 +104,7 @@ func TestHTTPHandlerPutMethodForUpdatingOnCustomEndpoint(t *testing.T) {
 		"created_by_user_id": 12,
 		"key": "123456789012345678901234567890nbh"
 	}`
-	_ = makePUTUpdateRequest(j, createdID, true, t)
+	_ = makePUTUpdateRequest(j, createdID, httpURI2, t)
 
 	id, flags, _, _, _, _, _, price, _, _, _, _, _, err := getRow()
 	if err != nil {
@@ -115,6 +115,22 @@ func TestHTTPHandlerPutMethodForUpdatingOnCustomEndpoint(t *testing.T) {
 		t.Fatalf(strconv.Itoa(price))
 		t.Fatalf("PUT method on a custom endpoint failed to update struct in the table")
 	}
+
+	j = `{
+		"password": "duplicateme!"
+	}`
+	_ = makePUTUpdateRequest(j, createdID, httpURIPassFunc, t)
+
+	id, flags, _, _, _, _, _, _, _, _, password, _, _, err := getRow()
+	if err != nil {
+		t.Fatalf("PUT method failed to update struct to the table: %s", err.Error())
+	}
+	// Only password field should be updated, and its value should be a duplicated string that was passed. Check the TestStruct_UpdatePasswordWithFunc struct
+	if id == 0 || flags != 0 || password != "duplicateme!duplicateme!" {
+		t.Fatalf(password)
+		t.Fatalf("PUT method on a custom endpoint failed to update struct with field using password function in the table")
+	}
+
 }
 
 // TestHTTPHandlerGetMethodOnExisting checks if HTTP endpoint properly return object details,

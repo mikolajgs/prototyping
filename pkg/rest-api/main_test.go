@@ -30,6 +30,7 @@ var httpPort = "32777"
 var httpCancelCtx context.CancelFunc
 var httpURI = "/v1/testobjects/"
 var httpURI2 = "/v1/testobjects/price/"
+var httpURIPassFunc = "/v1/testobjects/password/"
 var httpURIJoined = "/v1/joined/"
 
 var ctl *Controller
@@ -40,6 +41,7 @@ var testStructReadNewFunc func() interface{}
 var testStructUpdateNewFunc func() interface{}
 var testStructListNewFunc func() interface{}
 var testStructUpdatePriceNewFunc func() interface{}
+var testStructUpdatePasswordWithFuncNewFunc func() interface{}
 var testStructObj *TestStruct
 
 // Test struct for all the tests
@@ -90,6 +92,11 @@ type TestStruct_Update struct {
 type TestStruct_UpdatePrice struct {
 	ID    int64 `json:"test_struct_id"`
 	Price int   `json:"price" crud:"valmin:0 valmax:999"`
+}
+
+type TestStruct_UpdatePasswordWithFunc struct {
+	ID       int64  `json:"test_struct_id"`
+	Password string `json:"password" crud:"valmin:0 valmax:999 password"`
 }
 
 type TestStruct_Read struct {
@@ -146,6 +153,9 @@ func createDocker() {
 func createController() {
 	ctl = NewController(dbConn, "crud_", &ControllerConfig{
 		TagName: "crud",
+		PasswordGenerator: func(p string) string {
+			return p + p
+		},
 	})
 	testStructNewFunc = func() interface{} {
 		return &TestStruct{}
@@ -164,6 +174,9 @@ func createController() {
 	}
 	testStructUpdatePriceNewFunc = func() interface{} {
 		return &TestStruct_UpdatePrice{}
+	}
+	testStructUpdatePasswordWithFuncNewFunc = func() interface{} {
+		return &TestStruct_UpdatePasswordWithFunc{}
 	}
 	testStructObj = testStructNewFunc().(*TestStruct)
 }
@@ -194,6 +207,10 @@ func createHTTPServer() {
 			http.Handle(httpURI2, ctl.Handler(httpURI2, testStructNewFunc, HandlerOptions{
 				Operations:        OpUpdate,
 				UpdateConstructor: testStructUpdatePriceNewFunc,
+			}))
+			http.Handle(httpURIPassFunc, ctl.Handler(httpURIPassFunc, testStructNewFunc, HandlerOptions{
+				Operations:        OpUpdate,
+				UpdateConstructor: testStructUpdatePasswordWithFuncNewFunc,
 			}))
 			http.Handle(httpURIJoined, ctl.Handler(httpURIJoined, func() interface{} { return &Product_WithDetails{} }, HandlerOptions{
 				Operations: OpRead | OpList,
@@ -321,13 +338,14 @@ func makePUTInsertRequest(j string, status int, t *testing.T) []byte {
 	return b
 }
 
-func makePUTUpdateRequest(j string, id int64, customURI bool, t *testing.T) []byte {
+func makePUTUpdateRequest(j string, id int64, customURI string, t *testing.T) []byte {
 	uri := httpURI
-	if customURI {
-		uri = httpURI2
+	if customURI != "" {
+		uri = customURI
 	}
 
-	req, err := http.NewRequest("PUT", "http://localhost:"+httpPort+uri+fmt.Sprintf("%d", id), bytes.NewReader([]byte(j)))
+	url := "http://localhost:" + httpPort + uri + fmt.Sprintf("%d", id)
+	req, err := http.NewRequest("PUT", url, bytes.NewReader([]byte(j)))
 	if err != nil {
 		t.Fatalf("PUT method failed on HTTP server with handler from GetHTTPHandler: %s", err.Error())
 	}
@@ -337,6 +355,10 @@ func makePUTUpdateRequest(j string, id int64, customURI bool, t *testing.T) []by
 		t.Fatalf("PUT method failed on HTTP server with handler from GetHTTPHandler: %s", err.Error())
 	}
 	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		log.Printf("url: %s", url)
+		log.Printf("response body: %s", string(b))
+
 		t.Fatalf("PUT method returned wrong status code, want %d, got %d", http.StatusOK, resp.StatusCode)
 	}
 

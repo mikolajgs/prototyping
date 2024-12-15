@@ -10,6 +10,8 @@ import (
 // that can be attached to an HTTP server.
 type Controller struct {
 	struct2db *struct2db.Controller
+	tagName   string
+	passFunc  func(string) string
 }
 
 type ControllerConfig struct {
@@ -21,13 +23,17 @@ type ControllerConfig struct {
 func NewController(dbConn *sql.DB, tblPrefix string, cfg *ControllerConfig) *Controller {
 	c := &Controller{}
 
-	tagName := "restapi"
+	c.tagName = "restapi"
 	if cfg != nil && cfg.TagName != "" {
-		tagName = cfg.TagName
+		c.tagName = cfg.TagName
+	}
+
+	if cfg != nil && cfg.PasswordGenerator != nil {
+		c.passFunc = cfg.PasswordGenerator
 	}
 
 	c.struct2db = struct2db.NewController(dbConn, tblPrefix, &struct2db.ControllerConfig{
-		TagName: tagName,
+		TagName: c.tagName,
 	})
 
 	return c

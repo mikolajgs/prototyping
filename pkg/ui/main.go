@@ -34,7 +34,7 @@ func NewController(dbConn *sql.DB, tblPrefix string, cfg *ControllerConfig) *Con
 	}
 	c.tagName = tagName
 
-	if cfg.PasswordGenerator != nil {
+	if cfg != nil && cfg.PasswordGenerator != nil {
 		c.passFunc = cfg.PasswordGenerator
 	}
 
