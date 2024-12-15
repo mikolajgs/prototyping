@@ -18,19 +18,18 @@ import (
 )
 
 type Prototype struct {
-	dbDSN                      string
-	dbTablePrefix              string
-	uriAPI                     string
-	uriUI                      string
-	uriUmbrella                string
-	port                       string
-	constructors               []func() interface{}
-	db                         *sql.DB
-	apiCtl                     restapi.Controller
-	uiCtl                      ui.Controller
-	umbrella                   umbrella.Umbrella
-	umbrellaUserConstructor    func() interface{}
-	umbrellaSessionConstructor func() interface{}
+	dbDSN                   string
+	dbTablePrefix           string
+	uriAPI                  string
+	uriUI                   string
+	uriUmbrella             string
+	port                    string
+	constructors            []func() interface{}
+	db                      *sql.DB
+	apiCtl                  restapi.Controller
+	uiCtl                   ui.Controller
+	umbrella                umbrella.Umbrella
+	umbrellaUserConstructor func() interface{}
 }
 
 func (p *Prototype) CreateDB() error {
@@ -49,7 +48,7 @@ func (p *Prototype) CreateDB() error {
 	}
 
 	noDefaultConstructors := false
-	if p.umbrellaUserConstructor != nil || p.umbrellaSessionConstructor != nil {
+	if p.umbrellaUserConstructor != nil {
 		noDefaultConstructors = true
 	}
 
@@ -62,7 +61,7 @@ func (p *Prototype) CreateDB() error {
 		NoDefaultConstructors: noDefaultConstructors,
 	})
 
-	if p.umbrellaUserConstructor != nil || p.umbrellaSessionConstructor != nil {
+	if p.umbrellaUserConstructor != nil {
 		p.umbrella.Interfaces = &umbrella.Interfaces{
 			User: func() umbrella.UserInterface {
 				return &defaultUser{
@@ -73,9 +72,11 @@ func (p *Prototype) CreateDB() error {
 			},
 			Session: func() umbrella.SessionInterface {
 				return &defaultSession{
-					ctl:         stDB,
-					session:     p.umbrellaSessionConstructor().(SessionInterface),
-					constructor: func() SessionInterface { return p.umbrellaSessionConstructor().(SessionInterface) },
+					ctl:     stDB,
+					session: &Session{},
+					constructor: func() *Session {
+						return &Session{}
+					},
 				}
 			},
 		}
@@ -112,7 +113,7 @@ func (p *Prototype) Run() error {
 	}
 
 	noDefaultConstructors := false
-	if p.umbrellaUserConstructor != nil || p.umbrellaSessionConstructor != nil {
+	if p.umbrellaUserConstructor != nil {
 		noDefaultConstructors = true
 	}
 
@@ -143,7 +144,7 @@ func (p *Prototype) Run() error {
 		},
 	})
 
-	if p.umbrellaUserConstructor != nil || p.umbrellaSessionConstructor != nil {
+	if p.umbrellaUserConstructor != nil {
 		p.umbrella.Interfaces = &umbrella.Interfaces{
 			User: func() umbrella.UserInterface {
 				return &defaultUser{
@@ -154,9 +155,11 @@ func (p *Prototype) Run() error {
 			},
 			Session: func() umbrella.SessionInterface {
 				return &defaultSession{
-					ctl:         p.uiCtl.GetStruct2DB(),
-					session:     p.umbrellaSessionConstructor().(SessionInterface),
-					constructor: func() SessionInterface { return p.umbrellaSessionConstructor().(SessionInterface) },
+					ctl:     p.uiCtl.GetStruct2DB(),
+					session: &Session{},
+					constructor: func() *Session {
+						return &Session{}
+					},
 				}
 			},
 		}
@@ -261,11 +264,8 @@ func NewPrototype(cfg Config, constructors ...func() interface{}) (*Prototype, e
 
 	if cfg.UserConstructor != nil {
 		p.constructors = append(p.constructors, cfg.UserConstructor)
+		p.constructors = append(p.constructors, func() interface{} { return &Session{} })
 		p.umbrellaUserConstructor = cfg.UserConstructor
-	}
-	if cfg.SessionConstructor != nil {
-		p.constructors = append(p.constructors, cfg.SessionConstructor)
-		p.umbrellaSessionConstructor = cfg.SessionConstructor
 	}
 
 	return p, nil
