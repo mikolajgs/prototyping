@@ -65,14 +65,14 @@ func (p *Prototype) CreateDB() error {
 	if p.umbrellaUserConstructor != nil || p.umbrellaSessionConstructor != nil {
 		p.umbrella.Interfaces = &umbrella.Interfaces{
 			User: func() umbrella.UserInterface {
-				return &DefaultUser{
+				return &defaultUser{
 					ctl:         stDB,
 					user:        p.umbrellaUserConstructor().(UserInterface),
 					constructor: func() UserInterface { return p.umbrellaUserConstructor().(UserInterface) },
 				}
 			},
 			Session: func() umbrella.SessionInterface {
-				return &DefaultSession{
+				return &defaultSession{
 					ctl:         stDB,
 					session:     p.umbrellaSessionConstructor().(SessionInterface),
 					constructor: func() SessionInterface { return p.umbrellaSessionConstructor().(SessionInterface) },
@@ -146,14 +146,14 @@ func (p *Prototype) Run() error {
 	if p.umbrellaUserConstructor != nil || p.umbrellaSessionConstructor != nil {
 		p.umbrella.Interfaces = &umbrella.Interfaces{
 			User: func() umbrella.UserInterface {
-				return &DefaultUser{
+				return &defaultUser{
 					ctl:         p.uiCtl.GetStruct2DB(),
 					user:        p.umbrellaUserConstructor().(UserInterface),
 					constructor: func() UserInterface { return p.umbrellaUserConstructor().(UserInterface) },
 				}
 			},
 			Session: func() umbrella.SessionInterface {
-				return &DefaultSession{
+				return &defaultSession{
 					ctl:         p.uiCtl.GetStruct2DB(),
 					session:     p.umbrellaSessionConstructor().(SessionInterface),
 					constructor: func() SessionInterface { return p.umbrellaSessionConstructor().(SessionInterface) },
