@@ -20,6 +20,8 @@ type ControllerConfig struct {
 	PasswordGenerator func(string) string
 }
 
+type ContextValue string
+
 func (c *Controller) GetStruct2DB() *struct2db.Controller {
 	return c.struct2db
 }

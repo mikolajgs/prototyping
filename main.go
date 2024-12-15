@@ -96,6 +96,19 @@ func (p *Prototype) CreateDB() error {
 		return fmt.Errorf("error with confirming admin email: %w", errUmb.Unwrap())
 	}
 
+	adminPerm := &umbrella.Permission{
+		Flags:   umbrella.FlagTypeAllow,
+		ForType: umbrella.ForTypeUser,
+		ForItem: 1, // admin's userid
+		Ops:     umbrella.OpsCreate | umbrella.OpsRead | umbrella.OpsUpdate | umbrella.OpsDelete | umbrella.OpsList,
+		ToType:  "all",
+		ToItem:  0,
+	}
+	errPerm := stDB.Save(adminPerm, stdb.SaveOptions{})
+	if errPerm != nil {
+		return fmt.Errorf("error with confirming admin email: %w", errPerm.Unwrap())
+	}
+
 	db.Close()
 
 	return nil
@@ -220,8 +233,13 @@ func (p *Prototype) wrapHandlerWithUmbrella(h http.Handler, redirectNotLogged st
 			user := p.umbrella.Interfaces.User()
 			found, _ := user.GetByID(userId)
 			if found {
-				ctx := context.WithValue(r.Context(), "LoggedUserName", user.GetExtraField("name"))
-				req := r.WithContext(ctx)
+				ctx := context.WithValue(r.Context(), ui.ContextValue("LoggedUserName"), user.GetExtraField("name"))
+
+				allowedTypes, _ := p.umbrella.GetUserTypesList(userId)
+				ctx2 := context.WithValue(ctx, ui.ContextValue("PermTypesList"), allowedTypes)
+
+				req := r.WithContext(ctx2)
+
 				h.ServeHTTP(w, req)
 				return
 			}

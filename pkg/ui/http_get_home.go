@@ -38,7 +38,7 @@ func (c *Controller) renderMain(w http.ResponseWriter, r *http.Request, uri stri
 	userId := umbrella.GetUserIDFromRequest(r)
 	userName := fmt.Sprintf("%d", userId)
 	if userId != 0 {
-		userName = r.Context().Value("LoggedUserName").(string)
+		userName = r.Context().Value(ContextValue("LoggedUserName")).(string)
 	}
 
 	tplObj := struct {
@@ -48,6 +48,7 @@ func (c *Controller) renderMain(w http.ResponseWriter, r *http.Request, uri stri
 		ConfigCss  string
 		StylesCss  string
 		Username   string
+		UserID     int64
 	}{
 		URI:        uri,
 		StructList: structListTpl,
@@ -55,6 +56,7 @@ func (c *Controller) renderMain(w http.ResponseWriter, r *http.Request, uri stri
 		ConfigCss:  string(configCss),
 		StylesCss:  string(stylesCss),
 		Username:   userName,
+		UserID:     userId,
 	}
 	buf := &bytes.Buffer{}
 	t := template.Must(template.New("index").Parse(string(indexTpl)))

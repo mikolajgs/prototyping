@@ -72,6 +72,8 @@ type UmbrellaConfig struct {
 	StructDB          *sdb.Controller
 }
 
+type UmbrellaContextValue string
+
 type customClaims struct {
 	jwt.StandardClaims
 	SID string
@@ -217,7 +219,7 @@ func (u Umbrella) GetHTTPHandlerWrapper(next http.Handler, config HandlerConfig)
 			token = GetAuthorizationBearerToken(r)
 		}
 		_, _, userID, _ := u.check(token, false)
-		ctx := context.WithValue(r.Context(), "UmbrellaUserID", int64(userID))
+		ctx := context.WithValue(r.Context(), UmbrellaContextValue("UmbrellaUserID"), int64(userID))
 		req := r.WithContext(ctx)
 		next.ServeHTTP(w, req)
 	})
@@ -240,7 +242,7 @@ func GetAuthorizationBearerToken(r *http.Request) string {
 }
 
 func GetUserIDFromRequest(r *http.Request) int64 {
-	v := r.Context().Value("UmbrellaUserID").(int64)
+	v := r.Context().Value(UmbrellaContextValue("UmbrellaUserID")).(int64)
 	return v
 }
 
@@ -335,4 +337,45 @@ func (u Umbrella) ConfirmEmail(key string) *ErrUmbrella {
 	}
 
 	return nil
+}
+
+func (u Umbrella) GetUserTypesList(i int64) ([]string, error) {
+	perms, err := u.structDB.Get(func() interface{} { return &Permission{} }, sdb.GetOptions{
+		Order:  []string{"Flags", "ASC"},
+		Limit:  30,
+		Offset: 0,
+		Filters: map[string]interface{}{
+			"_raw": []interface{}{
+				"(.ForType=? OR (.ForType=? AND .ForItem=?))",
+				ForTypeEveryone,
+				ForTypeUser,
+				i,
+			},
+			"_rawConjuction": sdb.RawConjuctionOR,
+		},
+	})
+	if err != nil {
+		return []string{}, err
+	}
+
+	types := []string{}
+	for _, v := range perms {
+		p := v.(*Permission)
+		// only allow flags for now
+		if p.Flags&FlagTypeAllow == 0 {
+			continue
+		}
+		// everyone or particular user
+		if !(p.ForType == ForTypeEveryone || (p.ForType == ForTypeUser && p.ForItem == i)) {
+			continue
+		}
+		// ops list
+		if p.Ops&OpsList == 0 {
+			continue
+		}
+
+		types = append(types, p.ToType)
+	}
+
+	return types, nil
 }

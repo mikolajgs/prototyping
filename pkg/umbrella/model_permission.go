@@ -1,9 +1,10 @@
 package umbrella
 
 type Permission struct {
+	ID             int64  `json:"id"`
 	Flags          int64  `json:"flags"`
 	ForType        int8   `json:"for_type"`
-	ForID          int64  `json:"for_id"`
+	ForItem        int64  `json:"for_item"`
 	Ops            int64  `json:"ops"`
 	ToType         string `json:"to_type"`
 	ToItem         int64  `json:"to_item"`
@@ -13,7 +14,13 @@ type Permission struct {
 	LastModifiedBy int64  `json:"last_modified_by"`
 }
 
-const FlagAlwaysDeny = 1
-const FlagTypeDeny = 2
+const FlagTypeAllow = 4
 
-const ForTypeUser = 1
+const ForTypeEveryone = 1
+const ForTypeUser = 4
+
+const OpsCreate = 8
+const OpsRead = 16
+const OpsUpdate = 32
+const OpsDelete = 64
+const OpsList = 128
