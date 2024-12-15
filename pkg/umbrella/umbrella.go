@@ -61,8 +61,9 @@ type Hooks struct {
 }
 
 type Interfaces struct {
-	User    func() UserInterface
-	Session func() SessionInterface
+	User       func() UserInterface
+	Session    func() SessionInterface
+	Permission func() PermissionInterface
 }
 
 type UserExtraField struct {
@@ -128,6 +129,13 @@ func NewUmbrella(dbConn *sql.DB, tblPrefix string, jwtConfig *JWTConfig, cfg *Um
 				session: session,
 			}
 		},
+		Permission: func() PermissionInterface {
+			permission := &Permission{}
+			return &DefaultPermission{
+				ctl:        u.goCRUDController,
+				permission: permission,
+			}
+		},
 	}
 
 	return u
@@ -136,6 +144,7 @@ func NewUmbrella(dbConn *sql.DB, tblPrefix string, jwtConfig *JWTConfig, cfg *Um
 func (u Umbrella) CreateDBTables() *ErrUmbrella {
 	user := u.Interfaces.User()
 	session := u.Interfaces.Session()
+	permission := u.Interfaces.Permission()
 
 	err := user.CreateDBTable()
 	if err != nil {
@@ -146,6 +155,14 @@ func (u Umbrella) CreateDBTables() *ErrUmbrella {
 	}
 
 	err = session.CreateDBTable()
+	if err != nil {
+		return &ErrUmbrella{
+			Op:  "CreateDBTables",
+			Err: err,
+		}
+	}
+
+	err = permission.CreateDBTable()
 	if err != nil {
 		return &ErrUmbrella{
 			Op:  "CreateDBTables",

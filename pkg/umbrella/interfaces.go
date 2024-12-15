@@ -40,3 +40,9 @@ type SessionInterface interface {
 
 	GetSession() interface{}
 }
+
+type PermissionInterface interface {
+	CreateDBTable() error
+
+	GetPermission() interface{}
+}

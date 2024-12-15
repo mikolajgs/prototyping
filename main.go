@@ -62,6 +62,7 @@ func (p *Prototype) CreateDB() error {
 	})
 
 	if p.umbrellaUserConstructor != nil {
+		// This is purelly for user creation
 		p.umbrella.Interfaces = &umbrella.Interfaces{
 			User: func() umbrella.UserInterface {
 				return &defaultUser{
@@ -76,6 +77,15 @@ func (p *Prototype) CreateDB() error {
 					session: &Session{},
 					constructor: func() *Session {
 						return &Session{}
+					},
+				}
+			},
+			Permission: func() umbrella.PermissionInterface {
+				return &defaultPermission{
+					ctl:        stDB,
+					permission: &Permission{},
+					constructor: func() *Permission {
+						return &Permission{}
 					},
 				}
 			},
@@ -265,6 +275,7 @@ func NewPrototype(cfg Config, constructors ...func() interface{}) (*Prototype, e
 	if cfg.UserConstructor != nil {
 		p.constructors = append(p.constructors, cfg.UserConstructor)
 		p.constructors = append(p.constructors, func() interface{} { return &Session{} })
+		p.constructors = append(p.constructors, func() interface{} { return &Permission{} })
 		p.umbrellaUserConstructor = cfg.UserConstructor
 	}
 
