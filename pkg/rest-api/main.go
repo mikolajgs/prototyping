@@ -13,7 +13,8 @@ type Controller struct {
 }
 
 type ControllerConfig struct {
-	TagName string
+	TagName           string
+	PasswordGenerator func(string) string
 }
 
 // NewController returns new Controller object

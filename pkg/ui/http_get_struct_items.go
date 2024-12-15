@@ -245,6 +245,7 @@ func (c *Controller) getStructItemsTplObj(uri string, objFunc func() interface{}
 					for _, ft := range fieldTags {
 						if ft == "hidden" {
 							hideValue = true
+							break
 						}
 					}
 				}

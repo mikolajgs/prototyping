@@ -81,6 +81,13 @@ func (c *Controller) tryStructItem(w http.ResponseWriter, r *http.Request, uri s
 		}
 		i, _ := strconv.ParseInt(id, 10, 64)
 		valField.SetInt(i)
+
+		// Load values because we might not overwrite all of them (eg. passwords might stay untouched)
+		err := c.struct2db.Load(obj, id, stdb.LoadOptions{})
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return true
+		}
 	}
 
 	// Handle delete here
@@ -103,7 +110,10 @@ func (c *Controller) tryStructItem(w http.ResponseWriter, r *http.Request, uri s
 
 	// Value for each form key is actually an array of strings. We're taking the first one here only
 	// TODO: Tweak it
-	s := reflect.ValueOf(obj).Elem()
+	v := reflect.ValueOf(obj)
+	s := v.Elem()
+	indir := reflect.Indirect(v)
+	typ := indir.Type()
 
 	postValues := map[string]string{}
 	for fk, fv := range r.Form {
@@ -115,6 +125,34 @@ func (c *Controller) tryStructItem(w http.ResponseWriter, r *http.Request, uri s
 
 		f := s.FieldByName(fk)
 		if f.IsValid() && f.CanSet() {
+			// We can set password fields only when they are not empty
+			gotPassField := false
+			field, _ := typ.FieldByName(fk)
+			fieldTag := field.Tag.Get(c.tagName)
+			if fieldTag != "" {
+				fieldTags := strings.Split(fieldTag, " ")
+				for _, ft := range fieldTags {
+					if ft == "password" {
+						gotPassField = true
+						break
+					}
+				}
+			}
+			if gotPassField {
+				if fv[0] == "" {
+					continue
+				}
+				if c.passFunc != nil {
+					passVal := c.passFunc(fv[0])
+					if passVal == "" {
+						w.WriteHeader(http.StatusInternalServerError)
+						return true
+					}
+					f.SetString(passVal)
+					continue
+				}
+			}
+
 			if f.Kind() == reflect.String {
 				f.SetString(fv[0])
 			}
