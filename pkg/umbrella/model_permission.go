@@ -1,10 +1,7 @@
 package umbrella
 
-import (
-	sdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
-)
-
 type Permission struct {
+	Flags          int64  `json:"flags"`
 	ForType        int8   `json:"for_type"`
 	ForID          int64  `json:"for_id"`
 	Ops            int64  `json:"ops"`
@@ -16,20 +13,7 @@ type Permission struct {
 	LastModifiedBy int64  `json:"last_modified_by"`
 }
 
-type DefaultPermission struct {
-	ctl        *sdb.Controller
-	permission *Permission
-}
+const FlagAlwaysDeny = 1
+const FlagTypeDeny = 2
 
-func (g *DefaultPermission) CreateDBTable() error {
-	permission := &Permission{}
-	err := g.ctl.CreateTable(permission)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (g *DefaultPermission) GetPermission() interface{} {
-	return g.permission
-}
+const ForTypeUser = 1
