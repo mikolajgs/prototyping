@@ -61,7 +61,7 @@
     </div>
     <div class="logout">
       <div>
-        <button class="nobold nobtm">Signed in as {{ .Username }}</button> <button class="color nobtm" onclick="location.href='{{ .URI }}r/logout/';">Logout</button>
+        <button class="nobold nobtm">Signed in as {{ if ne .Username "" }}{{ .Username }}{{ else }}{{ .UserID }}{{ end }}</button> <button class="color nobtm" onclick="location.href='{{ .URI }}r/logout/';">Logout</button>
       </div>
     </div>
   </div>

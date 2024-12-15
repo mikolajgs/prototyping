@@ -18,9 +18,8 @@ const dbDSN = "host=localhost user=protouser password=protopass port=54320 dbnam
 func main() {
 	p, err := prototyping.NewPrototype(
 		prototyping.Config{
-			DatabaseDSN:        dbDSN,
-			UserConstructor:    func() interface{} { return &User{} },
-			SessionConstructor: func() interface{} { return &Session{} },
+			DatabaseDSN:     dbDSN,
+			UserConstructor: func() interface{} { return &User{} },
 		},
 		func() interface{} { return &Item{} },
 		func() interface{} { return &ItemGroup{} },

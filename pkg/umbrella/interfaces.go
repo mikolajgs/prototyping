@@ -22,21 +22,3 @@ type UserInterface interface {
 
 	GetUser() interface{}
 }
-
-type SessionInterface interface {
-	CreateDBTable() error
-
-	GetKey() string
-	SetKey(string)
-	GetExpiresAt() int64
-	SetExpiresAt(int64)
-	GetUserID() int64
-	SetUserID(int64)
-	GetFlags() int64
-	SetFlags(int64)
-
-	Save() error
-	GetByKey(string) (bool, error)
-
-	GetSession() interface{}
-}

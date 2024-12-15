@@ -19,6 +19,10 @@ type User struct {
 	LastModifiedBy     int64  `json:"last_modified_by"`
 }
 
+const FlagUserActive = 1
+const FlagUserEmailConfirmed = 2
+const FlagUserAllowLogin = 4
+
 // DefaultUserModel is default implementation of UserInterface using struct-db-postgres package
 type DefaultUser struct {
 	ctl  *sdb.Controller

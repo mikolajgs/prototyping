@@ -18,19 +18,18 @@ import (
 )
 
 type Prototype struct {
-	dbDSN                      string
-	dbTablePrefix              string
-	uriAPI                     string
-	uriUI                      string
-	uriUmbrella                string
-	port                       string
-	constructors               []func() interface{}
-	db                         *sql.DB
-	apiCtl                     restapi.Controller
-	uiCtl                      ui.Controller
-	umbrella                   umbrella.Umbrella
-	umbrellaUserConstructor    func() interface{}
-	umbrellaSessionConstructor func() interface{}
+	dbDSN                   string
+	dbTablePrefix           string
+	uriAPI                  string
+	uriUI                   string
+	uriUmbrella             string
+	port                    string
+	constructors            []func() interface{}
+	db                      *sql.DB
+	apiCtl                  restapi.Controller
+	uiCtl                   ui.Controller
+	umbrella                umbrella.Umbrella
+	umbrellaUserConstructor func() interface{}
 }
 
 func (p *Prototype) CreateDB() error {
@@ -40,6 +39,16 @@ func (p *Prototype) CreateDB() error {
 	}
 
 	stDB := stdb.NewController(db, p.dbTablePrefix, nil)
+
+	// Append umbrella structs
+	if p.umbrellaUserConstructor != nil {
+		p.constructors = append(p.constructors, p.umbrellaUserConstructor)
+	} else {
+		p.constructors = append(p.constructors, func() interface{} { return &umbrella.User{} })
+	}
+	p.constructors = append(p.constructors, func() interface{} { return &umbrella.Session{} })
+	p.constructors = append(p.constructors, func() interface{} { return &umbrella.Permission{} })
+
 	for _, f := range p.constructors {
 		o := f()
 		err := stDB.CreateTable(o)
@@ -48,9 +57,9 @@ func (p *Prototype) CreateDB() error {
 		}
 	}
 
-	noDefaultConstructors := false
-	if p.umbrellaUserConstructor != nil || p.umbrellaSessionConstructor != nil {
-		noDefaultConstructors = true
+	noUserConstructor := false
+	if p.umbrellaUserConstructor != nil {
+		noUserConstructor = true
 	}
 
 	p.umbrella = *umbrella.NewUmbrella(db, p.dbTablePrefix, &umbrella.JWTConfig{
@@ -58,11 +67,13 @@ func (p *Prototype) CreateDB() error {
 		Issuer:            "prototyping.gasior.dev",
 		ExpirationMinutes: 5,
 	}, &umbrella.UmbrellaConfig{
-		TagName:               "ui",
-		NoDefaultConstructors: noDefaultConstructors,
+		TagName:           "ui",
+		NoUserConstructor: noUserConstructor,
+		StructDB:          stDB,
 	})
 
-	if p.umbrellaUserConstructor != nil || p.umbrellaSessionConstructor != nil {
+	if p.umbrellaUserConstructor != nil {
+		// This is purelly for user creation
 		p.umbrella.Interfaces = &umbrella.Interfaces{
 			User: func() umbrella.UserInterface {
 				return &defaultUser{
@@ -71,18 +82,6 @@ func (p *Prototype) CreateDB() error {
 					constructor: func() UserInterface { return p.umbrellaUserConstructor().(UserInterface) },
 				}
 			},
-			Session: func() umbrella.SessionInterface {
-				return &defaultSession{
-					ctl:         stDB,
-					session:     p.umbrellaSessionConstructor().(SessionInterface),
-					constructor: func() SessionInterface { return p.umbrellaSessionConstructor().(SessionInterface) },
-				}
-			},
-		}
-	} else {
-		errUmb := p.umbrella.CreateDBTables()
-		if errUmb != nil {
-			return fmt.Errorf("error with creating umbrella db: %w", errUmb.Unwrap())
 		}
 	}
 
@@ -95,6 +94,19 @@ func (p *Prototype) CreateDB() error {
 	errUmb = p.umbrella.ConfirmEmail(key)
 	if errUmb != nil {
 		return fmt.Errorf("error with confirming admin email: %w", errUmb.Unwrap())
+	}
+
+	adminPerm := &umbrella.Permission{
+		Flags:   umbrella.FlagTypeAllow,
+		ForType: umbrella.ForTypeUser,
+		ForItem: 1, // admin's userid
+		Ops:     umbrella.OpsCreate | umbrella.OpsRead | umbrella.OpsUpdate | umbrella.OpsDelete | umbrella.OpsList,
+		ToType:  "all",
+		ToItem:  0,
+	}
+	errPerm := stDB.Save(adminPerm, stdb.SaveOptions{})
+	if errPerm != nil {
+		return fmt.Errorf("error with confirming admin email: %w", errPerm.Unwrap())
 	}
 
 	db.Close()
@@ -111,9 +123,9 @@ func (p *Prototype) Run() error {
 		p.db = db
 	}
 
-	noDefaultConstructors := false
-	if p.umbrellaUserConstructor != nil || p.umbrellaSessionConstructor != nil {
-		noDefaultConstructors = true
+	noUserConstructor := false
+	if p.umbrellaUserConstructor != nil {
+		noUserConstructor = true
 	}
 
 	p.umbrella = *umbrella.NewUmbrella(p.db, p.dbTablePrefix, &umbrella.JWTConfig{
@@ -121,8 +133,9 @@ func (p *Prototype) Run() error {
 		Issuer:            "prototyping.gasior.dev",
 		ExpirationMinutes: 15,
 	}, &umbrella.UmbrellaConfig{
-		TagName:               "2db",
-		NoDefaultConstructors: noDefaultConstructors,
+		TagName:           "2db",
+		NoUserConstructor: noUserConstructor,
+		StructDB:          p.uiCtl.GetStruct2DB(),
 	})
 	p.uiCtl = *ui.NewController(p.db, p.dbTablePrefix, &ui.ControllerConfig{
 		PasswordGenerator: func(pass string) string {
@@ -143,20 +156,13 @@ func (p *Prototype) Run() error {
 		},
 	})
 
-	if p.umbrellaUserConstructor != nil || p.umbrellaSessionConstructor != nil {
+	if p.umbrellaUserConstructor != nil {
 		p.umbrella.Interfaces = &umbrella.Interfaces{
 			User: func() umbrella.UserInterface {
 				return &defaultUser{
 					ctl:         p.uiCtl.GetStruct2DB(),
 					user:        p.umbrellaUserConstructor().(UserInterface),
 					constructor: func() UserInterface { return p.umbrellaUserConstructor().(UserInterface) },
-				}
-			},
-			Session: func() umbrella.SessionInterface {
-				return &defaultSession{
-					ctl:         p.uiCtl.GetStruct2DB(),
-					session:     p.umbrellaSessionConstructor().(SessionInterface),
-					constructor: func() SessionInterface { return p.umbrellaSessionConstructor().(SessionInterface) },
 				}
 			},
 		}
@@ -227,8 +233,13 @@ func (p *Prototype) wrapHandlerWithUmbrella(h http.Handler, redirectNotLogged st
 			user := p.umbrella.Interfaces.User()
 			found, _ := user.GetByID(userId)
 			if found {
-				ctx := context.WithValue(r.Context(), "LoggedUserName", user.GetExtraField("name"))
-				req := r.WithContext(ctx)
+				ctx := context.WithValue(r.Context(), ui.ContextValue("LoggedUserName"), user.GetExtraField("name"))
+
+				allowedTypes, _ := p.umbrella.GetUserTypesList(userId)
+				ctx2 := context.WithValue(ctx, ui.ContextValue("PermTypesList"), allowedTypes)
+
+				req := r.WithContext(ctx2)
+
 				h.ServeHTTP(w, req)
 				return
 			}
@@ -260,12 +271,7 @@ func NewPrototype(cfg Config, constructors ...func() interface{}) (*Prototype, e
 	p.port = "9001"
 
 	if cfg.UserConstructor != nil {
-		p.constructors = append(p.constructors, cfg.UserConstructor)
 		p.umbrellaUserConstructor = cfg.UserConstructor
-	}
-	if cfg.SessionConstructor != nil {
-		p.constructors = append(p.constructors, cfg.SessionConstructor)
-		p.umbrellaSessionConstructor = cfg.SessionConstructor
 	}
 
 	return p, nil

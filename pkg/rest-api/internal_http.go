@@ -13,6 +13,7 @@ import (
 	"time"
 
 	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
+	"github.com/mikolajgs/prototyping/pkg/umbrella"
 )
 
 func (c Controller) handleHTTPPut(w http.ResponseWriter, r *http.Request, newObjFunc func() interface{}, id string) {
@@ -77,7 +78,7 @@ func (c Controller) handleHTTPPut(w http.ResponseWriter, r *http.Request, newObj
 	}
 
 	opts := stdb.SaveOptions{}
-	userId := r.Context().Value("UmbrellaUserID")
+	userId := r.Context().Value(umbrella.UmbrellaContextValue("UmbrellaUserID"))
 	rk := reflect.ValueOf(userId).Kind()
 	if rk == reflect.Int64 && userId.(int64) != 0 {
 		opts.ModifiedBy = userId.(int64)
