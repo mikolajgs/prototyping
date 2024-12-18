@@ -16,6 +16,7 @@ import (
 
 	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
 	stsql "github.com/mikolajgs/prototyping/pkg/struct-sql-postgres"
+	"github.com/mikolajgs/prototyping/pkg/umbrella"
 )
 
 type structItemsTplObj struct {
@@ -61,6 +62,19 @@ func (c *Controller) tryGetStructItems(w http.ResponseWriter, r *http.Request, u
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		return true
+	}
+
+	// check access
+	allowedTypes := r.Context().Value(ContextValue(fmt.Sprintf("AllowedTypes_%d", umbrella.OpsRead)))
+	if allowedTypes != nil {
+		v, ok := allowedTypes.(map[string]bool)[structName]
+		if !ok || !v {
+			v2, ok2 := allowedTypes.(map[string]bool)["all"]
+			if !ok2 || !v2 {
+				w.WriteHeader(http.StatusForbidden)
+				return true
+			}
+		}
 	}
 
 	page := r.FormValue("page")

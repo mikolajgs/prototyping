@@ -85,6 +85,7 @@ func (p *Prototype) CreateDB() error {
 		}
 	}
 
+	// create admin user
 	key, errUmb := p.umbrella.CreateUser("admin@example.com", "admin", map[string]string{
 		"Name": "admin",
 	})
@@ -105,6 +106,61 @@ func (p *Prototype) CreateDB() error {
 		ToItem:  0,
 	}
 	errPerm := stDB.Save(adminPerm, stdb.SaveOptions{})
+	if errPerm != nil {
+		return fmt.Errorf("error with confirming admin email: %w", errPerm.Unwrap())
+	}
+
+	// just temporarily
+	// create normal user
+	key, errUmb = p.umbrella.CreateUser("user@example.com", "user", map[string]string{
+		"Name": "user",
+	})
+	if errUmb != nil {
+		return fmt.Errorf("error with creating user: %w", errUmb.Unwrap())
+	}
+	errUmb = p.umbrella.ConfirmEmail(key)
+	if errUmb != nil {
+		return fmt.Errorf("error with confirming user email: %w", errUmb.Unwrap())
+	}
+
+	// permission to list users only
+	userPerm := &umbrella.Permission{
+		Flags:   umbrella.FlagTypeAllow,
+		ForType: umbrella.ForTypeUser,
+		ForItem: 2, // normal user's userid
+		Ops:     umbrella.OpsList,
+		ToType:  "User",
+		ToItem:  0,
+	}
+	errPerm = stDB.Save(userPerm, stdb.SaveOptions{})
+	if errPerm != nil {
+		return fmt.Errorf("error with confirming admin email: %w", errPerm.Unwrap())
+	}
+
+	// permission to read and list item groups
+	userPerm = &umbrella.Permission{
+		Flags:   umbrella.FlagTypeAllow,
+		ForType: umbrella.ForTypeUser,
+		ForItem: 2, // normal user's userid
+		Ops:     umbrella.OpsList | umbrella.OpsRead,
+		ToType:  "ItemGroup",
+		ToItem:  0,
+	}
+	errPerm = stDB.Save(userPerm, stdb.SaveOptions{})
+	if errPerm != nil {
+		return fmt.Errorf("error with confirming admin email: %w", errPerm.Unwrap())
+	}
+
+	// permission to create items
+	userPerm = &umbrella.Permission{
+		Flags:   umbrella.FlagTypeAllow,
+		ForType: umbrella.ForTypeUser,
+		ForItem: 2, // normal user's userid
+		Ops:     umbrella.OpsList | umbrella.OpsRead | umbrella.OpsCreate,
+		ToType:  "Item",
+		ToItem:  0,
+	}
+	errPerm = stDB.Save(userPerm, stdb.SaveOptions{})
 	if errPerm != nil {
 		return fmt.Errorf("error with confirming admin email: %w", errPerm.Unwrap())
 	}
@@ -235,10 +291,12 @@ func (p *Prototype) wrapHandlerWithUmbrella(h http.Handler, redirectNotLogged st
 			if found {
 				ctx := context.WithValue(r.Context(), ui.ContextValue("LoggedUserName"), user.GetExtraField("name"))
 
-				allowedTypes, _ := p.umbrella.GetUserTypesList(userId)
-				ctx2 := context.WithValue(ctx, ui.ContextValue("PermTypesList"), allowedTypes)
+				for _, o := range []int{umbrella.OpsList, umbrella.OpsRead, umbrella.OpsCreate, umbrella.OpsUpdate, umbrella.OpsDelete} {
+					allowedTypes, _ := p.umbrella.GetUserOperationAllowedTypes(userId, o)
+					ctx = context.WithValue(ctx, ui.ContextValue(fmt.Sprintf("AllowedTypes_%d", o)), allowedTypes)
+				}
 
-				req := r.WithContext(ctx2)
+				req := r.WithContext(ctx)
 
 				h.ServeHTTP(w, req)
 				return

@@ -12,7 +12,7 @@ test: ## Runs tests
 run-sample-app: ## Runs sample app
 	docker rm -f sample-app-db
 	docker run --name sample-app-db -d -e POSTGRES_PASSWORD=protopass -e POSTGRES_USER=protouser -e POSTGRES_DB=protodb -p 54320:5432 postgres:13
-	sleep 5
+	sleep 20
 	cd cmd/sample_app && go build .
 	cd cmd/sample_app && ./sample_app
 
