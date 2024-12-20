@@ -2,6 +2,9 @@ package restapi
 
 import (
 	"net/http"
+
+	stsql "github.com/mikolajgs/prototyping/pkg/struct-sql-postgres"
+	"github.com/mikolajgs/prototyping/pkg/umbrella"
 )
 
 type HandlerOptions struct {
@@ -34,7 +37,16 @@ func (c Controller) Handler(uri string, constructor func() interface{}, options 
 		if !b {
 			return
 		}
+
+		structName := stsql.GetStructName(constructor())
+
 		if r.Method == http.MethodPut && id == "" && (options.Operations == OpAll || options.Operations&OpCreate > 0) {
+			// check access
+			if !c.isStructOperationAllowed(r, structName, umbrella.OpsCreate) {
+				c.writeErrText(w, http.StatusForbidden, "access_denied")
+				return
+			}
+
 			if options.CreateConstructor != nil {
 				c.handleHTTPPut(w, r, options.CreateConstructor, id)
 			} else {
@@ -43,6 +55,12 @@ func (c Controller) Handler(uri string, constructor func() interface{}, options 
 			return
 		}
 		if r.Method == http.MethodPut && id != "" && (options.Operations == OpAll || options.Operations&OpUpdate > 0) {
+			// check access
+			if !c.isStructOperationAllowed(r, structName, umbrella.OpsUpdate) {
+				c.writeErrText(w, http.StatusForbidden, "access_denied")
+				return
+			}
+
 			if options.UpdateConstructor != nil {
 				c.handleHTTPPut(w, r, options.UpdateConstructor, id)
 			} else {
@@ -52,6 +70,12 @@ func (c Controller) Handler(uri string, constructor func() interface{}, options 
 		}
 
 		if r.Method == http.MethodGet && id != "" && (options.Operations == OpAll || options.Operations&OpRead > 0) {
+			// check access
+			if !c.isStructOperationAllowed(r, structName, umbrella.OpsRead) {
+				c.writeErrText(w, http.StatusForbidden, "access_denied")
+				return
+			}
+
 			if options.ReadConstructor != nil {
 				c.handleHTTPGet(w, r, options.ReadConstructor, id)
 			} else {
@@ -60,6 +84,12 @@ func (c Controller) Handler(uri string, constructor func() interface{}, options 
 			return
 		}
 		if r.Method == http.MethodGet && id == "" && (options.Operations == OpAll || options.Operations&OpList > 0) {
+			// check access
+			if !c.isStructOperationAllowed(r, structName, umbrella.OpsRead) {
+				c.writeErrText(w, http.StatusForbidden, "access_denied")
+				return
+			}
+
 			if options.ListConstructor != nil {
 				c.handleHTTPGet(w, r, options.ListConstructor, id)
 			} else {
@@ -68,6 +98,12 @@ func (c Controller) Handler(uri string, constructor func() interface{}, options 
 			return
 		}
 		if r.Method == http.MethodDelete && id != "" && (options.Operations == OpAll || options.Operations&OpDelete > 0) {
+			// check access
+			if !c.isStructOperationAllowed(r, structName, umbrella.OpsDelete) {
+				c.writeErrText(w, http.StatusForbidden, "access_denied")
+				return
+			}
+
 			c.handleHTTPDelete(w, r, constructor, id)
 			return
 		}

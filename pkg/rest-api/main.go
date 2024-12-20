@@ -19,6 +19,8 @@ type ControllerConfig struct {
 	PasswordGenerator func(string) string
 }
 
+type ContextValue string
+
 // NewController returns new Controller object
 func NewController(dbConn *sql.DB, tblPrefix string, cfg *ControllerConfig) *Controller {
 	c := &Controller{}

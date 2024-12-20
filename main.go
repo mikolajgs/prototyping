@@ -32,6 +32,9 @@ type Prototype struct {
 	umbrellaUserConstructor func() interface{}
 }
 
+const uriUI = 1
+const uriAPI = 2
+
 func (p *Prototype) CreateDB() error {
 	db, err := sql.Open("postgres", p.dbDSN)
 	if err != nil {
@@ -109,62 +112,6 @@ func (p *Prototype) CreateDB() error {
 	if errPerm != nil {
 		return fmt.Errorf("error with confirming admin email: %w", errPerm.Unwrap())
 	}
-
-	/* TODO: remove me later
-	// just temporarily
-	// create normal user
-	key, errUmb = p.umbrella.CreateUser("user@example.com", "user", map[string]string{
-		"Name": "user",
-	})
-	if errUmb != nil {
-		return fmt.Errorf("error with creating user: %w", errUmb.Unwrap())
-	}
-	errUmb = p.umbrella.ConfirmEmail(key)
-	if errUmb != nil {
-		return fmt.Errorf("error with confirming user email: %w", errUmb.Unwrap())
-	}
-
-	// permission to list users only
-	userPerm := &umbrella.Permission{
-		Flags:   umbrella.FlagTypeAllow,
-		ForType: umbrella.ForTypeUser,
-		ForItem: 2, // normal user's userid
-		Ops:     umbrella.OpsList,
-		ToType:  "User",
-		ToItem:  0,
-	}
-	errPerm = stDB.Save(userPerm, stdb.SaveOptions{})
-	if errPerm != nil {
-		return fmt.Errorf("error with confirming admin email: %w", errPerm.Unwrap())
-	}
-
-	// permission to read and list item groups
-	userPerm = &umbrella.Permission{
-		Flags:   umbrella.FlagTypeAllow,
-		ForType: umbrella.ForTypeUser,
-		ForItem: 2, // normal user's userid
-		Ops:     umbrella.OpsList | umbrella.OpsRead | umbrella.OpsUpdate,
-		ToType:  "ItemGroup",
-		ToItem:  0,
-	}
-	errPerm = stDB.Save(userPerm, stdb.SaveOptions{})
-	if errPerm != nil {
-		return fmt.Errorf("error with confirming admin email: %w", errPerm.Unwrap())
-	}
-
-	// permission to create items
-	userPerm = &umbrella.Permission{
-		Flags:   umbrella.FlagTypeAllow,
-		ForType: umbrella.ForTypeUser,
-		ForItem: 2, // normal user's userid
-		Ops:     umbrella.OpsList | umbrella.OpsRead | umbrella.OpsCreate,
-		ToType:  "Item",
-		ToItem:  0,
-	}
-	errPerm = stDB.Save(userPerm, stdb.SaveOptions{})
-	if errPerm != nil {
-		return fmt.Errorf("error with confirming admin email: %w", errPerm.Unwrap())
-	}*/
 
 	db.Close()
 
@@ -252,6 +199,7 @@ func (p *Prototype) Run() error {
 
 	// /ui/ behind umbrella
 	http.Handle(p.uriUI, p.umbrella.GetHTTPHandlerWrapper(p.wrapHandlerWithUmbrella(
+		uriUI,
 		p.uiCtl.Handler(
 			p.uriUI,
 			p.constructors...,
@@ -267,6 +215,7 @@ func (p *Prototype) Run() error {
 		http.Handle(
 			fmt.Sprintf("%s%s/", p.uriAPI, s),
 			p.umbrella.GetHTTPHandlerWrapper(p.wrapHandlerWithUmbrella(
+				uriAPI,
 				p.apiCtl.Handler(
 					fmt.Sprintf("%s%s/", p.uriAPI, s),
 					f,
@@ -282,7 +231,7 @@ func (p *Prototype) Run() error {
 	return nil
 }
 
-func (p *Prototype) wrapHandlerWithUmbrella(h http.Handler, redirectNotLogged string) http.Handler {
+func (p *Prototype) wrapHandlerWithUmbrella(uriType int, h http.Handler, redirectNotLogged string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userId := umbrella.GetUserIDFromRequest(r)
 
@@ -290,11 +239,20 @@ func (p *Prototype) wrapHandlerWithUmbrella(h http.Handler, redirectNotLogged st
 			user := p.umbrella.Interfaces.User()
 			found, _ := user.GetByID(userId)
 			if found {
-				ctx := context.WithValue(r.Context(), ui.ContextValue("LoggedUserName"), user.GetExtraField("name"))
+				var ctx context.Context
+				if uriType == uriUI {
+					ctx = context.WithValue(r.Context(), ui.ContextValue("LoggedUserName"), user.GetExtraField("name"))
+				} else {
+					ctx = context.WithValue(r.Context(), restapi.ContextValue("LoggedUserName"), user.GetExtraField("name"))
+				}
 
 				for _, o := range []int{umbrella.OpsList, umbrella.OpsRead, umbrella.OpsCreate, umbrella.OpsUpdate, umbrella.OpsDelete} {
 					allowedTypes, _ := p.umbrella.GetUserOperationAllowedTypes(userId, o)
-					ctx = context.WithValue(ctx, ui.ContextValue(fmt.Sprintf("AllowedTypes_%d", o)), allowedTypes)
+					if uriType == uriUI {
+						ctx = context.WithValue(ctx, ui.ContextValue(fmt.Sprintf("AllowedTypes_%d", o)), allowedTypes)
+					} else {
+						ctx = context.WithValue(ctx, restapi.ContextValue(fmt.Sprintf("AllowedTypes_%d", o)), allowedTypes)
+					}
 				}
 
 				req := r.WithContext(ctx)
