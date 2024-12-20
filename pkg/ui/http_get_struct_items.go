@@ -16,6 +16,7 @@ import (
 
 	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
 	stsql "github.com/mikolajgs/prototyping/pkg/struct-sql-postgres"
+	"github.com/mikolajgs/prototyping/pkg/umbrella"
 )
 
 type structItemsTplObj struct {
@@ -31,6 +32,9 @@ type structItemsTplObj struct {
 	ParamFiltersEscaped   map[string]string
 	ParamOrder            string
 	ParamOrderDirection   string
+	CanCreate             bool
+	CanUpdate             bool
+	CanDelete             bool
 }
 
 type structItemsParams struct {
@@ -61,6 +65,24 @@ func (c *Controller) tryGetStructItems(w http.ResponseWriter, r *http.Request, u
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		return true
+	}
+
+	canCreate := true
+	canUpdate := true
+	canDelete := true
+	// check access
+	if !c.isStructOperationAllowed(r, structName, umbrella.OpsRead) {
+		w.WriteHeader(http.StatusForbidden)
+		return true
+	}
+	if !c.isStructOperationAllowed(r, structName, umbrella.OpsCreate) {
+		canCreate = false
+	}
+	if !c.isStructOperationAllowed(r, structName, umbrella.OpsUpdate) {
+		canUpdate = false
+	}
+	if !c.isStructOperationAllowed(r, structName, umbrella.OpsDelete) {
+		canDelete = false
 	}
 
 	page := r.FormValue("page")
@@ -115,7 +137,7 @@ func (c *Controller) tryGetStructItems(w http.ResponseWriter, r *http.Request, u
 		OrderDirection: orderDirection,
 		FiltersForDB:   filtersForDB,
 		FiltersForUI:   filtersForUI,
-	})
+	}, canCreate, canUpdate, canDelete)
 	return true
 }
 
@@ -180,8 +202,8 @@ func (c *Controller) tryStructItems(w http.ResponseWriter, r *http.Request, uri 
 	return true
 }
 
-func (c *Controller) renderStructItems(w http.ResponseWriter, r *http.Request, uri string, objFunc func() interface{}, params structItemsParams) {
-	tpl, err := c.getStructItemsHTML(uri, objFunc, params)
+func (c *Controller) renderStructItems(w http.ResponseWriter, r *http.Request, uri string, objFunc func() interface{}, params structItemsParams, canCreate bool, canUpdate bool, canDelete bool) {
+	tpl, err := c.getStructItemsHTML(uri, objFunc, params, canCreate, canUpdate, canDelete)
 	if err != nil {
 		log.Print(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
@@ -191,13 +213,13 @@ func (c *Controller) renderStructItems(w http.ResponseWriter, r *http.Request, u
 	w.Write([]byte(tpl))
 }
 
-func (c *Controller) getStructItemsHTML(uri string, objFunc func() interface{}, params structItemsParams) (string, error) {
+func (c *Controller) getStructItemsHTML(uri string, objFunc func() interface{}, params structItemsParams, canCreate bool, canUpdate bool, canDelete bool) (string, error) {
 	structItemsTpl, err := embed.FS.ReadFile(htmlDir, "html/struct_items.html")
 	if err != nil {
 		return "", fmt.Errorf("error reading struct items template from embed: %w", err)
 	}
 
-	tplObj, err := c.getStructItemsTplObj(uri, objFunc, params)
+	tplObj, err := c.getStructItemsTplObj(uri, objFunc, params, canCreate, canUpdate, canDelete)
 	if err != nil {
 		return "", fmt.Errorf("error getting struct items for html: %w", err)
 	}
@@ -216,7 +238,7 @@ func (c *Controller) getStructItemsHTML(uri string, objFunc func() interface{}, 
 	return buf.String(), nil
 }
 
-func (c *Controller) getStructItemsTplObj(uri string, objFunc func() interface{}, params structItemsParams) (*structItemsTplObj, error) {
+func (c *Controller) getStructItemsTplObj(uri string, objFunc func() interface{}, params structItemsParams, canCreate bool, canUpdate bool, canDelete bool) (*structItemsTplObj, error) {
 	o := objFunc()
 
 	getPage, getLimit, getOffset := c.getPageLimitOffset(params.Page, params.Limit)
@@ -297,6 +319,9 @@ func (c *Controller) getStructItemsTplObj(uri string, objFunc func() interface{}
 		ParamOrder:          params.Order,
 		ParamOrderDirection: params.OrderDirection,
 		ParamFiltersEscaped: params.FiltersForUI,
+		CanCreate:           canCreate,
+		CanUpdate:           canUpdate,
+		CanDelete:           canDelete,
 	}
 
 	return its, nil

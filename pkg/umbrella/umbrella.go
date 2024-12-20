@@ -339,26 +339,27 @@ func (u Umbrella) ConfirmEmail(key string) *ErrUmbrella {
 	return nil
 }
 
-func (u Umbrella) GetUserTypesList(i int64) ([]string, error) {
+func (u Umbrella) GetUserOperationAllowedTypes(i int64, o int) (map[string]bool, error) {
 	perms, err := u.structDB.Get(func() interface{} { return &Permission{} }, sdb.GetOptions{
 		Order:  []string{"Flags", "ASC"},
 		Limit:  30,
 		Offset: 0,
 		Filters: map[string]interface{}{
 			"_raw": []interface{}{
-				"(.ForType=? OR (.ForType=? AND .ForItem=?))",
+				"(.ForType=? OR (.ForType=? AND .ForItem=?)) AND .Ops&?>0",
 				ForTypeEveryone,
 				ForTypeUser,
 				i,
+				o,
 			},
 			"_rawConjuction": sdb.RawConjuctionOR,
 		},
 	})
 	if err != nil {
-		return []string{}, err
+		return map[string]bool{}, err
 	}
 
-	types := []string{}
+	types := map[string]bool{}
 	for _, v := range perms {
 		p := v.(*Permission)
 		// only allow flags for now
@@ -369,12 +370,8 @@ func (u Umbrella) GetUserTypesList(i int64) ([]string, error) {
 		if !(p.ForType == ForTypeEveryone || (p.ForType == ForTypeUser && p.ForItem == i)) {
 			continue
 		}
-		// ops list
-		if p.Ops&OpsList == 0 {
-			continue
-		}
 
-		types = append(types, p.ToType)
+		types[p.ToType] = true
 	}
 
 	return types, nil

@@ -26,7 +26,7 @@ func (c *Controller) renderMain(w http.ResponseWriter, r *http.Request, uri stri
 
 	indexTpl, _ := embed.FS.ReadFile(htmlDir, "html/index.html")
 
-	structListTpl, err := c.getStructListHTML(uri, objFuncs...)
+	structListTpl, err := c.getStructListHTML(uri, r, objFuncs...)
 	if err != nil {
 		log.Print(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)

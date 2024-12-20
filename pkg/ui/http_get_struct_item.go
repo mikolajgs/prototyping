@@ -10,6 +10,7 @@ import (
 	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
 	sthtml "github.com/mikolajgs/prototyping/pkg/struct-html"
 	stsql "github.com/mikolajgs/prototyping/pkg/struct-sql-postgres"
+	"github.com/mikolajgs/prototyping/pkg/umbrella"
 	validator "github.com/mikolajgs/struct-validator"
 
 	"net/http"
@@ -25,6 +26,7 @@ type structItemTplObj struct {
 	MsgHTML    string
 	OnlyMsg    bool
 	ID         string
+	ReadOnly   bool
 }
 
 func (c *Controller) tryGetStructItem(w http.ResponseWriter, r *http.Request, uri string) bool {
@@ -41,8 +43,25 @@ func (c *Controller) tryGetStructItem(w http.ResponseWriter, r *http.Request, ur
 		return true
 	}
 
+	// check access
+	readOnly := false
+	if id != "" {
+		if !c.isStructOperationAllowed(r, structName, umbrella.OpsRead) {
+			w.WriteHeader(http.StatusForbidden)
+			return true
+		}
+		if !c.isStructOperationAllowed(r, structName, umbrella.OpsUpdate) {
+			readOnly = true
+		}
+	} else {
+		if !c.isStructOperationAllowed(r, structName, umbrella.OpsCreate) {
+			w.WriteHeader(http.StatusForbidden)
+			return true
+		}
+	}
+
 	// Render the page
-	c.renderStructItem(w, r, uri, c.uriStructNameFunc[uri][structName], id, map[string]string{}, 0, "")
+	c.renderStructItem(w, r, uri, c.uriStructNameFunc[uri][structName], id, map[string]string{}, 0, "", readOnly)
 
 	return true
 }
@@ -68,6 +87,27 @@ func (c *Controller) tryStructItem(w http.ResponseWriter, r *http.Request, uri s
 	if r.Method == http.MethodDelete && id == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return true
+	}
+
+	// check access for delete
+	if r.Method == http.MethodDelete {
+		if !c.isStructOperationAllowed(r, structName, umbrella.OpsDelete) {
+			w.WriteHeader(http.StatusForbidden)
+			return true
+		}
+	}
+
+	// check access for either create or update
+	if id != "" {
+		if !c.isStructOperationAllowed(r, structName, umbrella.OpsUpdate) {
+			w.WriteHeader(http.StatusForbidden)
+			return true
+		}
+	} else {
+		if !c.isStructOperationAllowed(r, structName, umbrella.OpsCreate) {
+			w.WriteHeader(http.StatusForbidden)
+			return true
+		}
 	}
 
 	obj := c.uriStructNameFunc[uri][structName]()
@@ -192,19 +232,19 @@ func (c *Controller) tryStructItem(w http.ResponseWriter, r *http.Request, uri s
 		for k := range failedFields {
 			invVals = append(invVals, k)
 		}
-		c.renderStructItem(w, r, uri, c.uriStructNameFunc[uri][structName], id, postValues, MsgFailure, fmt.Sprintf("The following fields have invalid values: %s", strings.Join(invVals, ",")))
+		c.renderStructItem(w, r, uri, c.uriStructNameFunc[uri][structName], id, postValues, MsgFailure, fmt.Sprintf("The following fields have invalid values: %s", strings.Join(invVals, ",")), false)
 		return true
 	}
 
 	err2 := c.struct2db.Save(obj, stdb.SaveOptions{})
 	if err2 != nil {
-		c.renderStructItem(w, r, uri, c.uriStructNameFunc[uri][structName], id, postValues, MsgFailure, fmt.Sprintf("Problem with saving: %s", err2.Unwrap().Error()))
+		c.renderStructItem(w, r, uri, c.uriStructNameFunc[uri][structName], id, postValues, MsgFailure, fmt.Sprintf("Problem with saving: %s", err2.Unwrap().Error()), false)
 		return true
 	}
 
 	// Update
 	if id != "" {
-		c.renderStructItem(w, r, uri, c.uriStructNameFunc[uri][structName], id, postValues, MsgSuccess, fmt.Sprintf("%s item has been successfully updated.", structName))
+		c.renderStructItem(w, r, uri, c.uriStructNameFunc[uri][structName], id, postValues, MsgSuccess, fmt.Sprintf("%s item has been successfully updated.", structName), false)
 		return true
 	}
 
@@ -213,8 +253,8 @@ func (c *Controller) tryStructItem(w http.ResponseWriter, r *http.Request, uri s
 	return true
 }
 
-func (c *Controller) renderStructItem(w http.ResponseWriter, r *http.Request, uri string, objFunc func() interface{}, id string, postValues map[string]string, msgType int, msg string) {
-	tpl, err := c.getStructItemHTML(uri, objFunc, id, postValues, msgType, msg)
+func (c *Controller) renderStructItem(w http.ResponseWriter, r *http.Request, uri string, objFunc func() interface{}, id string, postValues map[string]string, msgType int, msg string, readOnly bool) {
+	tpl, err := c.getStructItemHTML(uri, objFunc, id, postValues, msgType, msg, readOnly)
 	if err != nil {
 		log.Print(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
@@ -224,13 +264,13 @@ func (c *Controller) renderStructItem(w http.ResponseWriter, r *http.Request, ur
 	w.Write([]byte(tpl))
 }
 
-func (c *Controller) getStructItemHTML(uri string, objFunc func() interface{}, id string, postValues map[string]string, msgType int, msg string) (string, error) {
+func (c *Controller) getStructItemHTML(uri string, objFunc func() interface{}, id string, postValues map[string]string, msgType int, msg string, readOnly bool) (string, error) {
 	structItemTpl, err := embed.FS.ReadFile(htmlDir, "html/struct_item.html")
 	if err != nil {
 		return "", fmt.Errorf("error reading struct item template from embed: %w", err)
 	}
 
-	tplObj, err := c.getStructItemTplObj(uri, objFunc, id, postValues, msgType, msg)
+	tplObj, err := c.getStructItemTplObj(uri, objFunc, id, postValues, msgType, msg, readOnly)
 	if err != nil {
 		return "", fmt.Errorf("error getting struct item for html: %w", err)
 	}
@@ -245,7 +285,7 @@ func (c *Controller) getStructItemHTML(uri string, objFunc func() interface{}, i
 	return buf.String(), nil
 }
 
-func (c *Controller) getStructItemTplObj(uri string, objFunc func() interface{}, id string, postValues map[string]string, msgType int, msg string) (*structItemTplObj, error) {
+func (c *Controller) getStructItemTplObj(uri string, objFunc func() interface{}, id string, postValues map[string]string, msgType int, msg string, readOnly bool) (*structItemTplObj, error) {
 	o := objFunc()
 
 	if id != "" {
@@ -272,6 +312,7 @@ func (c *Controller) getStructItemTplObj(uri string, objFunc func() interface{},
 		MsgHTML:    c.getMsgHTML(msgType, msg),
 		OnlyMsg:    onlyMsg,
 		ID:         id,
+		ReadOnly:   readOnly,
 	}
 
 	return a, nil

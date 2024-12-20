@@ -69,6 +69,8 @@ Property | Explanation
 `val` | Default value for the field. If the value is not a simple, short alphanumeric, use the `restapi_val` tag for it
 `lenmin` | If field is string, this is a minimal length of the field value
 `lenmax` | If field is string, this is a maximal length of the field value
+`password` | Field is a password, and a function that generates it can be attached (see `ControllerConfig`)
+`hidden` | Field's value will not be shown when listing item(s)
 
 
 ### Database storage
@@ -90,11 +92,18 @@ conn, _ := sql.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s
 defer conn.Close()
 
 // Create RESTAPI controller and an instance of a struct
-c := restapi.NewController(conn, "app1_")
+c := restapi.NewController(conn, "app1_", nil)
 user := &User{}
 
 err = c.CreateTable(user) // Run 'CREATE TABLE'
 ```
+
+#### ControllerConfig
+
+`restapi.&ControllerConfig{}` can be passed to a constructor. It contains the following fields:
+
+* `TagName` can be used to change the name of the tag in struct (by the default it is `restapi`)
+* `PasswordGenerator` - when a field is a `password` (see field tags above), a function can be attached, that generates the value to be put in the database
 
 ### HTTP Endpoints
 With `restapi`, HTTP endpoints can be created to manage objects stored in the database.
@@ -144,7 +153,7 @@ http.HandleFunc("/users/", c.Handler("/users/", parentFunc, HandlerOptions{
 	UpdateConstructor: updateFunc, // input fields (and JSON payload) for updating
 	ListConstructor: listFunc,     // fields to appear when listing items (and JSON output)
 }))
-http.HandleFunc("/users/password/", c.GetHTTPHandler("/users/password/", parentFunc, HandlerOptions{
+http.HandleFunc("/users/password/", c.Handler("/users/password/", parentFunc, HandlerOptions{
 	UpdateConstructor: updatePasswordFunc, // input fields for that one updating endpoint
 	Operations: OpUpdate, // only updating will be allowed
 }))

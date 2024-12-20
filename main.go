@@ -32,6 +32,9 @@ type Prototype struct {
 	umbrellaUserConstructor func() interface{}
 }
 
+const uriUI = 1
+const uriAPI = 2
+
 func (p *Prototype) CreateDB() error {
 	db, err := sql.Open("postgres", p.dbDSN)
 	if err != nil {
@@ -85,6 +88,7 @@ func (p *Prototype) CreateDB() error {
 		}
 	}
 
+	// create admin user
 	key, errUmb := p.umbrella.CreateUser("admin@example.com", "admin", map[string]string{
 		"Name": "admin",
 	})
@@ -195,6 +199,7 @@ func (p *Prototype) Run() error {
 
 	// /ui/ behind umbrella
 	http.Handle(p.uriUI, p.umbrella.GetHTTPHandlerWrapper(p.wrapHandlerWithUmbrella(
+		uriUI,
 		p.uiCtl.Handler(
 			p.uriUI,
 			p.constructors...,
@@ -210,6 +215,7 @@ func (p *Prototype) Run() error {
 		http.Handle(
 			fmt.Sprintf("%s%s/", p.uriAPI, s),
 			p.umbrella.GetHTTPHandlerWrapper(p.wrapHandlerWithUmbrella(
+				uriAPI,
 				p.apiCtl.Handler(
 					fmt.Sprintf("%s%s/", p.uriAPI, s),
 					f,
@@ -225,7 +231,7 @@ func (p *Prototype) Run() error {
 	return nil
 }
 
-func (p *Prototype) wrapHandlerWithUmbrella(h http.Handler, redirectNotLogged string) http.Handler {
+func (p *Prototype) wrapHandlerWithUmbrella(uriType int, h http.Handler, redirectNotLogged string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userId := umbrella.GetUserIDFromRequest(r)
 
@@ -233,12 +239,23 @@ func (p *Prototype) wrapHandlerWithUmbrella(h http.Handler, redirectNotLogged st
 			user := p.umbrella.Interfaces.User()
 			found, _ := user.GetByID(userId)
 			if found {
-				ctx := context.WithValue(r.Context(), ui.ContextValue("LoggedUserName"), user.GetExtraField("name"))
+				var ctx context.Context
+				if uriType == uriUI {
+					ctx = context.WithValue(r.Context(), ui.ContextValue("LoggedUserName"), user.GetExtraField("name"))
+				} else {
+					ctx = context.WithValue(r.Context(), restapi.ContextValue("LoggedUserName"), user.GetExtraField("name"))
+				}
 
-				allowedTypes, _ := p.umbrella.GetUserTypesList(userId)
-				ctx2 := context.WithValue(ctx, ui.ContextValue("PermTypesList"), allowedTypes)
+				for _, o := range []int{umbrella.OpsList, umbrella.OpsRead, umbrella.OpsCreate, umbrella.OpsUpdate, umbrella.OpsDelete} {
+					allowedTypes, _ := p.umbrella.GetUserOperationAllowedTypes(userId, o)
+					if uriType == uriUI {
+						ctx = context.WithValue(ctx, ui.ContextValue(fmt.Sprintf("AllowedTypes_%d", o)), allowedTypes)
+					} else {
+						ctx = context.WithValue(ctx, restapi.ContextValue(fmt.Sprintf("AllowedTypes_%d", o)), allowedTypes)
+					}
+				}
 
-				req := r.WithContext(ctx2)
+				req := r.WithContext(ctx)
 
 				h.ServeHTTP(w, req)
 				return

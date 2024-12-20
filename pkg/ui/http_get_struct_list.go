@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"reflect"
 	"text/template"
+
+	"github.com/mikolajgs/prototyping/pkg/umbrella"
 )
 
 type structListTplObj struct {
@@ -29,7 +31,7 @@ func (c *Controller) tryGetStructList(w http.ResponseWriter, r *http.Request, ur
 }
 
 func (c *Controller) renderStructList(w http.ResponseWriter, r *http.Request, uri string, objFuncs ...func() interface{}) {
-	tpl, err := c.getStructListHTML(uri, objFuncs...)
+	tpl, err := c.getStructListHTML(uri, r, objFuncs...)
 	if err != nil {
 		log.Print(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
@@ -39,13 +41,13 @@ func (c *Controller) renderStructList(w http.ResponseWriter, r *http.Request, ur
 	w.Write([]byte(tpl))
 }
 
-func (c *Controller) getStructListHTML(uri string, objFuncs ...func() interface{}) (string, error) {
+func (c *Controller) getStructListHTML(uri string, r *http.Request, objFuncs ...func() interface{}) (string, error) {
 	structListTpl, err := embed.FS.ReadFile(htmlDir, "html/struct_list.html")
 	if err != nil {
 		return "", fmt.Errorf("error reading struct list template from embed: %w", err)
 	}
 
-	tplObj, err := c.getStructListTplObj(uri, objFuncs...)
+	tplObj, err := c.getStructListTplObj(uri, r, objFuncs...)
 	if err != nil {
 		return "", fmt.Errorf("error getting struct list for html: %w", err)
 	}
@@ -60,17 +62,30 @@ func (c *Controller) getStructListHTML(uri string, objFuncs ...func() interface{
 	return buf.String(), nil
 }
 
-func (c *Controller) getStructListTplObj(uri string, objFuncs ...func() interface{}) (*structListTplObj, error) {
+func (c *Controller) getStructListTplObj(uri string, r *http.Request, objFuncs ...func() interface{}) (*structListTplObj, error) {
 	l := &structListTplObj{
 		URI:     uri,
 		Structs: []*structListTplObjItem{},
 	}
+
+	allowedTypes := r.Context().Value(ContextValue(fmt.Sprintf("AllowedTypes_%d", umbrella.OpsList)))
 
 	for _, objFunc := range objFuncs {
 		o := objFunc()
 		v := reflect.ValueOf(o)
 		i := reflect.Indirect(v)
 		s := i.Type()
+
+		if allowedTypes != nil {
+			v, ok := allowedTypes.(map[string]bool)[s.Name()]
+			if !ok || !v {
+				v2, ok2 := allowedTypes.(map[string]bool)["all"]
+				if !ok2 || !v2 {
+					continue
+				}
+			}
+		}
+
 		l.Structs = append(l.Structs, &structListTplObjItem{
 			Name: s.Name(),
 		})
