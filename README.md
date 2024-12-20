@@ -1,6 +1,6 @@
 # prototyping
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/mikolajgs/prototyping.svg)](https://pkg.go.dev/github.com/mikolajgs/prototyping) [![Go Report Card](https://goreportcard.com/badge/github.com/mikolajgs/prototyping)](https://goreportcard.com/report/github.com/mikolajgs/prototyping) ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/mikolajgs/prototyping?sort=semver)
+[![Go Reference](https://pkg.go.dev/badge/github.com/mikolajgs/prototyping.svg)](https://pkg.go.dev/github.com/mikolajgs/prototyping) [![Go Report Card](https://goreportcard.com/badge/github.com/mikolajgs/prototyping)](https://goreportcard.com/report/github.com/mikolajgs/prototyping)
 
 ## Intro
 

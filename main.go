@@ -81,8 +81,8 @@ func (p *Prototype) CreateDB() error {
 			User: func() umbrella.UserInterface {
 				return &defaultUser{
 					ctl:         stDB,
-					user:        p.umbrellaUserConstructor().(UserInterface),
-					constructor: func() UserInterface { return p.umbrellaUserConstructor().(UserInterface) },
+					user:        p.umbrellaUserConstructor().(userInterface),
+					constructor: func() userInterface { return p.umbrellaUserConstructor().(userInterface) },
 				}
 			},
 		}
@@ -165,8 +165,8 @@ func (p *Prototype) Run() error {
 			User: func() umbrella.UserInterface {
 				return &defaultUser{
 					ctl:         p.uiCtl.GetStruct2DB(),
-					user:        p.umbrellaUserConstructor().(UserInterface),
-					constructor: func() UserInterface { return p.umbrellaUserConstructor().(UserInterface) },
+					user:        p.umbrellaUserConstructor().(userInterface),
+					constructor: func() userInterface { return p.umbrellaUserConstructor().(userInterface) },
 				}
 			},
 		}

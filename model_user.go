@@ -8,8 +8,8 @@ import (
 
 type defaultUser struct {
 	ctl         *sdb.Controller
-	user        UserInterface
-	constructor func() UserInterface
+	user        userInterface
+	constructor func() userInterface
 }
 
 func (g *defaultUser) CreateDBTable() error {
@@ -78,7 +78,7 @@ func (g *defaultUser) GetByID(id int64) (bool, error) {
 		return false, nil
 	}
 
-	g.user = users[0].(UserInterface)
+	g.user = users[0].(userInterface)
 	return true, nil
 }
 func (g *defaultUser) GetByEmail(email string) (bool, error) {
@@ -95,7 +95,7 @@ func (g *defaultUser) GetByEmail(email string) (bool, error) {
 		return false, nil
 	}
 
-	g.user = users[0].(UserInterface)
+	g.user = users[0].(userInterface)
 	return true, nil
 }
 func (g *defaultUser) GetByEmailActivationKey(key string) (bool, error) {
@@ -112,7 +112,7 @@ func (g *defaultUser) GetByEmailActivationKey(key string) (bool, error) {
 		return false, nil
 	}
 
-	g.user = users[0].(UserInterface)
+	g.user = users[0].(userInterface)
 	return true, nil
 }
 

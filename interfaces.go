@@ -1,6 +1,6 @@
 package prototyping
 
-type UserInterface interface {
+type userInterface interface {
 	GetID() int64
 	GetEmail() string
 	GetPassword() string
