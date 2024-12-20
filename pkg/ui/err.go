@@ -15,7 +15,7 @@ func (e *ErrController) Unwrap() error {
 	return e.Err
 }
 
-// ErrValidation wraps error occuring during object validation
+// ErrValidation wraps error occurring during object validation
 type ErrValidation struct {
 	Fields map[string]int
 	Err    error

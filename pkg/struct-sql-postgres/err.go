@@ -1,6 +1,6 @@
 package structsqlpostgres
 
-// ErrStructSQL wraps original error with operation/step where the error occured and optionally with a tag when
+// ErrStructSQL wraps original error with operation/step where the error occurred and optionally with a tag when
 // parsing "crud" failed
 type ErrStructSQL struct {
 	Op  string
