@@ -110,6 +110,7 @@ func (p *Prototype) CreateDB() error {
 		return fmt.Errorf("error with confirming admin email: %w", errPerm.Unwrap())
 	}
 
+	/* TODO: remove me later
 	// just temporarily
 	// create normal user
 	key, errUmb = p.umbrella.CreateUser("user@example.com", "user", map[string]string{
@@ -142,7 +143,7 @@ func (p *Prototype) CreateDB() error {
 		Flags:   umbrella.FlagTypeAllow,
 		ForType: umbrella.ForTypeUser,
 		ForItem: 2, // normal user's userid
-		Ops:     umbrella.OpsList | umbrella.OpsRead,
+		Ops:     umbrella.OpsList | umbrella.OpsRead | umbrella.OpsUpdate,
 		ToType:  "ItemGroup",
 		ToItem:  0,
 	}
@@ -163,7 +164,7 @@ func (p *Prototype) CreateDB() error {
 	errPerm = stDB.Save(userPerm, stdb.SaveOptions{})
 	if errPerm != nil {
 		return fmt.Errorf("error with confirming admin email: %w", errPerm.Unwrap())
-	}
+	}*/
 
 	db.Close()
 

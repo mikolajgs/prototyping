@@ -17,6 +17,9 @@
 {{ $paramOrder := .ParamOrder }}
 {{ $paramOrderDirection := .ParamOrderDirection }}
 {{ $fields := .Fields }}
+{{ $canCreate := .CanCreate }}
+{{ $canUpdate := .CanUpdate }}
+{{ $canDelete := .CanDelete }}
 
 <input type="hidden" id="struct_items_raw_filter_onload" value="{{ $paramRawFilterEscaped }}"/>
 <input type="hidden" id="struct_items_page_onload" value="{{ $paramPage }}"/>
@@ -29,9 +32,11 @@
 
 <h3>{{ $name }} items</h3>
 
+{{ if $canCreate }}
 <div>
   <div><button hx-get="{{ $uri }}x/struct_item/{{ $name }}/" hx-trigger="click" hx-target="#right_text" hx-swap="innerHTML">Add item</button></div>
 </div>
+{{ end }}
 
 {{/*<div class="filter">
   <div class="label">Advanced filter:</div>
@@ -75,6 +80,7 @@
   </select></div>
 </div>
 
+{{ if $canDelete }}
 <div>
   <div>Selection: 
     <button onclick="tickAllStructItems('{{ $name }}');">Select all</button>
@@ -89,6 +95,7 @@
       hx-trigger="click" hx-swap="none">Delete</button>
   </div>
 </div>
+{{ end }}
 
 
 <div>
@@ -139,7 +146,7 @@
         {{ index $split 1 }}
         <td>
           <a hx-get="{{ $uri }}x/struct_item/{{ $name }}/{{ index $split 0 }}" hx-trigger="click"  hx-target="#right_text" hx-swap="innerHTML">&#9998;</a>
-          <a hx-delete="{{ $uri }}x/struct_item/{{ $name }}/{{ index $split 0 }}" hx-trigger="click" hx-target="closest tr" hx-swap="delete">&#10005;</a>
+          {{ if $canDelete }}<a hx-delete="{{ $uri }}x/struct_item/{{ $name }}/{{ index $split 0 }}" hx-trigger="click" hx-target="closest tr" hx-swap="delete">&#10005;</a> {{ end }}
         </td>
       </tr>
       {{ end }}

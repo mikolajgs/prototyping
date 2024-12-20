@@ -17,25 +17,25 @@
 {{ if eq .ID "" }}
 
 <div>
-<form hx-put="{{ $uri }}x/struct_item/{{ .Name }}/" hx-target="closest div">
+<form{{ if not .ReadOnly }} hx-put="{{ $uri }}x/struct_item/{{ .Name }}/" hx-target="closest div"{{ end }}>
 {{ .FieldsHTML }}
-<p>
+{{ if not .ReadOnly }}<p>
 <label></label>
 <button type="submit">add</button>
 <button type="reset">reset</button>
-</p>
+</p>{{ end }}
 </form>
 </div>
 
 {{ else }}
 
 <div>
-<form hx-post="{{ $uri }}x/struct_item/{{ .Name }}/{{ .ID }}" hx-target="#right_text">
+<form{{ if not .ReadOnly }} hx-post="{{ $uri }}x/struct_item/{{ .Name }}/{{ .ID }}" hx-target="#right_text"{{ end }}>
 {{ .FieldsHTML }}
-<p>
+{{ if not .ReadOnly }}<p>
 <label></label>
 <button type="submit">save</button>
-</p>
+</p>{{ end }}
 </form>
 </div>
 
