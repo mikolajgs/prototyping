@@ -11,3 +11,10 @@ type Session struct {
 
 const FlagSessionActive = 1
 const FlagSessionLoggedOut = 2
+
+func GetSessionFlagsSingleChoice() map[int]string {
+	return map[int]string{
+		1: "Active",
+		2: "LoggedOut",
+	}
+}

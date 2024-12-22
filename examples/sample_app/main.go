@@ -9,6 +9,8 @@ import (
 
 	"github.com/mikolajgs/prototyping"
 	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
+	"github.com/mikolajgs/prototyping/pkg/ui"
+	"github.com/mikolajgs/prototyping/pkg/umbrella"
 
 	_ "github.com/lib/pq"
 )
@@ -20,6 +22,28 @@ func main() {
 		prototyping.Config{
 			DatabaseDSN:     dbDSN,
 			UserConstructor: func() interface{} { return &User{} },
+			IntFieldValues: map[string]ui.FieldValues{
+				"Session_Flags": ui.FieldValues{
+					Type:   ui.ValuesSingleChoice,
+					Values: umbrella.GetSessionFlagsSingleChoice(),
+				},
+				"Permission_Flags": ui.FieldValues{
+					Type:   ui.ValuesMultipleBitChoice,
+					Values: umbrella.GetPermissionFlagsMultipleBitChoice(),
+				},
+				"Permission_ForType": ui.FieldValues{
+					Type:   ui.ValuesSingleChoice,
+					Values: umbrella.GetPermissionForTypeSingleChoice(),
+				},
+				"Permission_Ops": ui.FieldValues{
+					Type:   ui.ValuesMultipleBitChoice,
+					Values: umbrella.GetPermissionOpsMultipleBitChoice(),
+				},
+				"UserFlags": ui.FieldValues{
+					Type:   ui.ValuesMultipleBitChoice,
+					Values: GetUserFlagsMultipleBitChoice(),
+				},
+			},
 		},
 		func() interface{} { return &Item{} },
 		func() interface{} { return &ItemGroup{} },

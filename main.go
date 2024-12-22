@@ -241,9 +241,11 @@ func (p *Prototype) wrapHandlerWithUmbrella(uriType int, h http.Handler, redirec
 			if found {
 				var ctx context.Context
 				if uriType == uriUI {
-					ctx = context.WithValue(r.Context(), ui.ContextValue("LoggedUserName"), user.GetExtraField("name"))
+					ctx = context.WithValue(r.Context(), ui.ContextValue("LoggedUserID"), fmt.Sprintf("%d", userId))
+					ctx = context.WithValue(ctx, ui.ContextValue("LoggedUserName"), user.GetExtraField("name"))
 				} else {
-					ctx = context.WithValue(r.Context(), restapi.ContextValue("LoggedUserName"), user.GetExtraField("name"))
+					ctx = context.WithValue(r.Context(), restapi.ContextValue("LoggedUserID"), fmt.Sprintf("%d", userId))
+					ctx = context.WithValue(ctx, restapi.ContextValue("LoggedUserName"), user.GetExtraField("name"))
 				}
 
 				for _, o := range []int{umbrella.OpsList, umbrella.OpsRead, umbrella.OpsCreate, umbrella.OpsUpdate, umbrella.OpsDelete} {

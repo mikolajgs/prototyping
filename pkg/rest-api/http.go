@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	stsql "github.com/mikolajgs/prototyping/pkg/struct-sql-postgres"
-	"github.com/mikolajgs/prototyping/pkg/umbrella"
 )
 
 type HandlerOptions struct {
@@ -17,12 +16,13 @@ type HandlerOptions struct {
 }
 
 // Values for CRUD operations
+// Same as in the "umbrella" package: http://github.com/mikolajgs/prototyping/pkg/umbrella
 const OpAll = 0
-const OpRead = 2
-const OpUpdate = 4
+const OpRead = 16
+const OpUpdate = 32
 const OpCreate = 8
-const OpDelete = 16
-const OpList = 32
+const OpDelete = 64
+const OpList = 128
 
 // Handler returns a REST API HTTP handler that can be attached to HTTP server. It creates a CRUD endpoint
 // for creating, reading, updating, deleting and listing objects.
@@ -42,7 +42,7 @@ func (c Controller) Handler(uri string, constructor func() interface{}, options 
 
 		if r.Method == http.MethodPut && id == "" && (options.Operations == OpAll || options.Operations&OpCreate > 0) {
 			// check access
-			if !c.isStructOperationAllowed(r, structName, umbrella.OpsCreate) {
+			if !c.isStructOperationAllowed(r, structName, OpCreate) {
 				c.writeErrText(w, http.StatusForbidden, "access_denied")
 				return
 			}
@@ -56,7 +56,7 @@ func (c Controller) Handler(uri string, constructor func() interface{}, options 
 		}
 		if r.Method == http.MethodPut && id != "" && (options.Operations == OpAll || options.Operations&OpUpdate > 0) {
 			// check access
-			if !c.isStructOperationAllowed(r, structName, umbrella.OpsUpdate) {
+			if !c.isStructOperationAllowed(r, structName, OpUpdate) {
 				c.writeErrText(w, http.StatusForbidden, "access_denied")
 				return
 			}
@@ -71,7 +71,7 @@ func (c Controller) Handler(uri string, constructor func() interface{}, options 
 
 		if r.Method == http.MethodGet && id != "" && (options.Operations == OpAll || options.Operations&OpRead > 0) {
 			// check access
-			if !c.isStructOperationAllowed(r, structName, umbrella.OpsRead) {
+			if !c.isStructOperationAllowed(r, structName, OpRead) {
 				c.writeErrText(w, http.StatusForbidden, "access_denied")
 				return
 			}
@@ -85,7 +85,7 @@ func (c Controller) Handler(uri string, constructor func() interface{}, options 
 		}
 		if r.Method == http.MethodGet && id == "" && (options.Operations == OpAll || options.Operations&OpList > 0) {
 			// check access
-			if !c.isStructOperationAllowed(r, structName, umbrella.OpsRead) {
+			if !c.isStructOperationAllowed(r, structName, OpRead) {
 				c.writeErrText(w, http.StatusForbidden, "access_denied")
 				return
 			}
@@ -99,7 +99,7 @@ func (c Controller) Handler(uri string, constructor func() interface{}, options 
 		}
 		if r.Method == http.MethodDelete && id != "" && (options.Operations == OpAll || options.Operations&OpDelete > 0) {
 			// check access
-			if !c.isStructOperationAllowed(r, structName, umbrella.OpsDelete) {
+			if !c.isStructOperationAllowed(r, structName, OpDelete) {
 				c.writeErrText(w, http.StatusForbidden, "access_denied")
 				return
 			}

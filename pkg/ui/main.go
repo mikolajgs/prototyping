@@ -26,6 +26,14 @@ func (c *Controller) GetStruct2DB() *struct2db.Controller {
 	return c.struct2db
 }
 
+type FieldValues struct {
+	Type   int
+	Values map[int]string
+}
+
+var ValuesMultipleBitChoice = 1
+var ValuesSingleChoice = 2
+
 // NewController returns new Controller object
 func NewController(dbConn *sql.DB, tblPrefix string, cfg *ControllerConfig) *Controller {
 	c := &Controller{}

@@ -24,3 +24,26 @@ const OpsRead = 16
 const OpsUpdate = 32
 const OpsDelete = 64
 const OpsList = 128
+
+func GetPermissionFlagsMultipleBitChoice() map[int]string {
+	return map[int]string{
+		4: "Allow",
+	}
+}
+
+func GetPermissionForTypeSingleChoice() map[int]string {
+	return map[int]string{
+		0: "Everyone",
+		1: "User",
+	}
+}
+
+func GetPermissionOpsMultipleBitChoice() map[int]string {
+	return map[int]string{
+		8:   "Create",
+		16:  "Read",
+		32:  "Update",
+		64:  "Delete",
+		128: "List",
+	}
+}
