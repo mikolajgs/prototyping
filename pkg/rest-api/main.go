@@ -3,7 +3,7 @@ package restapi
 import (
 	"database/sql"
 
-	struct2db "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
+	struct2db "github.com/go-phings/struct-db-postgres"
 )
 
 // Controller is the main component that gets and saves objects in the database and generates CRUD HTTP handler

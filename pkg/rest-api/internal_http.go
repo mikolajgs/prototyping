@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
+	stdb "github.com/go-phings/struct-db-postgres"
 	"github.com/mikolajgs/prototyping/pkg/umbrella"
 )
 

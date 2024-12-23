@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
+	stdb "github.com/go-phings/struct-db-postgres"
 )
 
 type ProductKind struct {

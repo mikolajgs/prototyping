@@ -3,7 +3,7 @@ package umbrella
 import (
 	"fmt"
 
-	sdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
+	sdb "github.com/go-phings/struct-db-postgres"
 )
 
 type User struct {

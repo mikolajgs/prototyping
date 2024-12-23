@@ -14,8 +14,8 @@ import (
 	"strings"
 	"text/template"
 
-	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
-	stsql "github.com/mikolajgs/prototyping/pkg/struct-sql-postgres"
+	stdb "github.com/go-phings/struct-db-postgres"
+	stsql "github.com/go-phings/struct-sql-postgres"
 	"github.com/mikolajgs/prototyping/pkg/umbrella"
 )
 

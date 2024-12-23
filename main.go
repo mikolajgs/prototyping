@@ -8,9 +8,9 @@ import (
 	"log"
 	"net/http"
 
+	stdb "github.com/go-phings/struct-db-postgres"
+	sqldb "github.com/go-phings/struct-sql-postgres"
 	restapi "github.com/mikolajgs/prototyping/pkg/rest-api"
-	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
-	sqldb "github.com/mikolajgs/prototyping/pkg/struct-sql-postgres"
 	"github.com/mikolajgs/prototyping/pkg/ui"
 	"github.com/mikolajgs/prototyping/pkg/umbrella"
 

@@ -7,8 +7,8 @@ import (
 	_ "os"
 	_ "time"
 
+	stdb "github.com/go-phings/struct-db-postgres"
 	"github.com/mikolajgs/prototyping"
-	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
 	"github.com/mikolajgs/prototyping/pkg/ui"
 	"github.com/mikolajgs/prototyping/pkg/umbrella"
 

@@ -3,7 +3,7 @@ package restapi
 import (
 	"net/http"
 
-	stsql "github.com/mikolajgs/prototyping/pkg/struct-sql-postgres"
+	stsql "github.com/go-phings/struct-sql-postgres"
 )
 
 type HandlerOptions struct {
