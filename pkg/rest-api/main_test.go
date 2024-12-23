@@ -107,6 +107,7 @@ type TestStruct_Read struct {
 	Age          int    `json:"age"`
 	Price        int    `json:"price"`
 	PostCode     string `json:"post_code"`
+	Password     string `json:"password" crud:"hidden"`
 }
 
 type TestStruct_List struct {
@@ -115,6 +116,7 @@ type TestStruct_List struct {
 	PrimaryEmail string `json:"email" crud:"req email"`
 	FirstName    string `json:"first_name"`
 	Age          int    `json:"age"`
+	Password     string `json:"password" crud:"hidden"`
 }
 
 func TestMain(m *testing.M) {

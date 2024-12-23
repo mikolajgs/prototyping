@@ -103,13 +103,44 @@ func (c Controller) handleHTTPPut(w http.ResponseWriter, r *http.Request, newObj
 }
 
 func (c Controller) handleHTTPGet(w http.ResponseWriter, r *http.Request, newObjFunc func() interface{}, id string) {
-	if id != "" {
-		objClone := newObjFunc()
+	objClone := newObjFunc()
 
+	hiddenFields := map[string]bool{}
+	v := reflect.ValueOf(objClone)
+	s := v.Elem()
+	indir := reflect.Indirect(v)
+	typ := indir.Type()
+	for j := 0; j < s.NumField(); j++ {
+		f := s.Field(j)
+		fieldTag := typ.Field(j).Tag.Get(c.tagName)
+		gotHiddenField := false
+		if f.Kind() == reflect.String && fieldTag != "" {
+			fieldTags := strings.Split(fieldTag, " ")
+			for _, ft := range fieldTags {
+				if ft == "hidden" {
+					gotHiddenField = true
+					break
+				}
+			}
+		}
+		if gotHiddenField {
+			hiddenFields[typ.Field(j).Name] = true
+		}
+	}
+
+	if id != "" {
 		err := c.struct2db.Load(objClone, id, stdb.LoadOptions{})
 		if err != nil {
 			c.writeErrText(w, http.StatusInternalServerError, "cannot_get_from_db")
 			return
+		}
+
+		// hide fields that are tagged with 'hidden'
+		for j := 0; j < s.NumField(); j++ {
+			f := s.Field(j)
+			if f.Kind() == reflect.String && hiddenFields[typ.Field(j).Name] {
+				s.Field(j).SetString("(hidden)")
+			}
 		}
 
 		if c.struct2db.GetObjIDValue(objClone) == 0 {
@@ -125,7 +156,6 @@ func (c Controller) handleHTTPGet(w http.ResponseWriter, r *http.Request, newObj
 	}
 
 	// No id, get more elements
-	obj := newObjFunc()
 	params := c.getParamsFromURI(r.RequestURI)
 	limit, _ := strconv.Atoi(params["limit"])
 	offset, _ := strconv.Atoi(params["offset"])
@@ -148,7 +178,7 @@ func (c Controller) handleHTTPGet(w http.ResponseWriter, r *http.Request, newObj
 			continue
 		}
 		k = k[7:]
-		fieldName, fieldValue, errF := c.uriFilterToFilter(obj, k, v)
+		fieldName, fieldValue, errF := c.uriFilterToFilter(objClone, k, v)
 		if errF == nil {
 			if fieldName != "" {
 				filters[fieldName] = fieldValue
@@ -169,6 +199,19 @@ func (c Controller) handleHTTPGet(w http.ResponseWriter, r *http.Request, newObj
 		Limit:   limit,
 		Offset:  offset,
 		Filters: filters,
+		RowObjTransformFunc: func(obj interface{}) interface{} {
+			v := reflect.ValueOf(obj)
+			s := v.Elem()
+			i := reflect.Indirect(v)
+			t := i.Type()
+			for j := 0; j < s.NumField(); j++ {
+				f := s.Field(j)
+				if f.Kind() == reflect.String && hiddenFields[t.Field(j).Name] {
+					s.Field(j).SetString("(hidden)")
+				}
+			}
+			return obj
+		},
 	})
 	if err1 != nil {
 		if err1.Op == "ValidateFilters" {

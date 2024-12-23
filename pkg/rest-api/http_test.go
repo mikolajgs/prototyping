@@ -127,8 +127,7 @@ func TestHTTPHandlerPutMethodForUpdatingOnCustomEndpoint(t *testing.T) {
 	}
 	// Only password field should be updated, and its value should be a duplicated string that was passed. Check the TestStruct_UpdatePasswordWithFunc struct
 	if id == 0 || flags != 0 || password != "duplicateme!duplicateme!" {
-		t.Fatalf(password)
-		t.Fatalf("PUT method on a custom endpoint failed to update struct with field using password function in the table")
+		t.Fatalf("PUT method on a custom endpoint failed to update struct with field using password function in the table (wrong value: %s)", password)
 	}
 
 }
@@ -150,7 +149,7 @@ func TestHTTPHandlerGetMethodOnExisting(t *testing.T) {
 	r := NewHTTPResponse(1, "")
 	err = json.Unmarshal(body, &r)
 	if err != nil {
-		t.Fatalf("GET method failed to return unmarshable JSON: " + err.Error())
+		t.Fatalf("GET method failed to return unmarshable JSON: %s", err.Error())
 	}
 	if r.Data["item"].(map[string]interface{})["age"].(float64) != 0 {
 		t.Fatalf("GET method returned invalid values")
@@ -163,6 +162,12 @@ func TestHTTPHandlerGetMethodOnExisting(t *testing.T) {
 	}
 	if strings.Contains(string(body), "post_code2") {
 		t.Fatalf("GET method returned output with field that should have been hidden")
+	}
+	if r.Data["item"].(map[string]interface{})["password"].(string) != "(hidden)" {
+		t.Fatalf("GET method should have hid a field value")
+	}
+	if r.Data["item"].(map[string]interface{})["first_name"].(string) == "(hidden)" {
+		t.Fatalf("GET method hid a field that should not be hidden")
 	}
 }
 
@@ -228,5 +233,11 @@ func TestHTTPHandlerGetMethodWithoutID(t *testing.T) {
 	}
 	if strings.Contains(string(b), "post_code2") {
 		t.Fatalf("GET method returned output with field that should have been hidden")
+	}
+	if r.Data["items"].([]interface{})[2].(map[string]interface{})["password"].(string) != "(hidden)" {
+		t.Fatalf("GET method without id should have hid a field value")
+	}
+	if r.Data["items"].([]interface{})[2].(map[string]interface{})["first_name"].(string) == "(hidden)" {
+		t.Fatalf("GET method without id hid a field that should not be hidden")
 	}
 }
