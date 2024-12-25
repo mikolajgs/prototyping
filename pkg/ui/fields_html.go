@@ -39,7 +39,7 @@ func (c *Controller) getStructItemFieldsHTML(u interface{}, values map[string]st
 
 		gotDoubleEntry := c.isFieldHasTag(field, "dblentry")
 
-		fieldHTML := c.getStructItemFieldHTML(field, structName, values, true)
+		fieldHTML := c.getStructItemFieldHTML(field, structName, values[field.Name], true)
 
 		if fieldHTML == "" {
 			fieldHTML = fieldHTMLs[field.Name]
@@ -70,7 +70,7 @@ func (c *Controller) isFieldHasTag(field reflect.StructField, tag string) bool {
 	return false
 }
 
-func (c *Controller) getStructItemFieldHTML(field reflect.StructField, structName string, values map[string]string, forEdit bool) string {
+func (c *Controller) getStructItemFieldHTML(field reflect.StructField, structName string, value string, forEdit bool) string {
 	h := ""
 	if c.intFieldValues != nil && c.isFieldInt(field) {
 		fv, ok := c.intFieldValues[structName+"_"+field.Name]
@@ -78,8 +78,8 @@ func (c *Controller) getStructItemFieldHTML(field reflect.StructField, structNam
 			if fv.Type == ValuesMultipleBitChoice {
 				for ok, ov := range fv.Values {
 					found := false
-					if values[field.Name] != "" {
-						i64, err := strconv.ParseInt(values[field.Name], 10, 64)
+					if value != "" {
+						i64, err := strconv.ParseInt(value, 10, 64)
 						if err == nil {
 							if i64&int64(ok) > 0 {
 								found = true
@@ -109,7 +109,7 @@ func (c *Controller) getStructItemFieldHTML(field reflect.StructField, structNam
 					h += fmt.Sprintf(`<select name="%s">`, field.Name)
 					for ok, ov := range fv.Values {
 						selected := ""
-						if values[field.Name] == fmt.Sprintf("%d", ok) {
+						if value == fmt.Sprintf("%d", ok) {
 							selected = " selected"
 						}
 						h += fmt.Sprintf(`<option%s value="%d">%s</option>`, selected, ok, html.EscapeString(ov))
@@ -117,7 +117,7 @@ func (c *Controller) getStructItemFieldHTML(field reflect.StructField, structNam
 					h += "</select>"
 				} else {
 					for ok, ov := range fv.Values {
-						if values[field.Name] == fmt.Sprintf("%d", ok) {
+						if value == fmt.Sprintf("%d", ok) {
 							h += html.EscapeString(ov)
 						}
 					}
@@ -139,7 +139,7 @@ func (c *Controller) getStructItemFieldHTML(field reflect.StructField, structNam
 					h = fmt.Sprintf(`<select name="%s">`, field.Name)
 					for ok, ov := range fv.Values {
 						selected := ""
-						if values[field.Name] == ok {
+						if value == ok {
 							selected = " selected"
 						}
 						h += fmt.Sprintf(`<option%s value="%s">%s</option>`, selected, html.EscapeString(ok), html.EscapeString(ov))
@@ -147,7 +147,7 @@ func (c *Controller) getStructItemFieldHTML(field reflect.StructField, structNam
 					h += "</select>"
 				} else {
 					for ok, ov := range fv.Values {
-						if values[field.Name] == fmt.Sprintf("%d", ok) {
+						if value == fmt.Sprintf("%d", ok) {
 							h += html.EscapeString(ov)
 						}
 					}
