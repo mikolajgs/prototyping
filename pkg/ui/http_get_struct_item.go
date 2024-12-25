@@ -165,18 +165,9 @@ func (c *Controller) tryStructItem(w http.ResponseWriter, r *http.Request, uri s
 		f := s.FieldByName(fk)
 		if f.IsValid() && f.CanSet() {
 			// We can set password fields only when they are not empty
-			gotPassField := false
+
 			field, _ := typ.FieldByName(fk)
-			fieldTag := field.Tag.Get(c.tagName)
-			if fieldTag != "" {
-				fieldTags := strings.Split(fieldTag, " ")
-				for _, ft := range fieldTags {
-					if ft == "password" {
-						gotPassField = true
-						break
-					}
-				}
-			}
+			gotPassField := c.isFieldHasTag(field, "password")
 			if gotPassField {
 				if fv[0] == "" {
 					continue
@@ -307,7 +298,7 @@ func (c *Controller) getStructItemTplObj(uri string, objFunc func() interface{},
 	a := &structItemTplObj{
 		URI:        uri,
 		Name:       stsql.GetStructName(o),
-		FieldsHTML: c.getStructItemFieldsHTML(o, postValues, useFieldValues, c.tagName, c.intFieldValues),
+		FieldsHTML: c.getStructItemFieldsHTML(o, postValues, useFieldValues),
 		MsgHTML:    c.getMsgHTML(msgType, msg),
 		OnlyMsg:    onlyMsg,
 		ID:         id,

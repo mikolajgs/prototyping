@@ -260,17 +260,7 @@ func (c *Controller) getStructItemsTplObj(uri string, objFunc func() interface{}
 				out += "<td>"
 				field := s.Field(j)
 				fieldType := field.Type.Kind()
-				hideValue := false
-				fieldTag := field.Tag.Get(c.tagName)
-				if fieldTag != "" {
-					fieldTags := strings.Split(fieldTag, " ")
-					for _, ft := range fieldTags {
-						if ft == "hidden" {
-							hideValue = true
-							break
-						}
-					}
-				}
+				hideValue := c.isFieldHasTag(field, "hidden")
 				if hideValue {
 					out += "(hidden)</td>"
 					continue

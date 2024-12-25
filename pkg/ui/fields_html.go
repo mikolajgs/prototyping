@@ -11,9 +11,9 @@ import (
 	validator "github.com/go-phings/struct-validator"
 )
 
-func (c *Controller) getStructItemFieldsHTML(u interface{}, values map[string]string, withFieldValues bool, tagName string, intFieldValues map[string]IntFieldValues) string {
+func (c *Controller) getStructItemFieldsHTML(u interface{}, values map[string]string, withFieldValues bool) string {
 	fieldHTMLs := validator.GenerateHTML(u, &validator.HTMLOptions{
-		OverwriteTagName: "ui",
+		OverwriteTagName: c.tagName,
 		ExcludeFields: map[string]bool{
 			"ID": true,
 		},
@@ -37,66 +37,9 @@ func (c *Controller) getStructItemFieldsHTML(u interface{}, values map[string]st
 			continue
 		}
 
-		gotDoubleEntry := false
-		fieldTag := field.Tag.Get(tagName)
-		if fieldTag != "" {
-			fieldTags := strings.Split(fieldTag, " ")
-			for _, ft := range fieldTags {
-				if ft == "dblentry" {
-					gotDoubleEntry = true
-					break
-				}
-			}
-		}
+		gotDoubleEntry := c.isFieldHasTag(field, "dblentry")
 
-		var fieldHTML string
-		if c.intFieldValues != nil {
-			fv, ok := c.intFieldValues[structName+"_"+field.Name]
-			if ok {
-				if fv.Type == ValuesMultipleBitChoice {
-					for ok, ov := range fv.Values {
-						checked := ""
-						if values[field.Name] != "" {
-							i64, err := strconv.ParseInt(values[field.Name], 10, 64)
-							if err == nil {
-								if i64&int64(ok) > 0 {
-									checked = " checked"
-								}
-							}
-						}
-						fieldHTML += fmt.Sprintf(`<input%s type="checkbox" name="%s" value="%d"/> %s`, checked, field.Name, ok, html.EscapeString(ov))
-					}
-				}
-				if fv.Type == ValuesSingleChoice {
-					fieldHTML = fmt.Sprintf(`<select name="%s">`, field.Name)
-					for ok, ov := range fv.Values {
-						selected := ""
-						if values[field.Name] == fmt.Sprintf("%d", ok) {
-							selected = " selected"
-						}
-						fieldHTML += fmt.Sprintf(`<option%s value="%d">%s</option>`, selected, ok, html.EscapeString(ov))
-					}
-					fieldHTML += "</select>"
-				}
-			}
-		}
-
-		if c.stringFieldValues != nil {
-			fv, ok := c.stringFieldValues[structName+"_"+field.Name]
-			if ok {
-				if fv.Type == ValuesSingleChoice {
-					fieldHTML = fmt.Sprintf(`<select name="%s">`, field.Name)
-					for ok, ov := range fv.Values {
-						selected := ""
-						if values[field.Name] == ok {
-							selected = " selected"
-						}
-						fieldHTML += fmt.Sprintf(`<option%s value="%s">%s</option>`, selected, html.EscapeString(ok), html.EscapeString(ov))
-					}
-					fieldHTML += "</select>"
-				}
-			}
-		}
+		fieldHTML := c.getStructItemFieldHTML(field, structName, values, true)
 
 		if fieldHTML == "" {
 			fieldHTML = fieldHTMLs[field.Name]
@@ -112,4 +55,111 @@ func (c *Controller) getStructItemFieldsHTML(u interface{}, values map[string]st
 	}
 
 	return htm
+}
+
+func (c *Controller) isFieldHasTag(field reflect.StructField, tag string) bool {
+	fieldTags := field.Tag.Get(c.tagName)
+	if fieldTags != "" {
+		fieldTags := strings.Split(fieldTags, " ")
+		for _, ft := range fieldTags {
+			if ft == tag {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (c *Controller) getStructItemFieldHTML(field reflect.StructField, structName string, values map[string]string, forEdit bool) string {
+	h := ""
+	if c.intFieldValues != nil && c.isFieldInt(field) {
+		fv, ok := c.intFieldValues[structName+"_"+field.Name]
+		if ok {
+			if fv.Type == ValuesMultipleBitChoice {
+				for ok, ov := range fv.Values {
+					found := false
+					if values[field.Name] != "" {
+						i64, err := strconv.ParseInt(values[field.Name], 10, 64)
+						if err == nil {
+							if i64&int64(ok) > 0 {
+								found = true
+							}
+						}
+					}
+					if forEdit {
+						checked := ""
+						if found {
+							checked = " checked"
+						}
+						h += fmt.Sprintf(`<input%s type="checkbox" name="%s" value="%d"/> %s`, checked, field.Name, ok, html.EscapeString(ov))
+						continue
+					}
+
+					// not for edit
+					if found {
+						if h != "" {
+							h += ", "
+						}
+						h += html.EscapeString(ov)
+					}
+				}
+			}
+			if fv.Type == ValuesSingleChoice {
+				if forEdit {
+					h += fmt.Sprintf(`<select name="%s">`, field.Name)
+					for ok, ov := range fv.Values {
+						selected := ""
+						if values[field.Name] == fmt.Sprintf("%d", ok) {
+							selected = " selected"
+						}
+						h += fmt.Sprintf(`<option%s value="%d">%s</option>`, selected, ok, html.EscapeString(ov))
+					}
+					h += "</select>"
+				} else {
+					for ok, ov := range fv.Values {
+						if values[field.Name] == fmt.Sprintf("%d", ok) {
+							h += html.EscapeString(ov)
+						}
+					}
+				}
+
+			}
+		}
+	}
+
+	if h != "" {
+		return h
+	}
+
+	if c.stringFieldValues != nil && field.Type.Kind() == reflect.String {
+		fv, ok := c.stringFieldValues[structName+"_"+field.Name]
+		if ok {
+			if fv.Type == ValuesSingleChoice {
+				if forEdit {
+					h = fmt.Sprintf(`<select name="%s">`, field.Name)
+					for ok, ov := range fv.Values {
+						selected := ""
+						if values[field.Name] == ok {
+							selected = " selected"
+						}
+						h += fmt.Sprintf(`<option%s value="%s">%s</option>`, selected, html.EscapeString(ok), html.EscapeString(ov))
+					}
+					h += "</select>"
+				} else {
+					for ok, ov := range fv.Values {
+						if values[field.Name] == fmt.Sprintf("%d", ok) {
+							h += html.EscapeString(ov)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return h
+}
+
+func (c *Controller) isFieldInt(field reflect.StructField) bool {
+	k := field.Type.Kind()
+	return k == reflect.Int || k == reflect.Int8 || k == reflect.Int16 || k == reflect.Int32 || k == reflect.Int64
 }
