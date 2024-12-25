@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"regexp"
 
-	validator "github.com/mikolajgs/struct-validator"
+	validator "github.com/go-phings/struct-validator"
 )
 
 // Validate checks object's fields. It returns result of validation as a bool and list of fields with invalid value

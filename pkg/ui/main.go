@@ -13,11 +13,15 @@ type Controller struct {
 	uriStructNameFunc map[string]map[string]func() interface{}
 	tagName           string
 	passFunc          func(string) string
+	intFieldValues    map[string]IntFieldValues
+	stringFieldValues map[string]StringFieldValues
 }
 
 type ControllerConfig struct {
 	TagName           string
 	PasswordGenerator func(string) string
+	IntFieldValues    map[string]IntFieldValues
+	StringFieldValues map[string]StringFieldValues
 }
 
 type ContextValue string
@@ -26,9 +30,14 @@ func (c *Controller) GetStruct2DB() *struct2db.Controller {
 	return c.struct2db
 }
 
-type FieldValues struct {
+type IntFieldValues struct {
 	Type   int
 	Values map[int]string
+}
+
+type StringFieldValues struct {
+	Type   int
+	Values map[string]string
 }
 
 var ValuesMultipleBitChoice = 1
@@ -46,6 +55,11 @@ func NewController(dbConn *sql.DB, tblPrefix string, cfg *ControllerConfig) *Con
 
 	if cfg != nil && cfg.PasswordGenerator != nil {
 		c.passFunc = cfg.PasswordGenerator
+	}
+
+	if cfg != nil {
+		c.intFieldValues = cfg.IntFieldValues
+		c.stringFieldValues = cfg.StringFieldValues
 	}
 
 	c.struct2db = struct2db.NewController(dbConn, tblPrefix, &struct2db.ControllerConfig{

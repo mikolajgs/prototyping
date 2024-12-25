@@ -31,6 +31,8 @@ github.com/go-phings/struct-db-postgres v0.6.0 h1:EbxRIrkwF2cDdTYr5TUJ2Ot3N+xSvK
 github.com/go-phings/struct-db-postgres v0.6.0/go.mod h1:Yw7QdVcY6NZGp/gbn4sVGZLiCJF7YZR9mFx2HuWS+i0=
 github.com/go-phings/struct-sql-postgres v0.6.0 h1:GvaiSnywCnA4RtRfQEkYOtNwnykKHW158if0Yoi8jCs=
 github.com/go-phings/struct-sql-postgres v0.6.0/go.mod h1:bII8gzJnuAn7Ht+NEmHnyieu53EYnHhGg5EeY893yeE=
+github.com/go-phings/struct-validator v0.4.7 h1:qHCkn2ppOnzRxzE3+UCXD2+4bMp4xWtEcl5S/TKebRo=
+github.com/go-phings/struct-validator v0.4.7/go.mod h1:i+WCf5KGFnxiGdrtqsysAaIACvE5K+h5X/R8gPJQPB0=
 github.com/go-sql-driver/mysql v1.8.1 h1:LedoTUt/eveggdHS9qUFC1EFSa8bU2+1pZjSRpvNJ1Y=
 github.com/go-sql-driver/mysql v1.8.1/go.mod h1:wEBSXgmK//2ZFJyE+qWnIsVGmvmEKlqwuVSjsCm7DZg=
 github.com/gogo/protobuf v1.3.2 h1:Ov1cvc58UF3b5XjBnZv7+opcTcQFZebYjWzi34vdm4Q=

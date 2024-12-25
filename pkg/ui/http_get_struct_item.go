@@ -9,9 +9,8 @@ import (
 
 	stdb "github.com/go-phings/struct-db-postgres"
 	stsql "github.com/go-phings/struct-sql-postgres"
-	sthtml "github.com/mikolajgs/prototyping/pkg/struct-html"
+	validator "github.com/go-phings/struct-validator"
 	"github.com/mikolajgs/prototyping/pkg/umbrella"
-	validator "github.com/mikolajgs/struct-validator"
 
 	"net/http"
 	"reflect"
@@ -308,7 +307,7 @@ func (c *Controller) getStructItemTplObj(uri string, objFunc func() interface{},
 	a := &structItemTplObj{
 		URI:        uri,
 		Name:       stsql.GetStructName(o),
-		FieldsHTML: sthtml.GetFields(o, postValues, useFieldValues, c.tagName),
+		FieldsHTML: c.getStructItemFieldsHTML(o, postValues, useFieldValues, c.tagName, c.intFieldValues),
 		MsgHTML:    c.getMsgHTML(msgType, msg),
 		OnlyMsg:    onlyMsg,
 		ID:         id,

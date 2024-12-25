@@ -6,9 +6,9 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-phings/struct-db-postgres v0.6.0
 	github.com/go-phings/struct-sql-postgres v0.6.0
+	github.com/go-phings/struct-validator v0.4.7
 	github.com/google/uuid v1.6.0
 	github.com/lib/pq v1.10.9
-	github.com/mikolajgs/struct-validator v0.4.7
 	github.com/ory/dockertest/v3 v3.11.0
 	golang.org/x/crypto v0.29.0
 )
@@ -26,6 +26,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
+	github.com/mikolajgs/struct-validator v0.4.7 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/term v0.5.0 // indirect

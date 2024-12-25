@@ -22,26 +22,39 @@ func main() {
 		prototyping.Config{
 			DatabaseDSN:     dbDSN,
 			UserConstructor: func() interface{} { return &User{} },
-			IntFieldValues: map[string]ui.FieldValues{
-				"Session_Flags": ui.FieldValues{
+			IntFieldValues: map[string]ui.IntFieldValues{
+				"Session_Flags": {
 					Type:   ui.ValuesSingleChoice,
 					Values: umbrella.GetSessionFlagsSingleChoice(),
 				},
-				"Permission_Flags": ui.FieldValues{
+				"Permission_Flags": {
 					Type:   ui.ValuesMultipleBitChoice,
 					Values: umbrella.GetPermissionFlagsMultipleBitChoice(),
 				},
-				"Permission_ForType": ui.FieldValues{
+				"Permission_ForType": {
 					Type:   ui.ValuesSingleChoice,
 					Values: umbrella.GetPermissionForTypeSingleChoice(),
 				},
-				"Permission_Ops": ui.FieldValues{
+				"Permission_Ops": {
 					Type:   ui.ValuesMultipleBitChoice,
 					Values: umbrella.GetPermissionOpsMultipleBitChoice(),
 				},
-				"UserFlags": ui.FieldValues{
+				"User_Flags": {
 					Type:   ui.ValuesMultipleBitChoice,
 					Values: GetUserFlagsMultipleBitChoice(),
+				},
+			},
+			StringFieldValues: map[string]ui.StringFieldValues{
+				"Permission_ToType": {
+					Type: ui.ValuesSingleChoice,
+					Values: map[string]string{
+						"all":        "all",
+						"User":       "User",
+						"Session":    "Session",
+						"Permission": "Permission",
+						"Item":       "Item",
+						"ItemGroup":  "ItemGroup",
+					},
 				},
 			},
 		},

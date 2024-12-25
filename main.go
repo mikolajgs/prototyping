@@ -30,6 +30,8 @@ type Prototype struct {
 	uiCtl                   ui.Controller
 	umbrella                umbrella.Umbrella
 	umbrellaUserConstructor func() interface{}
+	intFieldValues          map[string]ui.IntFieldValues
+	stringFieldValues       map[string]ui.StringFieldValues
 }
 
 const uriUI = 1
@@ -149,6 +151,8 @@ func (p *Prototype) Run() error {
 			}
 			return passForDB
 		},
+		IntFieldValues:    p.intFieldValues,
+		StringFieldValues: p.stringFieldValues,
 	})
 	p.apiCtl = *restapi.NewController(p.db, p.dbTablePrefix, &restapi.ControllerConfig{
 		PasswordGenerator: func(pass string) string {
@@ -288,6 +292,8 @@ func NewPrototype(cfg Config, constructors ...func() interface{}) (*Prototype, e
 	p.uriUI = "/ui/"
 	p.uriUmbrella = "/umbrella/"
 	p.port = "9001"
+	p.intFieldValues = cfg.IntFieldValues
+	p.stringFieldValues = cfg.StringFieldValues
 
 	if cfg.UserConstructor != nil {
 		p.umbrellaUserConstructor = cfg.UserConstructor
