@@ -8,9 +8,9 @@ import (
 	"log"
 	"net/http"
 
+	crud "github.com/go-phings/crud"
 	stdb "github.com/go-phings/struct-db-postgres"
 	sqldb "github.com/go-phings/struct-sql-postgres"
-	restapi "github.com/mikolajgs/prototyping/pkg/rest-api"
 	"github.com/mikolajgs/prototyping/pkg/ui"
 	"github.com/mikolajgs/prototyping/pkg/umbrella"
 
@@ -26,7 +26,7 @@ type Prototype struct {
 	port                    string
 	constructors            []func() interface{}
 	db                      *sql.DB
-	apiCtl                  restapi.Controller
+	apiCtl                  crud.Controller
 	uiCtl                   ui.Controller
 	umbrella                umbrella.Umbrella
 	umbrellaUserConstructor func() interface{}
@@ -58,7 +58,7 @@ func (p *Prototype) CreateDB() error {
 		o := f()
 		err := stDB.CreateTable(o)
 		if err != nil {
-			return fmt.Errorf("error with struct db: %w", err.Unwrap())
+			return fmt.Errorf("error with struct db: %w", err)
 		}
 	}
 
@@ -112,7 +112,7 @@ func (p *Prototype) CreateDB() error {
 	}
 	errPerm := stDB.Save(adminPerm, stdb.SaveOptions{})
 	if errPerm != nil {
-		return fmt.Errorf("error with confirming admin email: %w", errPerm.Unwrap())
+		return fmt.Errorf("error with confirming admin email: %w", errPerm)
 	}
 
 	db.Close()
@@ -154,7 +154,7 @@ func (p *Prototype) Run() error {
 		IntFieldValues:    p.intFieldValues,
 		StringFieldValues: p.stringFieldValues,
 	})
-	p.apiCtl = *restapi.NewController(p.db, p.dbTablePrefix, &restapi.ControllerConfig{
+	p.apiCtl = *crud.NewController(p.db, p.dbTablePrefix, &crud.ControllerConfig{
 		PasswordGenerator: func(pass string) string {
 			passForDB, err := p.umbrella.GeneratePassword(pass)
 			if err != nil {
@@ -223,7 +223,7 @@ func (p *Prototype) Run() error {
 				p.apiCtl.Handler(
 					fmt.Sprintf("%s%s/", p.uriAPI, s),
 					f,
-					restapi.HandlerOptions{},
+					crud.HandlerOptions{},
 				),
 				"",
 			), umbrella.HandlerConfig{}),
@@ -248,8 +248,8 @@ func (p *Prototype) wrapHandlerWithUmbrella(uriType int, h http.Handler, redirec
 					ctx = context.WithValue(r.Context(), ui.ContextValue("LoggedUserID"), fmt.Sprintf("%d", userId))
 					ctx = context.WithValue(ctx, ui.ContextValue("LoggedUserName"), user.GetExtraField("name"))
 				} else {
-					ctx = context.WithValue(r.Context(), restapi.ContextValue("LoggedUserID"), fmt.Sprintf("%d", userId))
-					ctx = context.WithValue(ctx, restapi.ContextValue("LoggedUserName"), user.GetExtraField("name"))
+					ctx = context.WithValue(r.Context(), crud.ContextValue("LoggedUserID"), fmt.Sprintf("%d", userId))
+					ctx = context.WithValue(ctx, crud.ContextValue("LoggedUserName"), user.GetExtraField("name"))
 				}
 
 				for _, o := range []int{umbrella.OpsList, umbrella.OpsRead, umbrella.OpsCreate, umbrella.OpsUpdate, umbrella.OpsDelete} {
@@ -257,7 +257,7 @@ func (p *Prototype) wrapHandlerWithUmbrella(uriType int, h http.Handler, redirec
 					if uriType == uriUI {
 						ctx = context.WithValue(ctx, ui.ContextValue(fmt.Sprintf("AllowedTypes_%d", o)), allowedTypes)
 					} else {
-						ctx = context.WithValue(ctx, restapi.ContextValue(fmt.Sprintf("AllowedTypes_%d", o)), allowedTypes)
+						ctx = context.WithValue(ctx, crud.ContextValue(fmt.Sprintf("AllowedTypes_%d", o)), allowedTypes)
 					}
 				}
 

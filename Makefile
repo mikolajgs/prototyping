@@ -3,7 +3,6 @@
 .PHONY: help test
 
 test: ## Runs tests
-	cd pkg/rest-api && go test
 	cd pkg/umbrella && go test
 	cd pkg/ui && go test
 

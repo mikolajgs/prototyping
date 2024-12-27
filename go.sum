@@ -27,10 +27,16 @@ github.com/docker/go-connections v0.5.0 h1:USnMq7hx7gwdVZq1L49hLXaFtUdTADjXGp+uj
 github.com/docker/go-connections v0.5.0/go.mod h1:ov60Kzw0kKElRwhNs9UlUHAE/F9Fe6GLaXnqyDdmEXc=
 github.com/docker/go-units v0.5.0 h1:69rxXcBk27SvSaaxTtLh/8llcHD8vYHT7WSdRZ/jvr4=
 github.com/docker/go-units v0.5.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
+github.com/go-phings/crud v0.7.0 h1:MP9TU4VPTNJvKTAZouceFRR/BOFvKeeW9dqBryPBvN0=
+github.com/go-phings/crud v0.7.0/go.mod h1:pMEMGTGS4t0QECOXE/mcCmU4MK6lB3FSm2B2ic6Wfis=
 github.com/go-phings/struct-db-postgres v0.6.0 h1:EbxRIrkwF2cDdTYr5TUJ2Ot3N+xSvKUxY4brJGIuloA=
 github.com/go-phings/struct-db-postgres v0.6.0/go.mod h1:Yw7QdVcY6NZGp/gbn4sVGZLiCJF7YZR9mFx2HuWS+i0=
+github.com/go-phings/struct-db-postgres v0.7.0 h1:s3vWoPpEni1HzGF68L8b0cFO/dl8iQeWQ0jYkQhcVLs=
+github.com/go-phings/struct-db-postgres v0.7.0/go.mod h1:Yw7QdVcY6NZGp/gbn4sVGZLiCJF7YZR9mFx2HuWS+i0=
 github.com/go-phings/struct-sql-postgres v0.6.0 h1:GvaiSnywCnA4RtRfQEkYOtNwnykKHW158if0Yoi8jCs=
 github.com/go-phings/struct-sql-postgres v0.6.0/go.mod h1:bII8gzJnuAn7Ht+NEmHnyieu53EYnHhGg5EeY893yeE=
+github.com/go-phings/struct-sql-postgres v0.7.0 h1:E18btNpiBWkgMJdYLXjKv7qXOAJzrjfTu3nySynKDWs=
+github.com/go-phings/struct-sql-postgres v0.7.0/go.mod h1:bII8gzJnuAn7Ht+NEmHnyieu53EYnHhGg5EeY893yeE=
 github.com/go-phings/struct-validator v0.4.7 h1:qHCkn2ppOnzRxzE3+UCXD2+4bMp4xWtEcl5S/TKebRo=
 github.com/go-phings/struct-validator v0.4.7/go.mod h1:i+WCf5KGFnxiGdrtqsysAaIACvE5K+h5X/R8gPJQPB0=
 github.com/go-sql-driver/mysql v1.8.1 h1:LedoTUt/eveggdHS9qUFC1EFSa8bU2+1pZjSRpvNJ1Y=
