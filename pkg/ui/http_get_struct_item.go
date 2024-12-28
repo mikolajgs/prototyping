@@ -298,15 +298,10 @@ func (c *Controller) getStructItemTplObj(uri string, objFunc func() interface{},
 		onlyMsg = true
 	}
 
-	useFieldValues := false
-	if id != "" {
-		useFieldValues = true
-	}
-
 	a := &structItemTplObj{
 		URI:        uri,
 		Name:       stsql.GetStructName(o),
-		FieldsHTML: c.getStructItemFieldsHTML(o, postValues, useFieldValues),
+		FieldsHTML: c.getStructItemFieldsHTML(o, postValues),
 		MsgHTML:    c.getMsgHTML(msgType, msg),
 		OnlyMsg:    onlyMsg,
 		ID:         id,

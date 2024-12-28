@@ -11,7 +11,7 @@ import (
 	validator "github.com/go-phings/struct-validator"
 )
 
-func (c *Controller) getStructItemFieldsHTML(u interface{}, values map[string]string, withFieldValues bool) string {
+func (c *Controller) getStructItemFieldsHTML(u interface{}, values map[string]string) string {
 	fieldHTMLs := validator.GenerateHTML(u, &validator.HTMLOptions{
 		OverwriteTagName: c.tagName,
 		ExcludeFields: map[string]bool{
@@ -165,7 +165,7 @@ func (c *Controller) getStructItemFieldHTML(field reflect.StructField, structNam
 					h += "</select>"
 				} else {
 					for ok, ov := range fv.Values {
-						if value == fmt.Sprintf("%d", ok) {
+						if value == ok {
 							h += html.EscapeString(ov)
 						}
 					}
