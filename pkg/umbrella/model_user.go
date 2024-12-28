@@ -2,8 +2,6 @@ package umbrella
 
 import (
 	"fmt"
-
-	sdb "github.com/go-phings/struct-db-postgres"
 )
 
 type User struct {
@@ -25,13 +23,13 @@ const FlagUserAllowLogin = 4
 
 // DefaultUserModel is default implementation of UserInterface using struct-db-postgres package
 type DefaultUser struct {
-	ctl  *sdb.Controller
+	ctl  ORM
 	user *User
 }
 
 func (g *DefaultUser) CreateDBTable() error {
 	user := &User{}
-	err := g.ctl.CreateTable(user)
+	err := g.ctl.CreateTables(user)
 	if err != nil {
 		return err
 	}
@@ -76,19 +74,14 @@ func (g *DefaultUser) SetExtraField(n string, v string) {
 	}
 }
 func (g *DefaultUser) Save() error {
-	errCrud := g.ctl.Save(g.user, sdb.SaveOptions{})
+	errCrud := g.ctl.Save(g.user)
 	if errCrud != nil {
 		return fmt.Errorf("Error in sdb.SaveToDB: %w", errCrud)
 	}
 	return nil
 }
 func (g *DefaultUser) GetByID(id int64) (bool, error) {
-	users, errCrud := g.ctl.Get(func() interface{} { return &User{} }, sdb.GetOptions{
-		Order:   []string{"ID", "asc"},
-		Limit:   1,
-		Offset:  0,
-		Filters: map[string]interface{}{"ID": id},
-	})
+	users, errCrud := g.ctl.Get(func() interface{} { return &User{} }, []string{"ID", "asc"}, 1, 0, map[string]interface{}{"ID": id}, nil)
 	if errCrud != nil {
 		return false, fmt.Errorf("Error in sdb.GetFromDB: %w", errCrud)
 	}
@@ -100,12 +93,7 @@ func (g *DefaultUser) GetByID(id int64) (bool, error) {
 	return true, nil
 }
 func (g *DefaultUser) GetByEmail(email string) (bool, error) {
-	users, errCrud := g.ctl.Get(func() interface{} { return &User{} }, sdb.GetOptions{
-		Order:   []string{"ID", "asc"},
-		Limit:   1,
-		Offset:  0,
-		Filters: map[string]interface{}{"Email": email},
-	})
+	users, errCrud := g.ctl.Get(func() interface{} { return &User{} }, []string{"ID", "asc"}, 1, 0, map[string]interface{}{"Email": email}, nil)
 	if errCrud != nil {
 		return false, fmt.Errorf("Error in sdb.GetFromDB: %w", errCrud)
 	}
@@ -117,12 +105,7 @@ func (g *DefaultUser) GetByEmail(email string) (bool, error) {
 	return true, nil
 }
 func (g *DefaultUser) GetByEmailActivationKey(key string) (bool, error) {
-	users, errCrud := g.ctl.Get(func() interface{} { return &User{} }, sdb.GetOptions{
-		Order:   []string{"id", "asc"},
-		Limit:   1,
-		Offset:  0,
-		Filters: map[string]interface{}{"EmailActivationKey": key},
-	})
+	users, errCrud := g.ctl.Get(func() interface{} { return &User{} }, []string{"id", "asc"}, 1, 0, map[string]interface{}{"EmailActivationKey": key}, nil)
 	if errCrud != nil {
 		return false, fmt.Errorf("Error in sdb.GetFromDB: %w", errCrud)
 	}

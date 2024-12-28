@@ -27,10 +27,10 @@ github.com/docker/go-connections v0.5.0 h1:USnMq7hx7gwdVZq1L49hLXaFtUdTADjXGp+uj
 github.com/docker/go-connections v0.5.0/go.mod h1:ov60Kzw0kKElRwhNs9UlUHAE/F9Fe6GLaXnqyDdmEXc=
 github.com/docker/go-units v0.5.0 h1:69rxXcBk27SvSaaxTtLh/8llcHD8vYHT7WSdRZ/jvr4=
 github.com/docker/go-units v0.5.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
-github.com/go-phings/crud v0.7.0 h1:MP9TU4VPTNJvKTAZouceFRR/BOFvKeeW9dqBryPBvN0=
-github.com/go-phings/crud v0.7.0/go.mod h1:pMEMGTGS4t0QECOXE/mcCmU4MK6lB3FSm2B2ic6Wfis=
-github.com/go-phings/crud-ui v0.0.0-20241228104838-a2e9b2a826d3 h1:9cyrjUk4wC9ly824Dh+mx3HjjuZFCWVk/97G/SOEk0A=
-github.com/go-phings/crud-ui v0.0.0-20241228104838-a2e9b2a826d3/go.mod h1:3+qrv77tuzAdQW3IkWcF528N1BW8zYFqT4HKAJeNZCc=
+github.com/go-phings/crud v0.8.0 h1:O6UZXE96lWh42OJYpjZb9nevY/aoe+klm2OKStkJsGk=
+github.com/go-phings/crud v0.8.0/go.mod h1:pMEMGTGS4t0QECOXE/mcCmU4MK6lB3FSm2B2ic6Wfis=
+github.com/go-phings/crud-ui v0.8.0 h1:JFh8o5l/891tycxlTWzLQ4x6qsPzZa5bM9ePAkNpIXw=
+github.com/go-phings/crud-ui v0.8.0/go.mod h1:3+qrv77tuzAdQW3IkWcF528N1BW8zYFqT4HKAJeNZCc=
 github.com/go-phings/struct-db-postgres v0.7.0 h1:s3vWoPpEni1HzGF68L8b0cFO/dl8iQeWQ0jYkQhcVLs=
 github.com/go-phings/struct-db-postgres v0.7.0/go.mod h1:Yw7QdVcY6NZGp/gbn4sVGZLiCJF7YZR9mFx2HuWS+i0=
 github.com/go-phings/struct-sql-postgres v0.7.0 h1:E18btNpiBWkgMJdYLXjKv7qXOAJzrjfTu3nySynKDWs=

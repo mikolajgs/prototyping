@@ -4,11 +4,10 @@ go 1.23.4
 
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/go-phings/crud v0.7.0
-	github.com/go-phings/crud-ui v0.0.0-20241228104838-a2e9b2a826d3
+	github.com/go-phings/crud v0.8.0
+	github.com/go-phings/crud-ui v0.8.0
 	github.com/go-phings/struct-db-postgres v0.7.0
 	github.com/go-phings/struct-sql-postgres v0.7.0
-	github.com/go-phings/struct-validator v0.4.7
 	github.com/google/uuid v1.6.0
 	github.com/lib/pq v1.10.9
 	github.com/ory/dockertest/v3 v3.11.0
@@ -26,6 +25,7 @@ require (
 	github.com/docker/docker v27.1.1+incompatible // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
+	github.com/go-phings/struct-validator v0.4.7 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/mikolajgs/struct-validator v0.4.7 // indirect

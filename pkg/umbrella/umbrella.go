@@ -25,7 +25,7 @@ const RegisterAllowedToLogin = 32
 type Umbrella struct {
 	dbConn          *sql.DB
 	dbTblPrefix     string
-	structDB        *sdb.Controller
+	orm             ORM
 	jwtConfig       *JWTConfig
 	Hooks           *Hooks
 	Interfaces      *Interfaces
@@ -69,7 +69,7 @@ type HandlerConfig struct {
 type UmbrellaConfig struct {
 	TagName           string
 	NoUserConstructor bool
-	StructDB          *sdb.Controller
+	ORM               ORM
 }
 
 type UmbrellaContextValue string
@@ -96,12 +96,10 @@ func NewUmbrella(dbConn *sql.DB, tblPrefix string, jwtConfig *JWTConfig, cfg *Um
 	}
 	u.tagName = tagName
 
-	if cfg != nil && cfg.StructDB != nil {
-		u.structDB = cfg.StructDB
+	if cfg != nil && cfg.ORM != nil {
+		u.orm = cfg.ORM
 	} else {
-		u.structDB = sdb.NewController(dbConn, tblPrefix, &sdb.ControllerConfig{
-			TagName: tagName,
-		})
+		u.orm = newWrappedStruct2db(dbConn, tblPrefix, u.tagName)
 	}
 
 	if cfg != nil && cfg.NoUserConstructor {
@@ -112,7 +110,7 @@ func NewUmbrella(dbConn *sql.DB, tblPrefix string, jwtConfig *JWTConfig, cfg *Um
 		User: func() UserInterface {
 			user := &User{}
 			return &DefaultUser{
-				ctl:  u.structDB,
+				ctl:  u.orm,
 				user: user,
 			}
 		},
@@ -131,7 +129,7 @@ func (u Umbrella) CreateDBTables() *ErrUmbrella {
 		}
 	}
 
-	err2 := u.structDB.CreateTable(&Session{})
+	err2 := u.orm.CreateTables(&Session{})
 	if err2 != nil {
 		return &ErrUmbrella{
 			Op:  "CreateDBTables",
@@ -139,7 +137,7 @@ func (u Umbrella) CreateDBTables() *ErrUmbrella {
 		}
 	}
 
-	err2 = u.structDB.CreateTable(&Permission{})
+	err2 = u.orm.CreateTables(&Permission{})
 	if err2 != nil {
 		return &ErrUmbrella{
 			Op:  "CreateDBTables",
@@ -340,11 +338,7 @@ func (u Umbrella) ConfirmEmail(key string) *ErrUmbrella {
 }
 
 func (u Umbrella) GetUserOperationAllowedTypes(i int64, o int) (map[string]bool, error) {
-	perms, err := u.structDB.Get(func() interface{} { return &Permission{} }, sdb.GetOptions{
-		Order:  []string{"Flags", "ASC"},
-		Limit:  30,
-		Offset: 0,
-		Filters: map[string]interface{}{
+	perms, err := u.orm.Get(func() interface{} { return &Permission{} }, []string{"Flags", "ASC"}, 30, 0, map[string]interface{}{
 			"_raw": []interface{}{
 				"(.ForType=? OR (.ForType=? AND .ForItem=?)) AND .Ops&?>0",
 				ForTypeEveryone,
@@ -353,8 +347,7 @@ func (u Umbrella) GetUserOperationAllowedTypes(i int64, o int) (map[string]bool,
 				o,
 			},
 			"_rawConjuction": sdb.RawConjuctionOR,
-		},
-	})
+		}, nil)
 	if err != nil {
 		return map[string]bool{}, err
 	}

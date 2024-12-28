@@ -10,7 +10,6 @@ import (
 
 	crud "github.com/go-phings/crud"
 	ui "github.com/go-phings/crud-ui"
-	stdb "github.com/go-phings/struct-db-postgres"
 	sqldb "github.com/go-phings/struct-sql-postgres"
 	"github.com/mikolajgs/prototyping/pkg/umbrella"
 
@@ -32,6 +31,7 @@ type Prototype struct {
 	umbrellaUserConstructor func() interface{}
 	intFieldValues          map[string]ui.IntFieldValues
 	stringFieldValues       map[string]ui.StringFieldValues
+	orm                     ORM
 }
 
 const uriUI = 1
@@ -43,7 +43,7 @@ func (p *Prototype) CreateDB() error {
 		log.Fatal("Error connecting to db")
 	}
 
-	stDB := stdb.NewController(db, p.dbTablePrefix, nil)
+	p.orm.SetDatabase(db, p.dbTablePrefix)
 
 	// Append umbrella structs
 	if p.umbrellaUserConstructor != nil {
@@ -56,7 +56,7 @@ func (p *Prototype) CreateDB() error {
 
 	for _, f := range p.constructors {
 		o := f()
-		err := stDB.CreateTable(o)
+		err := p.orm.CreateTables(o)
 		if err != nil {
 			return fmt.Errorf("error with struct db: %w", err)
 		}
@@ -74,7 +74,7 @@ func (p *Prototype) CreateDB() error {
 	}, &umbrella.UmbrellaConfig{
 		TagName:           "ui",
 		NoUserConstructor: noUserConstructor,
-		StructDB:          stDB,
+		ORM:               p.orm,
 	})
 
 	if p.umbrellaUserConstructor != nil {
@@ -82,7 +82,7 @@ func (p *Prototype) CreateDB() error {
 		p.umbrella.Interfaces = &umbrella.Interfaces{
 			User: func() umbrella.UserInterface {
 				return &defaultUser{
-					ctl:         stDB,
+					ctl:         p.orm,
 					user:        p.umbrellaUserConstructor().(userInterface),
 					constructor: func() userInterface { return p.umbrellaUserConstructor().(userInterface) },
 				}
@@ -110,7 +110,7 @@ func (p *Prototype) CreateDB() error {
 		ToType:  "all",
 		ToItem:  0,
 	}
-	errPerm := stDB.Save(adminPerm, stdb.SaveOptions{})
+	errPerm := p.orm.Save(adminPerm)
 	if errPerm != nil {
 		return fmt.Errorf("error with confirming admin email: %w", errPerm)
 	}
@@ -127,6 +127,7 @@ func (p *Prototype) Run() error {
 			return errors.New("error connecting to db")
 		}
 		p.db = db
+		p.orm.SetDatabase(db, p.dbTablePrefix)
 	}
 
 	noUserConstructor := false
@@ -141,7 +142,7 @@ func (p *Prototype) Run() error {
 	}, &umbrella.UmbrellaConfig{
 		TagName:           "2db",
 		NoUserConstructor: noUserConstructor,
-		ORM:               p.uiCtl.GetORM(),
+		ORM:               p.orm,
 	})
 	p.uiCtl = *ui.NewController(p.db, p.dbTablePrefix, &ui.ControllerConfig{
 		PasswordGenerator: func(pass string) string {
@@ -153,6 +154,7 @@ func (p *Prototype) Run() error {
 		},
 		IntFieldValues:    p.intFieldValues,
 		StringFieldValues: p.stringFieldValues,
+		ORM:               p.orm,
 	})
 	p.apiCtl = *crud.NewController(p.db, p.dbTablePrefix, &crud.ControllerConfig{
 		PasswordGenerator: func(pass string) string {
@@ -162,13 +164,14 @@ func (p *Prototype) Run() error {
 			}
 			return passForDB
 		},
+		ORM: p.orm,
 	})
 
 	if p.umbrellaUserConstructor != nil {
 		p.umbrella.Interfaces = &umbrella.Interfaces{
 			User: func() umbrella.UserInterface {
 				return &defaultUser{
-					ctl:         p.uiCtl.GetORM(),
+					ctl:         p.orm,
 					user:        p.umbrellaUserConstructor().(userInterface),
 					constructor: func() userInterface { return p.umbrellaUserConstructor().(userInterface) },
 				}
@@ -297,6 +300,12 @@ func NewPrototype(cfg Config, constructors ...func() interface{}) (*Prototype, e
 
 	if cfg.UserConstructor != nil {
 		p.umbrellaUserConstructor = cfg.UserConstructor
+	}
+
+	if cfg.ORM != nil {
+		p.orm = cfg.ORM
+	} else {
+		p.orm = newWrappedStruct2db("ui")
 	}
 
 	return p, nil

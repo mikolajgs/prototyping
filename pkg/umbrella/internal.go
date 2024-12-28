@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	sdb "github.com/go-phings/struct-db-postgres"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -428,7 +427,7 @@ func (u Umbrella) login(email string, password string) (string, int64, *ErrUmbre
 		Flags:     FlagSessionActive,
 	}
 
-	errCrud := u.structDB.Save(sess, sdb.SaveOptions{})
+	errCrud := u.orm.Save(sess)
 	if errCrud != nil {
 		return "", 0, &ErrUmbrella{
 			Op:  "SaveToDB",
@@ -440,12 +439,7 @@ func (u Umbrella) login(email string, password string) (string, int64, *ErrUmbre
 }
 
 func (u *Umbrella) getSession(key string) (*Session, error) {
-	sessions, errCrud := u.structDB.Get(func() interface{} { return &Session{} }, sdb.GetOptions{
-		Order:   []string{"ID", "asc"},
-		Limit:   1,
-		Offset:  0,
-		Filters: map[string]interface{}{"Key": key},
-	})
+	sessions, errCrud := u.orm.Get(func() interface{} { return &Session{} }, []string{"ID", "asc"}, 1, 0, map[string]interface{}{"Key": key}, nil)
 
 	if errCrud != nil {
 		return nil, fmt.Errorf("Error in sdb.Get: %w", errCrud)
@@ -490,7 +484,7 @@ func (u Umbrella) logout(token string) *ErrUmbrella {
 	if session.Flags&FlagSessionActive > 0 {
 		session.Flags = session.Flags - FlagSessionActive
 	}
-	errCrud := u.structDB.Save(session, sdb.SaveOptions{})
+	errCrud := u.orm.Save(session)
 	if errCrud != nil {
 		return &ErrUmbrella{
 			Op:  "SaveToDB",
@@ -563,7 +557,7 @@ func (u Umbrella) check(token string, refresh bool) (string, int64, int64, *ErrU
 		}
 
 		session.ExpiresAt = expiresAt
-		errCrud := u.structDB.Save(session, sdb.SaveOptions{})
+		errCrud := u.orm.Save(session)
 		if errCrud != nil {
 			return "", 0, 0, &ErrUmbrella{
 				Op:  "SaveToDB",

@@ -9,4 +9,5 @@ type Config struct {
 	UserConstructor   func() interface{}
 	IntFieldValues    map[string]ui.IntFieldValues
 	StringFieldValues map[string]ui.StringFieldValues
+	ORM               ORM
 }
