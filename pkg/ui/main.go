@@ -2,14 +2,12 @@ package ui
 
 import (
 	"database/sql"
-
-	struct2db "github.com/go-phings/struct-db-postgres"
 )
 
 // Controller is the main component that gets and saves objects in the database and generates HTTP handler
 // that can be attached to an HTTP server.
 type Controller struct {
-	struct2db         *struct2db.Controller
+	orm               ORM
 	uriStructNameFunc map[string]map[string]func() interface{}
 	tagName           string
 	passFunc          func(string) string
@@ -17,18 +15,19 @@ type Controller struct {
 	stringFieldValues map[string]StringFieldValues
 }
 
+func (c *Controller) GetORM() ORM {
+	return c.orm
+}
+
 type ControllerConfig struct {
 	TagName           string
 	PasswordGenerator func(string) string
 	IntFieldValues    map[string]IntFieldValues
 	StringFieldValues map[string]StringFieldValues
+	ORM               ORM
 }
 
 type ContextValue string
-
-func (c *Controller) GetStruct2DB() *struct2db.Controller {
-	return c.struct2db
-}
 
 type IntFieldValues struct {
 	Type   int
@@ -62,9 +61,11 @@ func NewController(dbConn *sql.DB, tblPrefix string, cfg *ControllerConfig) *Con
 		c.stringFieldValues = cfg.StringFieldValues
 	}
 
-	c.struct2db = struct2db.NewController(dbConn, tblPrefix, &struct2db.ControllerConfig{
-		TagName: tagName,
-	})
+	if cfg != nil && cfg.ORM != nil {
+		c.orm = cfg.ORM
+	} else {
+		c.orm = newWrappedStruct2db(dbConn, tblPrefix, c.tagName)
+	}
 
 	return c
 }

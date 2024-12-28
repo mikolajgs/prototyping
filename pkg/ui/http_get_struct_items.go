@@ -14,8 +14,6 @@ import (
 	"strings"
 	"text/template"
 
-	stdb "github.com/go-phings/struct-db-postgres"
-	stsql "github.com/go-phings/struct-sql-postgres"
 	"github.com/mikolajgs/prototyping/pkg/umbrella"
 )
 
@@ -108,7 +106,7 @@ func (c *Controller) tryGetStructItems(w http.ResponseWriter, r *http.Request, u
 
 	obj := c.uriStructNameFunc[uri][structName]()
 
-	if !stsql.IsStructField(obj, order) {
+	if !isStructField(obj, order) {
 		order = "ID"
 	}
 
@@ -179,12 +177,10 @@ func (c *Controller) tryStructItems(w http.ResponseWriter, r *http.Request, uri 
 			idsInt = append(idsInt, idInt)
 		}
 
-		err2 := c.struct2db.DeleteMultiple(newObjFunc(), stdb.DeleteMultipleOptions{
-			Filters: map[string]interface{}{
-				"_raw": []interface{}{
-					".ID IN (?)",
-					idsInt,
-				},
+		err2 := c.orm.DeleteMultiple(newObjFunc(), map[string]interface{}{
+			"_raw": []interface{}{
+				".ID IN (?)",
+				idsInt,
 			},
 		})
 
@@ -243,65 +239,57 @@ func (c *Controller) getStructItemsTplObj(uri string, objFunc func() interface{}
 
 	getPage, getLimit, getOffset := c.getPageLimitOffset(params.Page, params.Limit)
 
-	itemsHTML, err := c.struct2db.Get(objFunc, stdb.GetOptions{
-		Offset:  getOffset,
-		Limit:   getLimit,
-		Order:   []string{params.Order, params.OrderDirection},
-		Filters: params.FiltersForDB,
-		RowObjTransformFunc: func(obj interface{}) interface{} {
-			out := ""
-			id := ""
+	itemsHTML, err := c.orm.Get(objFunc, []string{params.Order, params.OrderDirection}, getLimit, getOffset, params.FiltersForDB, func(obj interface{}) interface{} {
+		out := ""
+		id := ""
 
-			v := reflect.ValueOf(obj)
-			elem := v.Elem()
-			i := reflect.Indirect(v)
-			s := i.Type()
-			structName := s.Name()
-			for j := 0; j < s.NumField(); j++ {
-				out += "<td>"
-				field := s.Field(j)
-				fieldType := field.Type.Kind()
-				hideValue := c.isFieldHasTag(field, "hidden")
-				if hideValue {
-					out += "(hidden)</td>"
-					continue
-				}
-
-				var value string
-				if fieldType == reflect.String {
-					value = elem.Field(j).String()
-				}
-				if fieldType == reflect.Bool {
-					value = fmt.Sprintf("%v", elem.Field(j).Bool())
-				}
-				if fieldType == reflect.Int || fieldType == reflect.Int64 {
-					value = fmt.Sprintf("%d", elem.Field(j).Int())
-				}
-
-				valueHTML := c.getStructItemFieldHTML(field, structName, value, false)
-				if valueHTML != "" {
-					out += valueHTML + "</td>"
-					continue
-				}
-
-				out += html.EscapeString(value)
-				out += "</td>"
-
-				if field.Name == "ID" {
-					id = fmt.Sprintf("%d", elem.Field(j).Int())
-				}
+		v := reflect.ValueOf(obj)
+		elem := v.Elem()
+		i := reflect.Indirect(v)
+		s := i.Type()
+		structName := s.Name()
+		for j := 0; j < s.NumField(); j++ {
+			out += "<td>"
+			field := s.Field(j)
+			fieldType := field.Type.Kind()
+			hideValue := c.isFieldHasTag(field, "hidden")
+			if hideValue {
+				out += "(hidden)</td>"
+				continue
 			}
 
-			return fmt.Sprintf("%s:%s", id, out)
-		},
+			var value string
+			if fieldType == reflect.String {
+				value = elem.Field(j).String()
+			}
+			if fieldType == reflect.Bool {
+				value = fmt.Sprintf("%v", elem.Field(j).Bool())
+			}
+			if fieldType == reflect.Int || fieldType == reflect.Int64 {
+				value = fmt.Sprintf("%d", elem.Field(j).Int())
+			}
+
+			valueHTML := c.getStructItemFieldHTML(field, structName, value, false)
+			if valueHTML != "" {
+				out += valueHTML + "</td>"
+				continue
+			}
+
+			out += html.EscapeString(value)
+			out += "</td>"
+
+			if field.Name == "ID" {
+				id = fmt.Sprintf("%d", elem.Field(j).Int())
+			}
+		}
+
+		return fmt.Sprintf("%s:%s", id, out)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	itemsCount, err := c.struct2db.GetCount(objFunc, stdb.GetCountOptions{
-		Filters: params.FiltersForDB,
-	})
+	itemsCount, err := c.orm.GetCount(objFunc, params.FiltersForDB)
 	if err != nil {
 		return nil, err
 	}
@@ -309,8 +297,8 @@ func (c *Controller) getStructItemsTplObj(uri string, objFunc func() interface{}
 
 	its := &structItemsTplObj{
 		URI:                 uri,
-		Name:                stsql.GetStructName(o),
-		Fields:              stsql.GetStructFieldNames(o),
+		Name:                getStructName(o),
+		Fields:              getStructFieldNames(o),
 		ItemsHTML:           itemsHTML,
 		ItemsCount:          itemsCount,
 		ParamPage:           fmt.Sprintf("%d", getPage),

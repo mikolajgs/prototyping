@@ -7,8 +7,6 @@ import (
 	"log"
 	"text/template"
 
-	stdb "github.com/go-phings/struct-db-postgres"
-	stsql "github.com/go-phings/struct-sql-postgres"
 	validator "github.com/go-phings/struct-validator"
 	"github.com/mikolajgs/prototyping/pkg/umbrella"
 
@@ -122,7 +120,7 @@ func (c *Controller) tryStructItem(w http.ResponseWriter, r *http.Request, uri s
 		valField.SetInt(i)
 
 		// Load values because we might not overwrite all of them (eg. passwords might stay untouched)
-		err := c.struct2db.Load(obj, id, stdb.LoadOptions{})
+		err := c.orm.Load(obj, id)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return true
@@ -131,7 +129,7 @@ func (c *Controller) tryStructItem(w http.ResponseWriter, r *http.Request, uri s
 
 	// Handle delete here
 	if r.Method == http.MethodDelete {
-		err2 := c.struct2db.Delete(obj, stdb.DeleteOptions{})
+		err2 := c.orm.Delete(obj)
 		if err2 != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return true
@@ -234,7 +232,7 @@ func (c *Controller) tryStructItem(w http.ResponseWriter, r *http.Request, uri s
 		return true
 	}
 
-	err2 := c.struct2db.Save(obj, stdb.SaveOptions{})
+	err2 := c.orm.Save(obj)
 	if err2 != nil {
 		c.renderStructItem(w, r, uri, c.uriStructNameFunc[uri][structName], id, postValues, MsgFailure, fmt.Sprintf("Problem with saving: %s", err2.Error()), false)
 		return true
@@ -287,7 +285,7 @@ func (c *Controller) getStructItemTplObj(uri string, objFunc func() interface{},
 	o := objFunc()
 
 	if id != "" {
-		err := c.struct2db.Load(o, id, stdb.LoadOptions{})
+		err := c.orm.Load(o, id)
 		if err != nil {
 			return nil, err
 		}
@@ -300,7 +298,7 @@ func (c *Controller) getStructItemTplObj(uri string, objFunc func() interface{},
 
 	a := &structItemTplObj{
 		URI:        uri,
-		Name:       stsql.GetStructName(o),
+		Name:       getStructName(o),
 		FieldsHTML: c.getStructItemFieldsHTML(o, postValues),
 		MsgHTML:    c.getMsgHTML(msgType, msg),
 		OnlyMsg:    onlyMsg,

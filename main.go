@@ -9,9 +9,9 @@ import (
 	"net/http"
 
 	crud "github.com/go-phings/crud"
+	ui "github.com/go-phings/crud-ui"
 	stdb "github.com/go-phings/struct-db-postgres"
 	sqldb "github.com/go-phings/struct-sql-postgres"
-	"github.com/mikolajgs/prototyping/pkg/ui"
 	"github.com/mikolajgs/prototyping/pkg/umbrella"
 
 	_ "github.com/lib/pq"
@@ -141,7 +141,7 @@ func (p *Prototype) Run() error {
 	}, &umbrella.UmbrellaConfig{
 		TagName:           "2db",
 		NoUserConstructor: noUserConstructor,
-		StructDB:          p.uiCtl.GetStruct2DB(),
+		ORM:               p.uiCtl.GetORM(),
 	})
 	p.uiCtl = *ui.NewController(p.db, p.dbTablePrefix, &ui.ControllerConfig{
 		PasswordGenerator: func(pass string) string {
@@ -168,7 +168,7 @@ func (p *Prototype) Run() error {
 		p.umbrella.Interfaces = &umbrella.Interfaces{
 			User: func() umbrella.UserInterface {
 				return &defaultUser{
-					ctl:         p.uiCtl.GetStruct2DB(),
+					ctl:         p.uiCtl.GetORM(),
 					user:        p.umbrellaUserConstructor().(userInterface),
 					constructor: func() userInterface { return p.umbrellaUserConstructor().(userInterface) },
 				}

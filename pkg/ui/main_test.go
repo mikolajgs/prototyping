@@ -85,8 +85,8 @@ func createController() {
 }
 
 func createDBStructure() {
-	testController.struct2db.CreateTables(&Person{})
-	testController.struct2db.CreateTables(&Group{})
+	testController.orm.CreateTables(&Person{})
+	testController.orm.CreateTables(&Group{})
 }
 
 func createHTTPServer() {
