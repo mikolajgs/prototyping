@@ -1,3 +1,3 @@
 package prototyping
 
-const VERSION = "0.6.0"
+const VERSION = "0.8.0"

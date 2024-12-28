@@ -7,10 +7,10 @@ import (
 	_ "os"
 	_ "time"
 
+	ui "github.com/go-phings/crud-ui"
 	stdb "github.com/go-phings/struct-db-postgres"
+	"github.com/go-phings/umbrella"
 	"github.com/mikolajgs/prototyping"
-	"github.com/mikolajgs/prototyping/pkg/ui"
-	"github.com/mikolajgs/prototyping/pkg/umbrella"
 
 	_ "github.com/lib/pq"
 )
