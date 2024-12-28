@@ -18,20 +18,3 @@ This project is still at the very early stage, with just basic functionality wor
 
 Please navigate to the `examples` directory.
 
-## Packages
-
-The `pkg` directory contains a collection of useful Go modules designed for building application prototypes or creating small utility tools.
-
-As the modules are still under active development, breaking changes may occur between versions. It is advisable to lock your dependencies to a specific version when using them. 
-
-### umbrella
-
-With that package you can hide any HTTP API endpoint behind a simple login system, and in addition to that, module exposes endpoint for registration, activations, refreshing token and signing out.
-
-Check [README in pkg/umbrella](pkg/umbrella/README.md) for more information.
-
-### ui
-
-This module will automatically generate a simple administration panel for managing data defined by structs and stored in a PostgreSQL database.
-
-Check [README in pkg/ui](pkg/ui/README.md) for more information.
