@@ -11,7 +11,7 @@ import (
 	crud "github.com/go-phings/crud"
 	ui "github.com/go-phings/crud-ui"
 	sqldb "github.com/go-phings/struct-sql-postgres"
-	"github.com/mikolajgs/prototyping/pkg/umbrella"
+	"github.com/go-phings/umbrella"
 
 	_ "github.com/lib/pq"
 )
