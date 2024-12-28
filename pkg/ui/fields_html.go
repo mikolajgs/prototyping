@@ -26,6 +26,7 @@ func (c *Controller) getStructItemFieldsHTML(u interface{}, values map[string]st
 	reName := regexp.MustCompile(`name="[A-Za-z0-9\-_]+"`)
 
 	v := reflect.ValueOf(u)
+	elem := v.Elem()
 	i := reflect.Indirect(v)
 	s := i.Type()
 	structName := s.Name()
@@ -39,7 +40,24 @@ func (c *Controller) getStructItemFieldsHTML(u interface{}, values map[string]st
 
 		gotDoubleEntry := c.isFieldHasTag(field, "dblentry")
 
-		fieldHTML := c.getStructItemFieldHTML(field, structName, values[field.Name], true)
+		var value string
+		fieldType := field.Type.Kind()
+		if fieldType == reflect.String {
+			value = elem.Field(j).String()
+		}
+		if fieldType == reflect.Bool {
+			value = fmt.Sprintf("%v", elem.Field(j).Bool())
+		}
+		if c.isFieldInt(field) {
+			value = fmt.Sprintf("%d", elem.Field(j).Int())
+		}
+
+		overwriteValue, ok := values[field.Name]
+		if ok {
+			value = overwriteValue
+		}
+
+		fieldHTML := c.getStructItemFieldHTML(field, structName, value, true)
 
 		if fieldHTML == "" {
 			fieldHTML = fieldHTMLs[field.Name]

@@ -187,14 +187,22 @@ func (c *Controller) tryStructItem(w http.ResponseWriter, r *http.Request, uri s
 				f.SetString(fv[0])
 			}
 
-			if f.Kind() == reflect.Int || f.Kind() == reflect.Int64 {
-				i, err := strconv.ParseInt(fv[0], 10, 64)
-				if err != nil {
-					invalidFormFields[fk] = true
-					continue
+			if c.isFieldInt(field) {
+				var iSum int64
+				for _, fvv := range fv {
+					i, err := strconv.ParseInt(fvv, 10, 64)
+					if err != nil {
+						invalidFormFields[fk] = true
+						continue
+					}
+					if iSum&i == 0 {
+						iSum += i
+					}
 				}
 
-				f.SetInt(i)
+				if !invalidFormFields[fk] {
+					f.SetInt(iSum)
+				}
 			}
 		}
 	}
