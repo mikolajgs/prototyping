@@ -13,6 +13,14 @@ type User struct {
 	LastModifiedBy     int64  `json:"last_modified_by"`
 }
 
+func GetUserFlagsMultipleBitChoice() map[int]string {
+	return map[int]string{
+		1: "Active",
+		2: "EmailConfirmed",
+		4: "AllowLogin",
+	}
+}
+
 func (u *User) GetID() int64 {
 	return u.ID
 }

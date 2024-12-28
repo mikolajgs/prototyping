@@ -7,11 +7,10 @@ import (
 	"log"
 	"text/template"
 
-	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
-	sthtml "github.com/mikolajgs/prototyping/pkg/struct-html"
-	stsql "github.com/mikolajgs/prototyping/pkg/struct-sql-postgres"
+	stdb "github.com/go-phings/struct-db-postgres"
+	stsql "github.com/go-phings/struct-sql-postgres"
+	validator "github.com/go-phings/struct-validator"
 	"github.com/mikolajgs/prototyping/pkg/umbrella"
-	validator "github.com/mikolajgs/struct-validator"
 
 	"net/http"
 	"reflect"
@@ -166,18 +165,9 @@ func (c *Controller) tryStructItem(w http.ResponseWriter, r *http.Request, uri s
 		f := s.FieldByName(fk)
 		if f.IsValid() && f.CanSet() {
 			// We can set password fields only when they are not empty
-			gotPassField := false
+
 			field, _ := typ.FieldByName(fk)
-			fieldTag := field.Tag.Get(c.tagName)
-			if fieldTag != "" {
-				fieldTags := strings.Split(fieldTag, " ")
-				for _, ft := range fieldTags {
-					if ft == "password" {
-						gotPassField = true
-						break
-					}
-				}
-			}
+			gotPassField := c.isFieldHasTag(field, "password")
 			if gotPassField {
 				if fv[0] == "" {
 					continue
@@ -197,14 +187,22 @@ func (c *Controller) tryStructItem(w http.ResponseWriter, r *http.Request, uri s
 				f.SetString(fv[0])
 			}
 
-			if f.Kind() == reflect.Int || f.Kind() == reflect.Int64 {
-				i, err := strconv.ParseInt(fv[0], 10, 64)
-				if err != nil {
-					invalidFormFields[fk] = true
-					continue
+			if c.isFieldInt(field) {
+				var iSum int64
+				for _, fvv := range fv {
+					i, err := strconv.ParseInt(fvv, 10, 64)
+					if err != nil {
+						invalidFormFields[fk] = true
+						continue
+					}
+					if iSum&i == 0 {
+						iSum += i
+					}
 				}
 
-				f.SetInt(i)
+				if !invalidFormFields[fk] {
+					f.SetInt(iSum)
+				}
 			}
 		}
 	}
@@ -238,7 +236,7 @@ func (c *Controller) tryStructItem(w http.ResponseWriter, r *http.Request, uri s
 
 	err2 := c.struct2db.Save(obj, stdb.SaveOptions{})
 	if err2 != nil {
-		c.renderStructItem(w, r, uri, c.uriStructNameFunc[uri][structName], id, postValues, MsgFailure, fmt.Sprintf("Problem with saving: %s", err2.Unwrap().Error()), false)
+		c.renderStructItem(w, r, uri, c.uriStructNameFunc[uri][structName], id, postValues, MsgFailure, fmt.Sprintf("Problem with saving: %s", err2.Error()), false)
 		return true
 	}
 
@@ -300,15 +298,10 @@ func (c *Controller) getStructItemTplObj(uri string, objFunc func() interface{},
 		onlyMsg = true
 	}
 
-	useFieldValues := false
-	if id != "" {
-		useFieldValues = true
-	}
-
 	a := &structItemTplObj{
 		URI:        uri,
 		Name:       stsql.GetStructName(o),
-		FieldsHTML: sthtml.GetFields(o, postValues, useFieldValues, c.tagName),
+		FieldsHTML: c.getStructItemFieldsHTML(o, postValues),
 		MsgHTML:    c.getMsgHTML(msgType, msg),
 		OnlyMsg:    onlyMsg,
 		ID:         id,

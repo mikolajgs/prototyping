@@ -7,8 +7,10 @@ import (
 	_ "os"
 	_ "time"
 
+	stdb "github.com/go-phings/struct-db-postgres"
 	"github.com/mikolajgs/prototyping"
-	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
+	"github.com/mikolajgs/prototyping/pkg/ui"
+	"github.com/mikolajgs/prototyping/pkg/umbrella"
 
 	_ "github.com/lib/pq"
 )
@@ -20,6 +22,41 @@ func main() {
 		prototyping.Config{
 			DatabaseDSN:     dbDSN,
 			UserConstructor: func() interface{} { return &User{} },
+			IntFieldValues: map[string]ui.IntFieldValues{
+				"Session_Flags": {
+					Type:   ui.ValuesSingleChoice,
+					Values: umbrella.GetSessionFlagsSingleChoice(),
+				},
+				"Permission_Flags": {
+					Type:   ui.ValuesMultipleBitChoice,
+					Values: umbrella.GetPermissionFlagsMultipleBitChoice(),
+				},
+				"Permission_ForType": {
+					Type:   ui.ValuesSingleChoice,
+					Values: umbrella.GetPermissionForTypeSingleChoice(),
+				},
+				"Permission_Ops": {
+					Type:   ui.ValuesMultipleBitChoice,
+					Values: umbrella.GetPermissionOpsMultipleBitChoice(),
+				},
+				"User_Flags": {
+					Type:   ui.ValuesMultipleBitChoice,
+					Values: GetUserFlagsMultipleBitChoice(),
+				},
+			},
+			StringFieldValues: map[string]ui.StringFieldValues{
+				"Permission_ToType": {
+					Type: ui.ValuesSingleChoice,
+					Values: map[string]string{
+						"all":        "all",
+						"User":       "User",
+						"Session":    "Session",
+						"Permission": "Permission",
+						"Item":       "Item",
+						"ItemGroup":  "ItemGroup",
+					},
+				},
+			},
 		},
 		func() interface{} { return &Item{} },
 		func() interface{} { return &ItemGroup{} },

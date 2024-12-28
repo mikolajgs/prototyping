@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	sdb "github.com/go-phings/struct-db-postgres"
 	"github.com/google/uuid"
-	sdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
 	"golang.org/x/crypto/bcrypt"
 )
 

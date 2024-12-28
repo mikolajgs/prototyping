@@ -14,8 +14,8 @@ import (
 	"strings"
 	"text/template"
 
-	stdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
-	stsql "github.com/mikolajgs/prototyping/pkg/struct-sql-postgres"
+	stdb "github.com/go-phings/struct-db-postgres"
+	stsql "github.com/go-phings/struct-sql-postgres"
 	"github.com/mikolajgs/prototyping/pkg/umbrella"
 )
 
@@ -256,40 +256,40 @@ func (c *Controller) getStructItemsTplObj(uri string, objFunc func() interface{}
 			elem := v.Elem()
 			i := reflect.Indirect(v)
 			s := i.Type()
+			structName := s.Name()
 			for j := 0; j < s.NumField(); j++ {
 				out += "<td>"
 				field := s.Field(j)
 				fieldType := field.Type.Kind()
-				hideValue := false
-				fieldTag := field.Tag.Get(c.tagName)
-				if fieldTag != "" {
-					fieldTags := strings.Split(fieldTag, " ")
-					for _, ft := range fieldTags {
-						if ft == "hidden" {
-							hideValue = true
-							break
-						}
-					}
-				}
+				hideValue := c.isFieldHasTag(field, "hidden")
 				if hideValue {
 					out += "(hidden)</td>"
 					continue
 				}
 
+				var value string
 				if fieldType == reflect.String {
-					out += html.EscapeString(elem.Field(j).String())
+					value = elem.Field(j).String()
 				}
 				if fieldType == reflect.Bool {
-					out += fmt.Sprintf("%v", elem.Field(j).Bool())
+					value = fmt.Sprintf("%v", elem.Field(j).Bool())
 				}
 				if fieldType == reflect.Int || fieldType == reflect.Int64 {
-					out += fmt.Sprintf("%d", elem.Field(j).Int())
-					if field.Name == "ID" {
-						id = fmt.Sprintf("%d", elem.Field(j).Int())
-					}
+					value = fmt.Sprintf("%d", elem.Field(j).Int())
 				}
+
+				valueHTML := c.getStructItemFieldHTML(field, structName, value, false)
+				if valueHTML != "" {
+					out += valueHTML + "</td>"
+					continue
+				}
+
+				out += html.EscapeString(value)
 				out += "</td>"
 
+				if field.Name == "ID" {
+					id = fmt.Sprintf("%d", elem.Field(j).Int())
+				}
 			}
 
 			return fmt.Sprintf("%s:%s", id, out)

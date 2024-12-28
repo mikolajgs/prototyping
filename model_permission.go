@@ -1,9 +1,5 @@
 package prototyping
 
-import (
-	sdb "github.com/mikolajgs/prototyping/pkg/struct-db-postgres"
-)
-
 type Permission struct {
 	ForType        int8   `json:"for_type"`
 	ForID          int64  `json:"for_id"`
@@ -14,10 +10,4 @@ type Permission struct {
 	CreatedBy      int64  `json:"created_by"`
 	LastModifiedAt int64  `json:"last_modified_at"`
 	LastModifiedBy int64  `json:"last_modified_by"`
-}
-
-type defaultPermission struct {
-	ctl         *sdb.Controller
-	permission  *Permission
-	constructor func() *Permission
 }
